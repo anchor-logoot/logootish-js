@@ -17,7 +17,7 @@ if (env === 'build') {
 
 const config = {
   mode: mode,
-  entry: __dirname + '/src/index.js',
+  entry: __dirname + '/src/index.ts',
   devtool: 'source-map',
   output: {
     path: __dirname + '/dist',
@@ -30,15 +30,12 @@ const config = {
   module: {
     rules: [
       {
-        test: /(\.jsx|\.js)$/,
-        loader: 'babel-loader',
-        exclude: /(node_modules|bower_components)/,
-        options: {
-          plugins: ["@babel/plugin-proposal-class-properties"],
-        },
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
       },
       {
-        test: /(\.jsx|\.js)$/,
+        test: /(\.ts)$/,
         loader: 'eslint-loader',
         exclude: /node_modules/
       }

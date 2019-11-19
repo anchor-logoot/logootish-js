@@ -1,30 +1,30 @@
-import { Enum, arraymap, FatalError } from './utils'
-import { Int32 } from './ints'
-import { Bst } from './bst'
+import { arraymap, FatalError, CompareResult } from './utils.ts'
+import { Int32 } from './ints.ts'
+import { Bst } from './bst.ts'
 
-import { debug } from './debug'
+import { debug } from './debug.ts'
 
 // What a C++ typedef would do
 // This makes it possible to completely swap out the type of the int used in the
 // algorithm w/o actually replacing each instance (which would be a real pain)
-const LogootInt = Int32
+import LogootInt = Int32
 
-class LogootPosition {
-  array = [new LogootInt(0)]
+class LogootPosition extends Array<LogootInt> {
+  constructor(len: number = 0, start?: LogootPosition, end?: LogootPosition) {
+    super(new LogootInt())
 
-  constructor(len, start, end) {
-    if (!start && end && end.array[0]) {
+    if (!start && end && end[0]) {
       Object.assign(this, end.inverseOffsetLowest(len))
-    } else if (!end && start && start.array[0]) {
-      // Sleazy array copy
-      this.array = start.array.slice(0)
+    } else if (!end && start && start[0]) {
+      Object.assign(this, start)
     } else if (start && end) {
       let done = false
-      const newarray = []
-      const itstart = start.array.values()
-      const itend = end.array.values()
+      const itstart = start.values()
+      const itend = end.values()
       let nstart
       let nend
+
+      this.length = 0
 
       while (!done) {
         if (!nstart || !nstart.done) {
@@ -41,86 +41,95 @@ class LogootPosition {
             done = true
           }
           // Regardless, the start ID is the new ID for this level of our node
-          newarray.push(new LogootInt(nstart.value))
+          this.push(new LogootInt(nstart.value))
         } else if (!nstart.done) {
           // So there's no end restriction, that means we can just add right on
           // top of the old end (the start of the new node)
-          newarray.push(new LogootInt(nstart.value))
+          this.push(new LogootInt(nstart.value))
           done = true
         } else if (!nend.done) {
           // We have an end restriction, but no start restriction, so we just
           // put the new node's start behind the old end
-          newarray.push(new LogootInt(nend.value).sub(len))
+          this.push(new LogootInt(nend.value).sub(len))
           done = true
         } else {
           // So both other IDs have nothing else. It must be time to make a new
           // level and be done
-          newarray.push(new LogootInt(0))
+          this.push(new LogootInt())
           done = true
         }
       }
-
-      this.array = newarray
     }
+  }
+
+  static fromJSON(eventnode: LogootPosition.JSON) {
+    const pos = new LogootPosition()
+    pos.length = 0
+    eventnode.forEach((n) => {
+      pos.push(LogootInt.fromJSON(n))
+    })
+    return pos
+  }
+  toJSON(): LogootPosition.JSON {
+    return this.map((n) => n.toJSON())
   }
 
   get levels() {
     // A zero-length position is NOT valid
     // Through some sneakyness, you COULD directly assign the array to make it
     // have a length of zero. Don't do it.
-    return this.array.length - 1
-  }
-  level(n) {
-    return this.array[n]
+    return this.length - 1
   }
 
-  fromEvent(eventnode) {
-    this.array = []
-    const self = this
-    eventnode.forEach((n) => {
-      self.array.push(new LogootInt(n))
-    })
-    return this
-  }
-
-  offsetLowest(offset) {
-    return Object.assign(new LogootPosition(0, undefined, undefined), {
-      array: this.array.map((current, i, array) => {
+  offsetLowest(offset: number | LogootInt): LogootPosition {
+    return Object.assign(
+      new LogootPosition(),
+      this.map((current, i, array) => {
         return i < array.length - 1
           ? current
           : new LogootInt(current).add(offset)
       })
-    })
+    )
   }
-  inverseOffsetLowest(offset) {
-    return Object.assign(new LogootPosition(0, undefined, undefined), {
-      array: this.array.map((current, i, array) => {
+  inverseOffsetLowest(offset: number | LogootInt): LogootPosition {
+    return Object.assign(
+      new LogootPosition(),
+      this.map((current, i, array) => {
         return i < array.length - 1
           ? current
           : new LogootInt(current).sub(offset)
       })
-    })
+    )
   }
 
-  equivalentPositionAtLevel(level) {
-    return Object.assign(new LogootPosition(0, undefined, undefined), {
-      array: new Array(level + 1).fill(0, 0, level + 1).map((el, i) => {
-        return new LogootInt(this.array[i])
+  copy(): LogootPosition {
+    return Object.assign(
+      new LogootPosition(),
+      this.map((i) => new LogootInt(i))
+    )
+  }
+
+  // TODO: Move to compare func
+  equivalentPositionAtLevel(level: number): LogootPosition {
+    return Object.assign(
+      new LogootPosition(),
+      new Array(level + 1).fill(0, 0, level + 1).map((el, i) => {
+        return new LogootInt(this[i])
       })
-    })
+    )
   }
 
-  cmp(pos, level = 0) {
-    if (level >= this.array.length) {
-      if (this.array.length === pos.array.length) {
+  cmp(pos: LogootPosition, level = 0): CompareResult {
+    if (level >= this.length) {
+      if (this.length === pos.length) {
         return 0
       }
       return 1
     }
-    if (level >= pos.array.length) {
+    if (level >= pos.length) {
       return -1
     }
-    switch (this.array[level].cmp(pos.array[level])) {
+    switch (this[level].cmp(pos[level])) {
       case 1:
         return 1
       case -1:
@@ -132,36 +141,38 @@ class LogootPosition {
     }
   }
 
-  clamp(min, max) {
+  clamp(min: LogootPosition, max: LogootPosition) {
     return this.cmp(min) < 0 ? min : this.cmp(max) > 0 ? max : this
-  }
-
-  toJSON() {
-    return this.array
   }
 
   toString() {
     let str = '['
-    this.array.forEach((el, i, a) => {
+    this.forEach((el, i, a) => {
       str += el.toString() + (i >= a.length - 1 ? '' : ',')
     })
     str += ']'
     return str
   }
 }
+namespace LogootPosition {
+  export type JSON = LogootInt.JSON[]
+  export namespace JSON {
+    export const Schema = { type: 'array', items: LogootInt.JSON.Schema }
+  }
+}
 
 class LogootNode {
-  known_position = 0
-  length = 0
-  start = new LogootPosition()
-  rclk = new LogootInt(0)
+  known_position: number = 0
+  length: number = 0
+  start: LogootPosition = new LogootPosition()
+  rclk: LogootInt = new LogootInt(0)
 
-  constructor(node) {
+  constructor(node?: LogootNode) {
     if (node) {
       Object.assign(this, {
         known_position: node.known_position,
         length: node.length,
-        start: node.start.offsetLowest(new LogootInt(0)),
+        start: node.start.offsetLowest(new LogootInt()),
         rclk: new LogootInt(node.rclk)
       })
     }
@@ -182,30 +193,57 @@ class LogootNode {
   }
 }
 
-const EventState = new Enum('PENDING', 'SENDING', 'COMPLETE')
-const EventType = new Enum('INSERTATION', 'REMOVAL')
+enum EventState {
+  PENDING, SENDING, COMPLETE
+}
+enum EventType {
+  INSERTATION, REMOVAL
+}
 
-class InsertationEvent {
+interface LogootEvent {
+  type: EventType
+  state: EventState
+  toJSON(): any
+  rclk: LogootInt
+}
+
+class InsertationEvent implements LogootEvent {
   type = EventType.INSERTATION
   body = ''
-  start = undefined
-  known_position = undefined
-  rclk = 0
+  start?: LogootPosition = undefined
+  known_position?: number = undefined
+  rclk = new LogootInt()
 
   // Previous & next insertation event
-  last = undefined
-  next = undefined
+  last: InsertationEvent = undefined
+  next: InsertationEvent = undefined
 
   state = EventState.PENDING
 
-  constructor(body, left, right, rclk = 0, known_position = undefined) {
+  constructor(body: string, left?: LogootPosition, right?: LogootPosition, rclk?: LogootInt, known_position?: number) {
     Object.assign(this, {
       body,
       known_position,
       state: EventState.PENDING,
       start: new LogootPosition(body.length, left, right),
-      rclk
+      rclk: new LogootInt(rclk)
     })
+  }
+
+  static fromJSON(eventnode: InsertationEvent.JSON) {
+    return new InsertationEvent(
+      eventnode.body,
+      LogootPosition.fromJSON(eventnode.start),
+      undefined,
+      LogootInt.fromJSON(eventnode.rclk)
+    )
+  }
+  toJSON(): InsertationEvent.JSON {
+    return {
+      body: this.body,
+      start: this.start.toJSON(),
+      rclk: this.rclk.toJSON()
+    }
   }
 
   get length() {
@@ -224,57 +262,136 @@ class InsertationEvent {
     })
     return node
   }
-
-  toJSON() {
-    return { body: this.body, start: this.start, rclk: this.rclk }
+}
+namespace InsertationEvent {
+  export type JSON = {
+    body: string,
+    start: LogootPosition.JSON,
+    rclk: LogootInt.JSON
+  }
+  export namespace JSON {
+    export const Schema = {
+      type: 'object',
+      properties: {
+        removals: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              start: LogootPosition.JSON.Schema,
+              length: { type: 'number' }
+            }
+          }
+        },
+        rclk: LogootInt.JSON.Schema
+      }
+    }
   }
 }
 
-class RemovalEvent {
+type Removal = { start: LogootPosition, length: number }
+type RemovalJSON = { start: LogootPosition.JSON, length: number }
+class RemovalEvent implements LogootEvent {
   type = EventType.REMOVAL
-  removals = []
+  removals: Removal[] = []
+  rclk: LogootInt
 
   state = EventState.PENDING
 
-  constructor(removals, rclk) {
+  constructor(removals: Removal[], rclk?: LogootInt) {
     this.removals = removals
-    this.rclk = rclk
+    this.rclk = new LogootInt(rclk)
   }
 
-  toJSON() {
-    return { removals: this.removals, rclk: this.rclk }
+  static fromJSON(eventnode: RemovalEvent.JSON) {
+    return new RemovalEvent(
+      eventnode.removals.map(
+        (r) => ({ start: LogootPosition.fromJSON(r.start), length: r.length })
+      ),
+      LogootInt.fromJSON(eventnode.rclk)
+    )
   }
+  toJSON(): RemovalEvent.JSON {
+    return {
+      removals: this.removals.map(
+        (r) => ({ start: r.start.toJSON(), length: r.length })
+      ),
+      rclk: this.rclk.toJSON()
+    }
+  }
+}
+namespace RemovalEvent {
+  export type JSON = { removals: RemovalJSON[], rclk: LogootInt.JSON }
+  export namespace JSON {
+    export const Schema = {
+      type: 'object',
+      properties: {
+        removals: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              start: LogootPosition.JSON.Schema,
+              length: { type: 'number' }
+            }
+          }
+        },
+        rclk: LogootInt.JSON.Schema
+      }
+    }
+  }
+}
+
+type KnownPositionBst = Bst<LogootNode, { known_position: number }>
+type LogootBst = Bst<LogootNode, { start: LogootPosition }>
+
+type Conflict = {
+  start: LogootPosition,
+  end: LogootPosition,
+  clip_nstart: boolean,
+  clip_nend: boolean,
+  whole_node: boolean,
+  level: number
 }
 
 class Document {
   // The BST maps out where all insertation nodes are in the local document's
   // memory. It is used to go from position -> node
-  ldoc_bst = new Bst((a, b) => a.known_position - b.known_position)
+  ldoc_bst: KnownPositionBst = new Bst((a, b) => (a.known_position - b.known_position) as CompareResult)
   // This BST maps Logoot position identifiers to their text node to allow
   // lookup of text position from Logoot ID
-  logoot_bst = new Bst((a, b) => a.start.cmp(b.start))
+  logoot_bst: LogootBst = new Bst((a, b) => a.start.cmp(b.start))
   // A map of removals that do not yet have text to remove
-  removal_bst = new Bst((a, b) => a.start.cmp(b.start))
+  removal_bst: LogootBst = new Bst((a, b) => a.start.cmp(b.start))
   // Events that need to get sent over Matrix
-  pending_events = []
+  pending_events: LogootEvent[] = []
   // See the Logoot paper for why. Unlike the Logoot implementation, this is
   // incremented with each deletion only.
-  vector_clock = new LogootInt(0)
+  vector_clock = new LogootInt()
 
   // Used to keep track of active EventEmitter listeners having anything to do
   // with this document
   // TODO: Move this to a better place
-  _active_listeners = []
+  _active_listeners: any[] = []
 
-  last_insertation_event = undefined
+  send: (e: LogootEvent) => Promise<any>
 
-  constructor(send, insertLocal, removeLocal) {
+  insertLocal: (position: number, body: string, meta: any) => any
+  removeLocal: (position: number, length: number) => any
+
+  last_insertation_event: InsertationEvent = undefined
+
+  constructor(
+    send: (e: LogootEvent) => Promise<any>,
+    insertLocal: (position: number, body: string, meta: any) => any,
+    removeLocal: (position: number, length: number) => any
+  ) {
     this.send = send
     this.insertLocal = insertLocal
     this.removeLocal = removeLocal
   }
 
-  _removePendingEvent(event) {
+  _removePendingEvent(event: LogootEvent) {
     const index = this.pending_events.indexOf(event)
     if (index >= 0) {
       this.pending_events.splice(index, 1)
@@ -282,7 +399,7 @@ class Document {
     }
     return false
   }
-  _tryMergeEvents(event) {
+  _tryMergeEvents(event: InsertationEvent) {
     if (event.state !== EventState.PENDING) {
       return false
     }
@@ -331,7 +448,7 @@ class Document {
     return false
   }
 
-  _pushEvent(event) {
+  _pushEvent(event: LogootEvent) {
     this.pending_events.push(event)
 
     const self = this
@@ -351,7 +468,7 @@ class Document {
           if (e && e.data && e.data.retry_after_ms) {
             if (
               event.type === EventType.INSERTATION &&
-              self._tryMergeEvents(event)
+              self._tryMergeEvents(event as InsertationEvent)
             ) {
               debug.warn(
                 `Hitting the rate limit: Will resend in ${e.data.retry_after_ms} ms with multiple messages merged together`
@@ -371,22 +488,25 @@ class Document {
     queue_send()
   }
 
-  insert(position, text) {
+  insert(position: number, text: string) {
     debug.debug('INSERT', position, text)
 
     // The position must be -1 for lesser because it can't count the text node
     // currently in the insertation position (we're between two nodes)
-    let lesser = this.ldoc_bst.getLteq({ known_position: position - 1 })
-    let greater = this.ldoc_bst.getGteq({ known_position: position })
+    let nodes_lesser = this.ldoc_bst.getLteq({ known_position: position - 1 })
+    let nodes_greater = this.ldoc_bst.getGteq({ known_position: position })
+
+    let lesser
+    let greater
 
     // Nodes are not allowed to have the same position
-    if (lesser.length > 1 || greater.length > 1) {
+    if (nodes_lesser.length > 1 || nodes_greater.length > 1) {
       throw new FatalError(
         'Corrupt BST. There are multiple nodes at a position.'
       )
     } else {
-      lesser = lesser[0]
-      greater = greater[0]
+      lesser = nodes_lesser[0]
+      greater = nodes_greater[0]
     }
 
     // Finally, we can create positions...
@@ -452,7 +572,7 @@ class Document {
     this.last_insertation_event = event
   }
 
-  remove(position, length) {
+  remove(position: number, length: number) {
     debug.debug('REMOVE', position, length)
 
     // First, find any nodes that MAY have content removed from them
@@ -463,8 +583,8 @@ class Document {
       )
       .concat(this.ldoc_bst.getLteq({ known_position: position - 1 }))
 
-    const removals = []
-    let last_end
+    const removals: Removal[] = []
+    let last_end: LogootPosition
     nodes.forEach(({ data }) => {
       let newlen = data.length
       let newstart = data.start
@@ -503,55 +623,50 @@ class Document {
     this._pushEvent(event)
   }
 
-  _constructSkipRanges(bst, start, end, lesser, copy = false) {
-    // These ranges are areas of the document that are already populated in the
-    // region where the insert is happening. If there are conflicts, they will
-    // be skipped. The end of this new insert must be added to the end as a fake
-    // zero-length node so that the for each loop triggers for the end.
-    const skip_ranges = bst
-      .getRange({ start }, { start: end })
-      // Make sure we COPY all nodes
-      .map((n) => (copy ? new LogootNode(n.data) : n.data))
-      .sort((a, b) => a.start.cmp(b.start))
-
-    if (!lesser) {
-      lesser = bst.getLteq({ start })
-      if (lesser.length > 1) {
-        throw new FatalError(
-          'Corrupt BST. There are multiple nodes at a position.'
-        )
-      } else {
-        lesser = lesser[0]
-      }
-    }
-    if (lesser && !skip_ranges.includes(lesser)) {
-      skip_ranges.unshift(lesser)
-    }
-    // It's fine that position is undefined because that would only impact nodes
-    // AFTER this one
-    skip_ranges.push({ start: end, end, length: 0 })
-    return skip_ranges
-  }
-
-  _mergeNode(bst, nstart, length, resolveConflict, addNode, informRemoval) {
+  _mergeNode(
+    bst: LogootBst,
+    nstart: LogootPosition,
+    length: number,
+    resolveConflict: (node: LogootNode, conflict: Conflict, lesser: LogootNode) => CompareResult,
+    addNode: (node: LogootNode) => any,
+    informRemoval: (node: LogootNode, pos: number, length: number, whole: boolean) => any
+  ) {
     const level = nstart.levels
     const nend = nstart.offsetLowest(length)
 
-    // Find a node BEFORE this Logoot position as a real text position marker
-    let lesser = bst.getLteq({ start: nstart })
-    if (lesser.length > 1) {
-      throw new FatalError(
-        'Corrupt BST. There are multiple nodes at a position.'
-      )
-    } else {
-      lesser = lesser[0] ? lesser[0].data : undefined
-    }
-
     // These ranges are areas of the document that are already populated in the
     // region where the insert is happening. If there are conflicts, they will
     // be skipped. The end of this new insert must be added to the end as a fake
     // zero-length node so that the for each loop triggers for the end.
-    let skip_ranges = this._constructSkipRanges(bst, nstart, nend, lesser)
+    let skip_ranges = bst
+      .getRange({ start: nstart }, { start: nend })
+      .map(({ data }) => data)
+      .sort((a, b) => a.start.cmp(b.start))
+
+    const nodes_lesser = bst.getLteq({ start: nstart })
+    let lesser: LogootNode
+    if (nodes_lesser.length > 1) {
+      throw new FatalError(
+        'Corrupt BST. There are multiple nodes at a position.'
+      )
+    } else if (nodes_lesser.length) {
+      lesser = nodes_lesser[0].data
+    }
+
+    // Ensure that lesser is initially defined as a skip_range (this is useful
+    // for some removals that may want to use conflicts with lesser 
+    if (lesser && !skip_ranges.includes(lesser)) {
+      skip_ranges.unshift(lesser)
+    }
+    // It's fine that known_position is invalid because that would only impact
+    // nodes AFTER this one (whose calculations depend upon it)
+    skip_ranges.push({
+      start: nend,
+      end: nend,
+      length: 0,
+      known_position: 0,
+      rclk: new LogootInt(0)
+    })
 
     skip_ranges = skip_ranges.filter((n) => {
       if (n.length && n.start.levels === level) {
@@ -572,7 +687,7 @@ class Document {
         }
 
         // Get the externally defined result for this conflict
-        const result = resolveConflict(n, conflict, lesser, bst)
+        const result = resolveConflict(n, conflict, lesser)
 
         // Actually remove the node or part of it if it looses
         if (result < 1) {
@@ -584,8 +699,7 @@ class Document {
             } else {
               // Find the length of the middle region of the node
               // nnnnnRRRRnnnn <- Where the 'R' is (l=4 in this case)
-              const l = new LogootInt(end.level(level)).sub(start.level(level))
-                .js_int
+              const l = new LogootInt(end[level]).sub(start[level]).js_int
 
               // Make a copy because we will need to modify the original
               const endnode = new LogootNode(n)
@@ -597,9 +711,8 @@ class Document {
                 // a length > 0:
                 // NNNNrrrrrnnnnn (As above, 'r' is the section of the node
                 // being removed)
-                n.length = new LogootInt(start.level(level)).sub(
-                  n.start.level(level)
-                ).js_int
+                n.length = new LogootInt(start[level]).sub(n.start[level])
+                  .js_int
 
                 endnode.known_position += n.length
                 endnode.start.offsetLowest(n.known_position + n.length + l)
@@ -617,9 +730,8 @@ class Document {
                 // We also have to re-add it to the BSTs because they are
                 // sorted by start position, so if we modify the start, we could
                 // break the sorting
-                endnode.length = new LogootInt(n_end_old.level(level)).sub(
-                  end.level(level)
-                ).js_int
+                endnode.length = new LogootInt(n_end_old[level]).sub(end[level])
+                  .js_int
                 if (endnode.length > 0) {
                   addNode(endnode)
                 }
@@ -639,8 +751,8 @@ class Document {
       // be greater than lesser's length and will be ignored
       if (lesser.start.levels < nstart.levels) {
         positions.push(
-          new LogootInt(nstart.level(lesser.start.levels)).sub(
-            lesser.start.level(lesser.start.levels)
+          new LogootInt(nstart[lesser.start.levels]).sub(
+            lesser.start[lesser.start.levels]
           ).js_int
         )
       }
@@ -662,7 +774,8 @@ class Document {
       }
     }
 
-    const newnodes = []
+    type LogootNodeWithMeta = LogootNode & { offset: number }
+    const newnodes: LogootNodeWithMeta[] = []
     // We fake the last node end to be the start of the new node because the
     // inserted text always needs to 'snap' to the end of the last node,
     // regardless of discontinuities in Logoot positions
@@ -676,13 +789,16 @@ class Document {
       const cstart = start.equivalentPositionAtLevel(level).clamp(nstart, nend)
       const cend = end.equivalentPositionAtLevel(level).clamp(nstart, nend)
 
-      const node = new LogootNode()
+      // Now, find the offset in our body string
+      const offset = new LogootInt(last_end[level]).sub(nstart[level]).js_int
+
+      const node: LogootNodeWithMeta = Object.assign(
+        new LogootNode(),
+        { offset }
+      )
       // Find the new node length by finding the distance between the last end
       // and the next one
-      const _length = new LogootInt(cstart.level(level)).sub(
-        last_end.level(level)
-      )
-      node.length = _length.js_int
+      node.length = new LogootInt(cstart[level]).sub(last_end[level]).js_int
 
       if (node.length <= 0) {
         last_end = cend
@@ -692,13 +808,8 @@ class Document {
         return
       }
 
-      // Now, find the offset in our body string
-      const offset = new LogootInt(last_end.level(level)).sub(
-        nstart.level(level)
-      ).js_int
       node.start = nstart.offsetLowest(offset)
       node.known_position = last_known_position
-      node._offset = offset
 
       newnodes.push(node)
 
@@ -718,14 +829,10 @@ class Document {
     return newnodes
   }
 
-  remoteInsert(event_contents) {
+  remoteInsert(event_contents: InsertationEvent.JSON) {
     // TODO: Evaluate using `jsonschema` package
-    const body = event_contents.body
-    if (typeof body !== 'string') {
-      throw new TypeError('Corrupt insertation event')
-    }
-    const nstart = new LogootPosition(0).fromEvent(event_contents.start)
-    const this_rclk = new LogootInt(event_contents.rclk)
+    const { body, start: nstart, rclk: this_rclk } = InsertationEvent
+      .fromJSON(event_contents)
     debug.debug('REMOTE INSERT', body, nstart.toString(), this_rclk.toString())
 
     if (this_rclk.cmp(this.vector_clock) > 0) {
@@ -738,6 +845,7 @@ class Document {
       nstart,
       body.length,
       (node, conflict, lesser) => {
+        // If we're inside and on a lower level than lesser, simply ignore it
         if (node === lesser && lesser.start.levels < conflict.level) {
           return 0
         }
@@ -765,7 +873,7 @@ class Document {
         }
         this.removeLocal(pos, length)
         this.ldoc_bst.operateOnAllGteq({ known_position: pos }, (n) => {
-          if (n === node) {
+          if (n.data === node) {
             return
           }
           n.data.known_position -= length
@@ -791,7 +899,7 @@ class Document {
         // known_positions in the removal tree are BS, so set them correctly
         // here. TODO: Remove known_position from removals
         newnode.known_position = last_known_position
-        newnode._offset += node._offset
+        newnode.offset += node.offset
         last_known_position += newnode.length
         return newnode
       })
@@ -801,14 +909,14 @@ class Document {
       node.rclk = this_rclk
       // Now, make a space between the nodes
       this.ldoc_bst.operateOnAllGteq(node, (n) => {
-        if (n === node) {
+        if (n.data === node) {
           return
         }
         n.data.known_position += node.length
       })
 
-      const node_body = body.substr(node._offset, node.length)
-      delete node._offset
+      const node_body = body.substr(node.offset, node.length)
+      delete node.offset
       this.insertLocal(node.known_position, node_body, {
         position: node.start
       })
@@ -818,16 +926,17 @@ class Document {
     })
   }
 
-  remoteRemove(event_contents) {
-    const rclk = new LogootInt(event_contents.rclk)
+  remoteRemove(event_contents: RemovalEvent.JSON) {
+    const { rclk, removals } = RemovalEvent.fromJSON(event_contents)
+
     const new_rclk = new LogootInt(rclk).add(1)
     if (new_rclk.cmp(this.vector_clock) > 0) {
       this.vector_clock = new_rclk
       debug.info('Fast-forward vector clock to', JSON.stringify(new_rclk))
     }
 
-    event_contents.removals.forEach((r) => {
-      const start = new LogootPosition(0).fromEvent(r.start)
+    removals.forEach((r) => {
+      const { start } = r
       const end = start.offsetLowest(r.length)
       // The level where our removal is happening (always the lowest)
       const level = start.levels
@@ -859,7 +968,7 @@ class Document {
           }
           this.removeLocal(pos, length)
           this.ldoc_bst.operateOnAllGteq({ known_position: pos }, (n) => {
-            if (n === node) {
+            if (n.data === node) {
               return
             }
             n.data.known_position -= length
@@ -870,15 +979,20 @@ class Document {
       // Now, use the text nodes that stay as `skip_ranges`, like in the
       // `_mergeNode` function, to find where the removal should be added to the
       // removal BST
-      nodes.push({ start: end, end })
+      nodes.push({
+        start: end,
+        end,
+        length: 0,
+        known_position: 0,
+        rclk: new LogootInt(),
+        offset: 0
+      })
 
       // I've gotten lazier and lazier with variable names as this file has
       // gotten longer. I've regressed to single letter variable names
       let last_end = start
       nodes.forEach((n) => {
-        const length = new LogootInt(n.end.level(level)).sub(
-          last_end.level(level)
-        ).js_int
+        const length = new LogootInt(n.end[level]).sub(last_end[level]).js_int
         // Now, merge this removal with possible other ones in the removal_bst
         const nodes = this._mergeNode(
           this.removal_bst,
@@ -903,7 +1017,7 @@ class Document {
         // Make sure the removals actually exist
         nodes.forEach((node) => {
           node.rclk = rclk
-          delete node._offset
+          delete node.offset
 
           this.removal_bst.add(node)
         })
