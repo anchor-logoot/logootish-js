@@ -10,7 +10,7 @@ import { debug } from './debug.ts'
 import LogootInt = Int32
 
 class LogootPosition extends Array<LogootInt> {
-  constructor(len: number = 0, start?: LogootPosition, end?: LogootPosition) {
+  constructor(len = 0, start?: LogootPosition, end?: LogootPosition) {
     super(new LogootInt())
 
     if (!start && end && end[0]) {
@@ -62,7 +62,7 @@ class LogootPosition extends Array<LogootInt> {
     }
   }
 
-  static fromJSON(eventnode: LogootPosition.JSON) {
+  static fromJSON(eventnode: LogootPosition.JSON): LogootPosition {
     const pos = new LogootPosition()
     pos.length = 0
     eventnode.forEach((n) => {
@@ -74,7 +74,7 @@ class LogootPosition extends Array<LogootInt> {
     return this.map((n) => n.toJSON())
   }
 
-  get levels() {
+  get levels(): number {
     // A zero-length position is NOT valid
     // Through some sneakyness, you COULD directly assign the array to make it
     // have a length of zero. Don't do it.
@@ -141,11 +141,11 @@ class LogootPosition extends Array<LogootInt> {
     }
   }
 
-  clamp(min: LogootPosition, max: LogootPosition) {
+  clamp(min: LogootPosition, max: LogootPosition): LogootPosition {
     return this.cmp(min) < 0 ? min : this.cmp(max) > 0 ? max : this
   }
 
-  toString() {
+  toString(): string {
     let str = '['
     this.forEach((el, i, a) => {
       str += el.toString() + (i >= a.length - 1 ? '' : ',')
@@ -162,8 +162,8 @@ namespace LogootPosition {
 }
 
 class LogootNode {
-  known_position: number = 0
-  length: number = 0
+  known_position = 0
+  length = 0
   start: LogootPosition = new LogootPosition()
   rclk: LogootInt = new LogootInt(0)
 
@@ -178,11 +178,11 @@ class LogootNode {
     }
   }
 
-  get end() {
+  get end(): LogootPosition {
     return this.start.offsetLowest(this.length)
   }
 
-  toString() {
+  toString(): string {
     return (
       this.start.toString() +
       (typeof this.known_position === 'number'
@@ -192,35 +192,46 @@ class LogootNode {
     )
   }
 }
+type LogootNodeWithMeta = LogootNode & { offset: number }
 
 enum EventState {
-  PENDING, SENDING, COMPLETE
+  PENDING,
+  SENDING,
+  COMPLETE
 }
 enum EventType {
-  INSERTATION, REMOVAL
+  INSERTION,
+  REMOVAL
 }
 
 interface LogootEvent {
   type: EventType
   state: EventState
+  // eslint-disable-next-line
   toJSON(): any
   rclk: LogootInt
 }
 
-class InsertationEvent implements LogootEvent {
-  type = EventType.INSERTATION
+class InsertionEvent implements LogootEvent {
+  type = EventType.INSERTION
   body = ''
   start?: LogootPosition = undefined
   known_position?: number = undefined
   rclk = new LogootInt()
 
-  // Previous & next insertation event
-  last: InsertationEvent = undefined
-  next: InsertationEvent = undefined
+  // Previous & next insertion event
+  last: InsertionEvent = undefined
+  next: InsertionEvent = undefined
 
   state = EventState.PENDING
 
-  constructor(body: string, left?: LogootPosition, right?: LogootPosition, rclk?: LogootInt, known_position?: number) {
+  constructor(
+    body: string,
+    left?: LogootPosition,
+    right?: LogootPosition,
+    rclk?: LogootInt,
+    known_position?: number
+  ) {
     Object.assign(this, {
       body,
       known_position,
@@ -230,15 +241,15 @@ class InsertationEvent implements LogootEvent {
     })
   }
 
-  static fromJSON(eventnode: InsertationEvent.JSON) {
-    return new InsertationEvent(
+  static fromJSON(eventnode: InsertionEvent.JSON): InsertionEvent {
+    return new InsertionEvent(
       eventnode.body,
       LogootPosition.fromJSON(eventnode.start),
       undefined,
       LogootInt.fromJSON(eventnode.rclk)
     )
   }
-  toJSON(): InsertationEvent.JSON {
+  toJSON(): InsertionEvent.JSON {
     return {
       body: this.body,
       start: this.start.toJSON(),
@@ -246,13 +257,13 @@ class InsertationEvent implements LogootEvent {
     }
   }
 
-  get length() {
+  get length(): number {
     return this.body.length
   }
-  get end() {
+  get end(): LogootPosition {
     return this.start.offsetLowest(this.length)
   }
-  get node() {
+  get node(): LogootNode {
     const node = new LogootNode()
     Object.assign(node, {
       start: this.start,
@@ -263,10 +274,10 @@ class InsertationEvent implements LogootEvent {
     return node
   }
 }
-namespace InsertationEvent {
+namespace InsertionEvent {
   export type JSON = {
-    body: string,
-    start: LogootPosition.JSON,
+    body: string
+    start: LogootPosition.JSON
     rclk: LogootInt.JSON
   }
   export namespace JSON {
@@ -289,8 +300,8 @@ namespace InsertationEvent {
   }
 }
 
-type Removal = { start: LogootPosition, length: number }
-type RemovalJSON = { start: LogootPosition.JSON, length: number }
+type Removal = { start: LogootPosition; length: number }
+type RemovalJSON = { start: LogootPosition.JSON; length: number }
 class RemovalEvent implements LogootEvent {
   type = EventType.REMOVAL
   removals: Removal[] = []
@@ -303,25 +314,27 @@ class RemovalEvent implements LogootEvent {
     this.rclk = new LogootInt(rclk)
   }
 
-  static fromJSON(eventnode: RemovalEvent.JSON) {
+  static fromJSON(eventnode: RemovalEvent.JSON): RemovalEvent {
     return new RemovalEvent(
-      eventnode.removals.map(
-        (r) => ({ start: LogootPosition.fromJSON(r.start), length: r.length })
-      ),
+      eventnode.removals.map((r) => ({
+        start: LogootPosition.fromJSON(r.start),
+        length: r.length
+      })),
       LogootInt.fromJSON(eventnode.rclk)
     )
   }
   toJSON(): RemovalEvent.JSON {
     return {
-      removals: this.removals.map(
-        (r) => ({ start: r.start.toJSON(), length: r.length })
-      ),
+      removals: this.removals.map((r) => ({
+        start: r.start.toJSON(),
+        length: r.length
+      })),
       rclk: this.rclk.toJSON()
     }
   }
 }
 namespace RemovalEvent {
-  export type JSON = { removals: RemovalJSON[], rclk: LogootInt.JSON }
+  export type JSON = { removals: RemovalJSON[]; rclk: LogootInt.JSON }
   export namespace JSON {
     export const Schema = {
       type: 'object',
@@ -346,18 +359,20 @@ type KnownPositionBst = Bst<LogootNode, { known_position: number }>
 type LogootBst = Bst<LogootNode, { start: LogootPosition }>
 
 type Conflict = {
-  start: LogootPosition,
-  end: LogootPosition,
-  clip_nstart: boolean,
-  clip_nend: boolean,
-  whole_node: boolean,
+  start: LogootPosition
+  end: LogootPosition
+  clip_nstart: boolean
+  clip_nend: boolean
+  whole_node: boolean
   level: number
 }
 
 class Document {
-  // The BST maps out where all insertation nodes are in the local document's
+  // The BST maps out where all insertion nodes are in the local document's
   // memory. It is used to go from position -> node
-  ldoc_bst: KnownPositionBst = new Bst((a, b) => (a.known_position - b.known_position) as CompareResult)
+  ldoc_bst: KnownPositionBst = new Bst(
+    (a, b) => (a.known_position - b.known_position) as CompareResult
+  )
   // This BST maps Logoot position identifiers to their text node to allow
   // lookup of text position from Logoot ID
   logoot_bst: LogootBst = new Bst((a, b) => a.start.cmp(b.start))
@@ -376,22 +391,22 @@ class Document {
 
   send: (e: LogootEvent) => Promise<any>
 
-  insertLocal: (position: number, body: string, meta: any) => any
-  removeLocal: (position: number, length: number) => any
+  insertLocal: (position: number, body: string) => void
+  removeLocal: (position: number, length: number) => void
 
-  last_insertation_event: InsertationEvent = undefined
+  last_insertion_event: InsertionEvent = undefined
 
   constructor(
     send: (e: LogootEvent) => Promise<any>,
-    insertLocal: (position: number, body: string, meta: any) => any,
-    removeLocal: (position: number, length: number) => any
+    insertLocal: (position: number, body: string) => void,
+    removeLocal: (position: number, length: number) => void
   ) {
     this.send = send
     this.insertLocal = insertLocal
     this.removeLocal = removeLocal
   }
 
-  _removePendingEvent(event: LogootEvent) {
+  _removePendingEvent(event: LogootEvent): boolean {
     const index = this.pending_events.indexOf(event)
     if (index >= 0) {
       this.pending_events.splice(index, 1)
@@ -399,7 +414,7 @@ class Document {
     }
     return false
   }
-  _tryMergeEvents(event: InsertationEvent) {
+  _tryMergeEvents(event: InsertionEvent): boolean {
     if (event.state !== EventState.PENDING) {
       return false
     }
@@ -417,8 +432,8 @@ class Document {
 
         this._removePendingEvent(oldevent)
 
-        if (this.last_insertation_event === oldevent) {
-          this.last_insertation_event = oldevent.last
+        if (this.last_insertion_event === oldevent) {
+          this.last_insertion_event = oldevent.last
         }
         oldevent = oldevent.last
       }
@@ -438,8 +453,8 @@ class Document {
 
         this._removePendingEvent(oldevent)
 
-        if (this.last_insertation_event === oldevent) {
-          this.last_insertation_event = oldevent.next
+        if (this.last_insertion_event === oldevent) {
+          this.last_insertion_event = oldevent.next
         }
         oldevent = oldevent.next
       }
@@ -448,11 +463,10 @@ class Document {
     return false
   }
 
-  _pushEvent(event: LogootEvent) {
+  _pushEvent(event: LogootEvent): void {
     this.pending_events.push(event)
 
-    const self = this
-    const queue_send = () => {
+    const queue_send = (): void => {
       event.state = EventState.SENDING
       this.send(event)
         .then(() => {
@@ -467,8 +481,8 @@ class Document {
           }
           if (e && e.data && e.data.retry_after_ms) {
             if (
-              event.type === EventType.INSERTATION &&
-              self._tryMergeEvents(event as InsertationEvent)
+              event.type === EventType.INSERTION &&
+              this._tryMergeEvents(event as InsertionEvent)
             ) {
               debug.warn(
                 `Hitting the rate limit: Will resend in ${e.data.retry_after_ms} ms with multiple messages merged together`
@@ -488,13 +502,13 @@ class Document {
     queue_send()
   }
 
-  insert(position: number, text: string) {
+  insert(position: number, text: string): void {
     debug.debug('INSERT', position, text)
 
     // The position must be -1 for lesser because it can't count the text node
-    // currently in the insertation position (we're between two nodes)
-    let nodes_lesser = this.ldoc_bst.getLteq({ known_position: position - 1 })
-    let nodes_greater = this.ldoc_bst.getGteq({ known_position: position })
+    // currently in the insertion position (we're between two nodes)
+    const nodes_lesser = this.ldoc_bst.getLteq({ known_position: position - 1 })
+    const nodes_greater = this.ldoc_bst.getGteq({ known_position: position })
 
     let lesser
     let greater
@@ -538,7 +552,7 @@ class Document {
       this.logoot_bst.add(node)
     }
 
-    const event = new InsertationEvent(
+    const event = new InsertionEvent(
       text,
       left_position,
       right_position,
@@ -559,20 +573,20 @@ class Document {
     // only work when events are consecutive, but its better than spamming the
     // HS and having text go letter by letter when we hit the rate limit
     if (
-      this.last_insertation_event &&
-      event.start.cmp(this.last_insertation_event.end) === 0
+      this.last_insertion_event &&
+      event.start.cmp(this.last_insertion_event.end) === 0
     ) {
-      event.last = this.last_insertation_event
-      this.last_insertation_event.next = event
+      event.last = this.last_insertion_event
+      this.last_insertion_event.next = event
     }
     if (this._tryMergeEvents(event)) {
       return
     }
     this._pushEvent(event)
-    this.last_insertation_event = event
+    this.last_insertion_event = event
   }
 
-  remove(position: number, length: number) {
+  remove(position: number, length: number): void {
     debug.debug('REMOVE', position, length)
 
     // First, find any nodes that MAY have content removed from them
@@ -627,10 +641,19 @@ class Document {
     bst: LogootBst,
     nstart: LogootPosition,
     length: number,
-    resolveConflict: (node: LogootNode, conflict: Conflict, lesser: LogootNode) => CompareResult,
-    addNode: (node: LogootNode) => any,
-    informRemoval: (node: LogootNode, pos: number, length: number, whole: boolean) => any
-  ) {
+    resolveConflict: (
+      node: LogootNode,
+      conflict: Conflict,
+      lesser: LogootNode
+    ) => CompareResult,
+    addNode: (node: LogootNode) => void,
+    informRemoval: (
+      node: LogootNode,
+      pos: number,
+      length: number,
+      whole: boolean
+    ) => void
+  ): LogootNodeWithMeta[] {
     const level = nstart.levels
     const nend = nstart.offsetLowest(length)
 
@@ -654,7 +677,7 @@ class Document {
     }
 
     // Ensure that lesser is initially defined as a skip_range (this is useful
-    // for some removals that may want to use conflicts with lesser 
+    // for some removals that may want to use conflicts with lesser
     if (lesser && !skip_ranges.includes(lesser)) {
       skip_ranges.unshift(lesser)
     }
@@ -711,8 +734,9 @@ class Document {
                 // a length > 0:
                 // NNNNrrrrrnnnnn (As above, 'r' is the section of the node
                 // being removed)
-                n.length = new LogootInt(start[level]).sub(n.start[level])
-                  .js_int
+                n.length = new LogootInt(start[level]).sub(
+                  n.start[level]
+                ).js_int
 
                 endnode.known_position += n.length
                 endnode.start.offsetLowest(n.known_position + n.length + l)
@@ -730,8 +754,9 @@ class Document {
                 // We also have to re-add it to the BSTs because they are
                 // sorted by start position, so if we modify the start, we could
                 // break the sorting
-                endnode.length = new LogootInt(n_end_old[level]).sub(end[level])
-                  .js_int
+                endnode.length = new LogootInt(n_end_old[level]).sub(
+                  end[level]
+                ).js_int
                 if (endnode.length > 0) {
                   addNode(endnode)
                 }
@@ -774,7 +799,6 @@ class Document {
       }
     }
 
-    type LogootNodeWithMeta = LogootNode & { offset: number }
     const newnodes: LogootNodeWithMeta[] = []
     // We fake the last node end to be the start of the new node because the
     // inserted text always needs to 'snap' to the end of the last node,
@@ -792,10 +816,9 @@ class Document {
       // Now, find the offset in our body string
       const offset = new LogootInt(last_end[level]).sub(nstart[level]).js_int
 
-      const node: LogootNodeWithMeta = Object.assign(
-        new LogootNode(),
-        { offset }
-      )
+      const node: LogootNodeWithMeta = Object.assign(new LogootNode(), {
+        offset
+      })
       // Find the new node length by finding the distance between the last end
       // and the next one
       node.length = new LogootInt(cstart[level]).sub(last_end[level]).js_int
@@ -829,10 +852,11 @@ class Document {
     return newnodes
   }
 
-  remoteInsert(event_contents: InsertationEvent.JSON) {
+  remoteInsert(event_contents: InsertionEvent.JSON): void {
     // TODO: Evaluate using `jsonschema` package
-    const { body, start: nstart, rclk: this_rclk } = InsertationEvent
-      .fromJSON(event_contents)
+    const { body, start: nstart, rclk: this_rclk } = InsertionEvent.fromJSON(
+      event_contents
+    )
     debug.debug('REMOTE INSERT', body, nstart.toString(), this_rclk.toString())
 
     if (this_rclk.cmp(this.vector_clock) > 0) {
@@ -887,14 +911,14 @@ class Document {
         this.removal_bst,
         node.start,
         node.length,
-        (node, { start, end, whole_node, clip_nstart, clip_nend, level }) => {
+        (node) => {
           if (node.rclk.cmp(this_rclk) < 0) {
             return 0
           }
           return 1
         },
-        (node) => {},
-        (node, pos, length, whole) => {}
+        () => {},
+        () => {}
       ).map((newnode) => {
         // known_positions in the removal tree are BS, so set them correctly
         // here. TODO: Remove known_position from removals
@@ -917,16 +941,14 @@ class Document {
 
       const node_body = body.substr(node.offset, node.length)
       delete node.offset
-      this.insertLocal(node.known_position, node_body, {
-        position: node.start
-      })
+      this.insertLocal(node.known_position, node_body)
 
       this.ldoc_bst.add(node)
       this.logoot_bst.add(node)
     })
   }
 
-  remoteRemove(event_contents: RemovalEvent.JSON) {
+  remoteRemove(event_contents: RemovalEvent.JSON): void {
     const { rclk, removals } = RemovalEvent.fromJSON(event_contents)
 
     const new_rclk = new LogootInt(rclk).add(1)
@@ -948,7 +970,7 @@ class Document {
         this.logoot_bst,
         start,
         r.length,
-        (node, conflict, lesser) => {
+        (node) => {
           // TODO: Nodes with the SAME `rclk` should still have a removal added
           // at their position because another node with the same `rclk` as the
           // one just removed could show up.
@@ -998,7 +1020,7 @@ class Document {
           this.removal_bst,
           last_end,
           length,
-          (node, conflict) => {
+          (node) => {
             if (node.rclk.cmp(rclk) < 0) {
               return -1
             }
@@ -1031,7 +1053,7 @@ export {
   EventType,
   EventState,
   Document,
-  InsertationEvent,
+  InsertionEvent,
   RemovalEvent,
   LogootNode,
   LogootPosition

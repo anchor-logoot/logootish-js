@@ -16,12 +16,12 @@ class PeekableIterator<T> {
     this.array = array
   }
 
-  next(): { value: T, done: Boolean } {
+  next(): { value: T; done: boolean } {
     const obj = this.peek()
     this.i++
     return obj
   }
-  peek(): { value: T, done: Boolean } {
+  peek(): { value: T; done: boolean } {
     return {
       value: this.array[this.i],
       done: this.i >= this.array.length
@@ -32,7 +32,7 @@ class PeekableIterator<T> {
 // Errors that indicate a corrupt document and require client shutdown
 // This class only exists to make code look pretty
 class FatalError extends Error {
-  fatal: boolean = true
+  fatal = true
 }
 
 type CompareResult = -1 | 0 | 1
@@ -41,19 +41,19 @@ type DualCompareFunction<T> = (a: T, b: T) => CompareResult
 
 abstract class Comparable<T> {
   abstract cmp(other: T): CompareResult
-  gt(n: T) : Boolean {
+  gt(n: T): boolean {
     return this.cmp(n) === 1
   }
-  gteq(n: T): Boolean {
+  gteq(n: T): boolean {
     return this.cmp(n) >= 0
   }
-  eq(n: T): Boolean {
+  eq(n: T): boolean {
     return this.cmp(n) === 0
   }
-  lteq(n: T): Boolean {
+  lteq(n: T): boolean {
     return this.cmp(n) <= 0
   }
-  lt(n: T): Boolean {
+  lt(n: T): boolean {
     return this.cmp(n) === -1
   }
 }

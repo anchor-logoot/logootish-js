@@ -30,12 +30,12 @@ const config = {
   module: {
     rules: [
       {
-        test: /\.tsx?$/,
+        test: /\.ts$/,
         use: 'ts-loader',
         exclude: /node_modules/,
       },
       {
-        test: /(\.ts)$/,
+        test: /\.ts$/,
         loader: 'eslint-loader',
         exclude: /node_modules/
       }

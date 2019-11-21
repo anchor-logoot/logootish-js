@@ -9,8 +9,12 @@ class BstNode<T> {
   }
 }
 
-type BstNodePtr<T> = MemberPtr<BstNode<T>, 'left'> | MemberPtr<BstNode<T>, 'right'> | MemberPtr<Bst<T, any>, 'bst_root'>
-type NodeOp<T> = (node: BstNode<T>) => any
+type BstNodePtr<T> =
+  | MemberPtr<BstNode<T>, 'left'>
+  | MemberPtr<BstNode<T>, 'right'>
+  // eslint-disable-next-line
+  | MemberPtr<Bst<T, any>, 'bst_root'>
+type NodeOp<T> = (node: BstNode<T>) => void
 
 class Bst<T extends S, S = T> {
   bst_root: BstNode<T> | undefined = undefined
@@ -20,17 +24,17 @@ class Bst<T extends S, S = T> {
     this.cmp = cmp
   }
 
-  gteqcmp(a: S, b: S) {
+  gteqcmp(a: S, b: S): boolean {
     return this.cmp(a, b) >= 0
   }
-  gtcmp(a: S, b: S) {
+  gtcmp(a: S, b: S): boolean {
     return this.cmp(a, b) > 0
   }
-  eqcmp(a: S, b: S) {
+  eqcmp(a: S, b: S): boolean {
     return this.cmp(a, b) === 0
   }
 
-  add(object: T, node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')) {
+  add(object: T, node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')): void {
     if (!node.value) {
       node.value = new BstNode(object)
     } else if (this.gteqcmp(node.value.data, object)) {
@@ -40,10 +44,13 @@ class Bst<T extends S, S = T> {
     }
   }
 
-  _getInorderSuccessor(object: S, node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')): { ptr: BstNodePtr<T>, data: T } | undefined {
-    type SuccessorType = { ptr: BstNodePtr<T>, data: T } | undefined
+  _getInorderSuccessor(
+    object: S,
+    node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')
+  ): { ptr: BstNodePtr<T>; data: T } | undefined {
+    type SuccessorType = { ptr: BstNodePtr<T>; data: T } | undefined
     let successor: SuccessorType
-    const setSuccessor = (s: SuccessorType) => {
+    const setSuccessor = (s: SuccessorType): void => {
       if (!successor || (s && this.gtcmp(successor.data, s.data))) {
         successor = s
       }
@@ -53,13 +60,20 @@ class Bst<T extends S, S = T> {
         if (!this.eqcmp(node.value.data, object)) {
           setSuccessor({ ptr: node, data: node.value.data })
         }
-        setSuccessor(this._getInorderSuccessor(object, new MemberPtr(node.value, 'left')))
+        setSuccessor(
+          this._getInorderSuccessor(object, new MemberPtr(node.value, 'left'))
+        )
       }
-      setSuccessor(this._getInorderSuccessor(object, new MemberPtr(node.value, 'right')))
+      setSuccessor(
+        this._getInorderSuccessor(object, new MemberPtr(node.value, 'right'))
+      )
     }
     return successor
   }
-  remove(object: S, node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')) {
+  remove(
+    object: S,
+    node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')
+  ): void {
     if (node.value) {
       const result = this.cmp(node.value.data, object)
       if (result > 0) {
@@ -83,7 +97,7 @@ class Bst<T extends S, S = T> {
     operation: NodeOp<T>,
     node = this.bst_root,
     undef = false
-  ) {
+  ): void {
     if (node && !undef) {
       if (this.gteqcmp(node.data, start)) {
         if (this.gteqcmp(endm1, node.data)) {
@@ -104,26 +118,49 @@ class Bst<T extends S, S = T> {
       }
     }
   }
-  operateOnAllGteq(value: S, operation: NodeOp<T>, node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')) {
+  operateOnAllGteq(
+    value: S,
+    operation: NodeOp<T>,
+    node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')
+  ): void {
     if (node.value) {
       if (this.gteqcmp(node.value.data, value)) {
         operation(node.value)
-        this.operateOnAllGteq(value, operation, new MemberPtr(node.value, 'left'))
+        this.operateOnAllGteq(
+          value,
+          operation,
+          new MemberPtr(node.value, 'left')
+        )
       }
-      this.operateOnAllGteq(value, operation, new MemberPtr(node.value, 'right'))
+      this.operateOnAllGteq(
+        value,
+        operation,
+        new MemberPtr(node.value, 'right')
+      )
     }
   }
-  operateOnAllLteq(value: S, operation: NodeOp<T>, node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')) {
+  operateOnAllLteq(
+    value: S,
+    operation: NodeOp<T>,
+    node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')
+  ): void {
     if (node.value) {
       if (this.gteqcmp(value, node.value.data)) {
         operation(node.value)
-        this.operateOnAllLteq(value, operation, new MemberPtr(node.value, 'right'))
+        this.operateOnAllLteq(
+          value,
+          operation,
+          new MemberPtr(node.value, 'right')
+        )
       }
       this.operateOnAllLteq(value, operation, new MemberPtr(node.value, 'left'))
     }
   }
 
-  operateOnAll(operation: NodeOp<T>, node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')) {
+  operateOnAll(
+    operation: NodeOp<T>,
+    node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')
+  ): void {
     if (node.value) {
       this.operateOnAll(operation, new MemberPtr(node.value, 'left'))
       operation(node.value)
@@ -131,13 +168,13 @@ class Bst<T extends S, S = T> {
     }
   }
 
-  getRange(start: S, endm1: S) {
+  getRange(start: S, endm1: S): (BstNode<T> | undefined)[] {
     const nodes: (BstNode<T> | undefined)[] = []
     this.operateOnAllRange(start, endm1, (n) => nodes.push(n))
 
     return nodes
   }
-  getGteq(value: S) {
+  getGteq(value: S): (BstNode<T> | undefined)[] {
     let nodes: (BstNode<T> | undefined)[] = []
     this.operateOnAllGteq(value, (n) => {
       if (!nodes[0] || this.gtcmp(nodes[0].data, n.data)) {
@@ -149,7 +186,7 @@ class Bst<T extends S, S = T> {
 
     return nodes
   }
-  getLteq(value: S) {
+  getLteq(value: S): (BstNode<T> | undefined)[] {
     let nodes: (BstNode<T> | undefined)[] = []
     this.operateOnAllLteq(value, (n) => {
       if (!nodes[0] || this.gtcmp(n.data, nodes[0].data)) {
