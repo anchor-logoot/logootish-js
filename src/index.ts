@@ -35,7 +35,9 @@ import LogootInt = Int32
  * console.log(new LogootPosition(2, a, b).toString()) // [0,0]
  * ```
  */
-class LogootPosition extends Array<LogootInt> {
+class LogootPosition {
+  protected array: LogootInt[] = [new LogootInt(0)]
+
   /**
    * This constructor constructs a new position that is in the range specified
    * by `start` and `end`. By using `len`, it is possible to enforce that a
@@ -58,20 +60,18 @@ class LogootPosition extends Array<LogootInt> {
     readonly start?: LogootPosition,
     readonly end?: LogootPosition
   ) {
-    super(new LogootInt())
-
-    if (!start && end && end[0]) {
-      Object.assign(this, end.inverseOffsetLowest(len))
-    } else if (!end && start && start[0]) {
-      Object.assign(this, start)
+    if (!start && end) {
+      this.array = end.inverseOffsetLowest(len).array
+    } else if (!end && start) {
+      this.array = start.copy().array
     } else if (start && end) {
       let done = false
-      const itstart = start.values()
-      const itend = end.values()
+      const itstart = start.array.values()
+      const itend = end.array.values()
       let nstart
       let nend
 
-      this.length = 0
+      this.array.length = 0
 
       while (!done) {
         if (!nstart || !nstart.done) {
@@ -88,21 +88,21 @@ class LogootPosition extends Array<LogootInt> {
             done = true
           }
           // Regardless, the start ID is the new ID for this level of our node
-          this.push(new LogootInt(nstart.value))
+          this.array.push(new LogootInt(nstart.value))
         } else if (!nstart.done) {
           // So there's no end restriction, that means we can just add right on
           // top of the old end (the start of the new node)
-          this.push(new LogootInt(nstart.value))
+          this.array.push(new LogootInt(nstart.value))
           done = true
         } else if (!nend.done) {
           // We have an end restriction, but no start restriction, so we just
           // put the new node's start behind the old end
-          this.push(new LogootInt(nend.value).sub(len))
+          this.array.push(new LogootInt(nend.value).sub(len))
           done = true
         } else {
           // So both other IDs have nothing else. It must be time to make a new
           // level and be done
-          this.push(new LogootInt())
+          this.array.push(new LogootInt())
           done = true
         }
       }
@@ -111,16 +111,25 @@ class LogootPosition extends Array<LogootInt> {
 
   static fromJSON(eventnode: LogootPosition.JSON): LogootPosition {
     const pos = new LogootPosition()
-    pos.length = 0
+    pos.array.length = 0
     eventnode.forEach((n) => {
-      pos.push(LogootInt.fromJSON(n))
+      pos.array.push(LogootInt.fromJSON(n))
     })
     return pos
   }
   toJSON(): LogootPosition.JSON {
-    return this.map((n) => n.toJSON())
+    return this.array.map((n) => n.toJSON())
   }
 
+  /**
+   * @returns Internal array length
+   */
+  get length(): number {
+    // A zero-length position is NOT valid
+    // Through some sneakiness, you COULD directly assign the array to make it
+    // have a length of zero. Don't do it.
+    return this.array.length
+  }
   /**
    * Returns the last index of the array. This is useful because before this,
    * the algorithm code often contained many occurences of `length - 1`. This
@@ -132,44 +141,54 @@ class LogootPosition extends Array<LogootInt> {
     // have a length of zero. Don't do it.
     return this.length - 1
   }
+  /**
+   * An array accessor
+   */
+  level(n: number): LogootInt {
+    return this.array[n]
+  }
+  /**
+   * An array accessor
+   * @alias level
+   */
+  l(n: number): LogootInt {
+    return this.level(n)
+  }
 
   /**
    * Returns a new position with `offset` added to the lowest level of the
    * position.
    */
   offsetLowest(offset: number | LogootInt): LogootPosition {
-    return Object.assign(
-      new LogootPosition(),
-      this.map((current, i, array) => {
+    return Object.assign(new LogootPosition(), {
+      array: this.array.map((current, i, array) => {
         return i < array.length - 1
           ? current
           : new LogootInt(current).add(offset)
       })
-    )
+    })
   }
   /**
    * Returns a new position with `offset` subtracted from the lowest level of
    * the position.
    */
   inverseOffsetLowest(offset: number | LogootInt): LogootPosition {
-    return Object.assign(
-      new LogootPosition(),
-      this.map((current, i, array) => {
+    return Object.assign(new LogootPosition(), {
+      array: this.array.map((current, i, array) => {
         return i < array.length - 1
           ? current
           : new LogootInt(current).sub(offset)
       })
-    )
+    })
   }
 
   /**
    * Duplicates this position.
    */
   copy(): LogootPosition {
-    return Object.assign(
-      new LogootPosition(),
-      this.map((i) => new LogootInt(i))
-    )
+    return Object.assign(new LogootPosition(), {
+      array: this.array.map((e) => new LogootInt(e))
+    })
   }
 
   /**
@@ -177,12 +196,11 @@ class LogootPosition extends Array<LogootInt> {
    * `level`. If this position has fewer levels, zeroes will be added in place.
    */
   equivalentPositionAtLevel(level: number): LogootPosition {
-    return Object.assign(
-      new LogootPosition(),
-      new Array(level + 1).fill(0, 0, level + 1).map((el, i) => {
-        return new LogootInt(this[i])
+    return Object.assign(new LogootPosition(), {
+      array: new Array(level + 1).fill(0, 0, level + 1).map((el, i) => {
+        return new LogootInt(this.array[i])
       })
-    )
+    })
   }
 
   cmp(pos: LogootPosition, level = 0): CompareResult {
@@ -195,7 +213,7 @@ class LogootPosition extends Array<LogootInt> {
     if (level >= pos.length) {
       return -1
     }
-    switch (this[level].cmp(pos[level])) {
+    switch (this.level(level).cmp(pos.level(level))) {
       case 1:
         return 1
       case -1:
@@ -230,7 +248,7 @@ class LogootPosition extends Array<LogootInt> {
 
   toString(): string {
     let str = '['
-    this.forEach((el, i, a) => {
+    this.array.forEach((el, i, a) => {
       str += el.toString() + (i >= a.length - 1 ? '' : ',')
     })
     str += ']'
@@ -916,7 +934,7 @@ class Document {
             } else {
               // Find the length of the middle region of the node
               // nnnnnRRRRnnnn <- Where the 'R' is (l=4 in this case)
-              const l = new LogootInt(end[level]).sub(start[level]).js_int
+              const l = new LogootInt(end.l(level)).sub(start.l(level)).js_int
 
               // Make a copy because we will need to modify the original
               const endnode = new LogootNode(n)
@@ -928,8 +946,8 @@ class Document {
                 // a length > 0:
                 // NNNNrrrrrnnnnn (As above, 'r' is the section of the node
                 // being removed)
-                n.length = new LogootInt(start[level]).sub(
-                  n.start[level]
+                n.length = new LogootInt(start.l(level)).sub(
+                  n.start.l(level)
                 ).js_int
 
                 endnode.known_position += n.length
@@ -948,8 +966,8 @@ class Document {
                 // We also have to re-add it to the BSTs because they are
                 // sorted by start position, so if we modify the start, we could
                 // break the sorting
-                endnode.length = new LogootInt(n_end_old[level]).sub(
-                  end[level]
+                endnode.length = new LogootInt(n_end_old.l(level)).sub(
+                  end.l(level)
                 ).js_int
                 if (endnode.length > 0) {
                   addNode(endnode)
@@ -970,8 +988,8 @@ class Document {
       // be greater than lesser's length and will be ignored
       if (lesser.start.levels < nstart.levels) {
         positions.push(
-          new LogootInt(nstart[lesser.start.levels]).sub(
-            lesser.start[lesser.start.levels]
+          new LogootInt(nstart.l(lesser.start.levels)).sub(
+            lesser.start.l(lesser.start.levels)
           ).js_int
         )
       }
@@ -1008,14 +1026,15 @@ class Document {
       const cend = end.equivalentPositionAtLevel(level).clamp(nstart, nend)
 
       // Now, find the offset in our body string
-      const offset = new LogootInt(last_end[level]).sub(nstart[level]).js_int
+      const offset = new LogootInt(last_end.l(level)).sub(nstart.l(level))
+        .js_int
 
       const node: LogootNodeWithMeta = Object.assign(new LogootNode(), {
         offset
       })
       // Find the new node length by finding the distance between the last end
       // and the next one
-      node.length = new LogootInt(cstart[level]).sub(last_end[level]).js_int
+      node.length = new LogootInt(cstart.l(level)).sub(last_end.l(level)).js_int
 
       if (node.length <= 0) {
         last_end = cend
@@ -1217,7 +1236,8 @@ class Document {
       // gotten longer. I've regressed to single letter variable names
       let last_end = start
       nodes.forEach((n) => {
-        const length = new LogootInt(n.end[level]).sub(last_end[level]).js_int
+        const length = new LogootInt(n.end.l(level)).sub(last_end.l(level))
+          .js_int
         // Now, merge this removal with possible other ones in the removal_bst
         const nodes = this._mergeNode(
           this.removal_bst,
