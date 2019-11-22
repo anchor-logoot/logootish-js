@@ -1,16 +1,63 @@
-import { arraymap, FatalError, CompareResult } from './utils.ts'
-import { Int32 } from './ints.ts'
-import { Bst } from './bst.ts'
+/**
+ * @file This is the core of the Logootish algorithm. It contains all position
+ * manipulation code.
+ * @author Nathan Pennie <kb1rd@kb1rd.net>
+ */
+/** */
 
-import { debug } from './debug.ts'
+import { arraymap, FatalError, CompareResult } from './utils'
+import { Int32 } from './ints'
+import { Bst } from './bst'
+
+import { debug } from './debug'
 
 // What a C++ typedef would do
 // This makes it possible to completely swap out the type of the int used in the
 // algorithm w/o actually replacing each instance (which would be a real pain)
 import LogootInt = Int32
 
+/**
+ * A position in Logoot. This is just an array of numbers with some utility
+ * functions. In Logoot, it must always be possible to allocate a position
+ * between any possible two positions. In this algorithm, a position with more
+ * `levels` (or elements in the array) comes first. So, if it is necessary to
+ * create a position between `A` and `B`, then another level can be added to the
+ * position to make it come after `A` and before `B`. Positions are represented
+ * in writing the same as arrays: `[1,2,3]`
+ * @example ```typescript
+ * const a = new LogootPosition()
+ * console.log(a.toString()) // [0]
+ *
+ * const b = a.offsetLowest(1)
+ * console.log(b.toString()) // [1]
+ *
+ * console.log(new LogootPosition(1, a, b).toString()) // [0]
+ * console.log(new LogootPosition(2, a, b).toString()) // [0,0]
+ * ```
+ */
 class LogootPosition extends Array<LogootInt> {
-  constructor(len = 0, start?: LogootPosition, end?: LogootPosition) {
+  /**
+   * This constructor constructs a new position that is in the range specified
+   * by `start` and `end`. By using `len`, it is possible to enforce that a
+   * certain number of additional positions are available in the selected range.
+   * This guarantees that there's space for a LogootNode of length `len` at this
+   * position between `start` and `end`.
+   *
+   * @param len - The length of the allocation to make. The length is never
+   * actually stored in the Logoot position, but is used when finding space for
+   * the position to be created and `len` position(s) after it.
+   * @param start - This will cause the new position to have a value greater
+   * than or equal to this. This value is tricky: It must be the end of the last
+   * node. So if `A` is at `[1]` and an allocation *after* it is desired, then
+   * `[2]` would need to be passed to `start`.
+   * @param end - This will cause the new position to have a value less than or
+   * equal to this, subject to the value of `len`.
+   */
+  constructor(
+    len = 0,
+    readonly start?: LogootPosition,
+    readonly end?: LogootPosition
+  ) {
     super(new LogootInt())
 
     if (!start && end && end[0]) {
@@ -74,13 +121,22 @@ class LogootPosition extends Array<LogootInt> {
     return this.map((n) => n.toJSON())
   }
 
+  /**
+   * Returns the last index of the array. This is useful because before this,
+   * the algorithm code often contained many occurences of `length - 1`. This
+   * is used to cut down redundancy.
+   */
   get levels(): number {
     // A zero-length position is NOT valid
-    // Through some sneakyness, you COULD directly assign the array to make it
+    // Through some sneakiness, you COULD directly assign the array to make it
     // have a length of zero. Don't do it.
     return this.length - 1
   }
 
+  /**
+   * Returns a new position with `offset` added to the lowest level of the
+   * position.
+   */
   offsetLowest(offset: number | LogootInt): LogootPosition {
     return Object.assign(
       new LogootPosition(),
@@ -91,6 +147,10 @@ class LogootPosition extends Array<LogootInt> {
       })
     )
   }
+  /**
+   * Returns a new position with `offset` subtracted from the lowest level of
+   * the position.
+   */
   inverseOffsetLowest(offset: number | LogootInt): LogootPosition {
     return Object.assign(
       new LogootPosition(),
@@ -102,6 +162,9 @@ class LogootPosition extends Array<LogootInt> {
     )
   }
 
+  /**
+   * Duplicates this position.
+   */
   copy(): LogootPosition {
     return Object.assign(
       new LogootPosition(),
@@ -109,7 +172,10 @@ class LogootPosition extends Array<LogootInt> {
     )
   }
 
-  // TODO: Move to compare func
+  /**
+   * Return a copy of this position, but with the number of levels specified by
+   * `level`. If this position has fewer levels, zeroes will be added in place.
+   */
   equivalentPositionAtLevel(level: number): LogootPosition {
     return Object.assign(
       new LogootPosition(),
@@ -141,8 +207,25 @@ class LogootPosition extends Array<LogootInt> {
     }
   }
 
-  clamp(min: LogootPosition, max: LogootPosition): LogootPosition {
-    return this.cmp(min) < 0 ? min : this.cmp(max) > 0 ? max : this
+  /**
+   * Return this position if it is between `min` or `max`, otherwise return
+   * `min` if this is less and `max` if this is greater.
+   * @param min - The minimum output.
+   * @param max - The maximum output.
+   * @param preserve_levels - If defined, the output number of levels will be
+   * equal to `preserve_levels`.
+   */
+  clamp(
+    min: LogootPosition,
+    max: LogootPosition,
+    preserve_levels?: undefined | number
+  ): LogootPosition {
+    const clamped = this.cmp(min) < 0 ? min : this.cmp(max) > 0 ? max : this
+    if (preserve_levels !== undefined) {
+      return clamped.equivalentPositionAtLevel(preserve_levels)
+    } else {
+      return clamped.copy()
+    }
   }
 
   toString(): string {
@@ -161,12 +244,22 @@ namespace LogootPosition {
   }
 }
 
+/**
+ * Logoot treats each atom as seperate. However, in a real-world environment, it
+ * is not practical to treat each atom seperately. To save memory and CPU time,
+ * the algorithm groups together consecutive atoms into `LogootNode`s. A
+ * `LogootNode` is technically just a series of consecutive atoms with the same
+ * `rclk` (vector clock).
+ */
 class LogootNode {
   known_position = 0
   length = 0
   start: LogootPosition = new LogootPosition()
   rclk: LogootInt = new LogootInt(0)
 
+  /**
+   * @param node - A node to copy, C++ style
+   */
   constructor(node?: LogootNode) {
     if (node) {
       Object.assign(this, {
@@ -178,6 +271,10 @@ class LogootNode {
     }
   }
 
+  /**
+   * The end of the node. Note that technically there is not an atom at this
+   * position, so it's fair game to have another node placed at this position.
+   */
   get end(): LogootPosition {
     return this.start.offsetLowest(this.length)
   }
@@ -195,15 +292,32 @@ class LogootNode {
 type LogootNodeWithMeta = LogootNode & { offset: number }
 
 enum EventState {
+  /**
+   * Not being actively sent and can be modified.
+   */
   PENDING,
+  /**
+   * In transit. Cannot be modified.
+   */
   SENDING,
+  /**
+   * Already sent. Also cannot be modified.
+   */
   COMPLETE
 }
+/**
+ * @deprecated in favor of typeof statements, but I've been meaning to remove
+ * code dependent on this for a few versions now.
+ * @todo Fix me
+ */
 enum EventType {
   INSERTION,
   REMOVAL
 }
 
+/**
+ * Generic event interface.
+ */
 interface LogootEvent {
   type: EventType
   state: EventState
@@ -212,6 +326,9 @@ interface LogootEvent {
   rclk: LogootInt
 }
 
+/**
+ * An event sent when text is added, which contains a body and start position.
+ */
 class InsertionEvent implements LogootEvent {
   type = EventType.INSERTION
   body = ''
@@ -302,6 +419,13 @@ namespace InsertionEvent {
 
 type Removal = { start: LogootPosition; length: number }
 type RemovalJSON = { start: LogootPosition.JSON; length: number }
+/**
+ * An event sent when text is removed, which contains an array of start
+ * positions and lengths. An array was chosen since it is preferred for one
+ * operation to translate to one event. In an insertion, this is easy since
+ * there is just a start and body. However, a removal might remove areas of text
+ * that are on different levels and could generate many events.
+ */
 class RemovalEvent implements LogootEvent {
   type = EventType.REMOVAL
   removals: Removal[] = []
@@ -367,35 +491,58 @@ type Conflict = {
   level: number
 }
 
+/**
+ * A representation of the Logootish Document that maps "real," continuous
+ * `known_position`s to Logoot positions.
+ * @todo Remove all code specific to the event system being used.
+ * @todo Overhaul insert/remove functions to never handle events or text.
+ * Instead, another module should handle everything having to do with events.
+ * This would make the document universal for any data type, including, but not
+ * limited to, arrays and rich text.
+ */
 class Document {
-  // The BST maps out where all insertion nodes are in the local document's
-  // memory. It is used to go from position -> node
+  /**
+   * The BST maps out where all insertion nodes are in the local document's
+   * memory. It is used to go from position -> node
+   */
   ldoc_bst: KnownPositionBst = new Bst(
     (a, b) => (a.known_position - b.known_position) as CompareResult
   )
-  // This BST maps Logoot position identifiers to their text node to allow
-  // lookup of text position from Logoot ID
+  /**
+   * This BST maps Logoot position identifiers to their text node to allow
+   * lookup of text position from Logoot ID
+   */
   logoot_bst: LogootBst = new Bst((a, b) => a.start.cmp(b.start))
-  // A map of removals that do not yet have text to remove
+  /** A map of removals that do not yet have text to remove */
   removal_bst: LogootBst = new Bst((a, b) => a.start.cmp(b.start))
-  // Events that need to get sent over Matrix
+  /** Events that need to get sent over Matrix */
   pending_events: LogootEvent[] = []
-  // See the Logoot paper for why. Unlike the Logoot implementation, this is
-  // incremented with each deletion only.
+  /**
+   * See the Logoot paper for why. Unlike the Logoot implementation, this is
+   * incremented with each deletion only.
+   */
   vector_clock = new LogootInt()
 
-  // Used to keep track of active EventEmitter listeners having anything to do
-  // with this document
-  // TODO: Move this to a better place
+  /**
+   * Used to keep track of active EventEmitter listeners having anything to do
+   * with this document
+   * @deprecated it shouldn't be here and is temporary
+   * @todo Move this to matrix-notepad
+   */
   _active_listeners: any[] = []
 
-  send: (e: LogootEvent) => Promise<any>
+  private send: (e: LogootEvent) => Promise<any>
 
-  insertLocal: (position: number, body: string) => void
-  removeLocal: (position: number, length: number) => void
+  private insertLocal: (position: number, body: string) => void
+  private removeLocal: (position: number, length: number) => void
 
   last_insertion_event: InsertionEvent = undefined
 
+  /**
+   * @param send - A callback function to send a LogootEvent
+   * @param insertLocal - A callback function to insert text
+   * @param removeLocal - A callback function to remove text
+   */
   constructor(
     send: (e: LogootEvent) => Promise<any>,
     insertLocal: (position: number, body: string) => void,
@@ -406,7 +553,10 @@ class Document {
     this.removeLocal = removeLocal
   }
 
-  _removePendingEvent(event: LogootEvent): boolean {
+  /**
+   * Remove an event from the pending event array
+   */
+  private _removePendingEvent(event: LogootEvent): boolean {
     const index = this.pending_events.indexOf(event)
     if (index >= 0) {
       this.pending_events.splice(index, 1)
@@ -414,7 +564,10 @@ class Document {
     }
     return false
   }
-  _tryMergeEvents(event: InsertionEvent): boolean {
+  /**
+   * Merge an event with other neighboring ones
+   */
+  private _tryMergeEvents(event: InsertionEvent): boolean {
     if (event.state !== EventState.PENDING) {
       return false
     }
@@ -463,7 +616,10 @@ class Document {
     return false
   }
 
-  _pushEvent(event: LogootEvent): void {
+  /**
+   * Send a `LogootEvent` using the document-specific logic.
+   */
+  private _pushEvent(event: LogootEvent): void {
     this.pending_events.push(event)
 
     const queue_send = (): void => {
@@ -502,6 +658,12 @@ class Document {
     queue_send()
   }
 
+  /**
+   * Inform the document of new text in the local text copy. This will call the
+   * `send` function with the resulting event.
+   * @param position - The index of new text
+   * @param text - The text that will be inserted
+   */
   insert(position: number, text: string): void {
     debug.debug('INSERT', position, text)
 
@@ -586,6 +748,12 @@ class Document {
     this.last_insertion_event = event
   }
 
+  /**
+   * Inform the document of removed text in the local text copy. This will call
+   * the `send` function with the resulting event.
+   * @param position - The index of old text
+   * @param length - The length text that will be removed
+   */
   remove(position: number, length: number): void {
     debug.debug('REMOVE', position, length)
 
@@ -637,6 +805,32 @@ class Document {
     this._pushEvent(event)
   }
 
+  /**
+   * This is possibly the most important function in this entire program. The
+   * role of this function is to determine which parts of a node will have
+   * precedence over nodes currently in a Logoot binary search tree. Any new
+   * node must be filtered to determine which parts can actually make it into
+   * the document. For example, if there is a node with a higher `rclk`
+   * currently in the BST, that portion that overlaps with the node must be cut
+   * out. If the reverse is true, the node must be removed. This is done by
+   * first filtering the nodes in the region in question using a user-defined
+   * priority function. Nodes are either kept, ignored, or removed. These nodes
+   * are then used as regions of the input to skip over (variable named
+   * `skip_ranges`) and the resulting node(s) are returned.
+   *
+   * @param bst - The binary search tree containing current nodes to consider
+   * @param nstart - The start of the region in question
+   * @param length - The length of the region in question
+   * @param resolveConflict - A callback function determining what happens to a
+   * node currently in the BST in the region in question. If it returns 1, the
+   * node is kept. If it is 0, the node is ignored and is not skipped over. If
+   * it is -1, the section in question of the node is removed and the
+   * `informRemoval` function is called so further removals can be performed.
+   * @param addNode - A function only called when a node is split into pieces
+   * and additional nodes must be added as side-effects of the operation.
+   * @param informRemoval - A function to be called when a section or all of a
+   * node is removed so that the caller can modify the document as necessary.
+   */
   _mergeNode(
     bst: LogootBst,
     nstart: LogootPosition,
@@ -852,8 +1046,12 @@ class Document {
     return newnodes
   }
 
+  /**
+   * Inform the document of an incoming event from remote documents. The
+   * function `insertLocal` will be called based on the results of this.
+   * @param event_contents - The raw incoming JSON
+   */
   remoteInsert(event_contents: InsertionEvent.JSON): void {
-    // TODO: Evaluate using `jsonschema` package
     const { body, start: nstart, rclk: this_rclk } = InsertionEvent.fromJSON(
       event_contents
     )
@@ -948,6 +1146,11 @@ class Document {
     })
   }
 
+  /**
+   * Inform the document of an incoming event from remote documents. The
+   * function `removeLocal` will be called based on the results of this.
+   * @param event_contents - The raw incoming JSON
+   */
   remoteRemove(event_contents: RemovalEvent.JSON): void {
     const { rclk, removals } = RemovalEvent.fromJSON(event_contents)
 

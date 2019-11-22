@@ -1,11 +1,12 @@
 {
   "name": "logootish-js",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "private": true,
   "description": "Logootish algorithm for matrix-notepad",
   "main": "dist/logootish-js.min.js",
   "scripts": {
     "build": "webpack --env dev && webpack --env build",
+    "build:docs": "typedoc --mode modules --out .jsdoc src/",
     "dev": "webpack --progress --colors --watch --env dev",
     "test": "mocha --require babel-register --colors ./test/*.spec.js",
     "test:watch": "mocha --require babel-register --colors -w ./test/*.spec.js",
@@ -38,6 +39,7 @@
     "nyc": "^13.1.0",
     "prettier": "^1.19.1",
     "ts-loader": "^6.2.1",
+    "typedoc": "^0.15.2",
     "typescript": "^3.7.2",
     "uglifyjs-webpack-plugin": "^1.2.7",
     "webpack": "^4.12.2",
