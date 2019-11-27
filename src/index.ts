@@ -270,6 +270,9 @@ namespace LogootPosition {
  * `rclk` (vector clock).
  */
 class LogootNode {
+  /**
+   * The position of the node in the local document.
+   */
   known_position = 0
   length = 0
   start: LogootPosition = new LogootPosition()
@@ -295,6 +298,12 @@ class LogootNode {
    */
   get end(): LogootPosition {
     return this.start.offsetLowest(this.length)
+  }
+  /**
+   * The end of the node in the local document.
+   */
+  get known_end_position(): number {
+    return this.known_position + this.length
   }
 
   toString(): string {
@@ -326,7 +335,7 @@ enum EventState {
 /**
  * @deprecated in favor of typeof statements, but I've been meaning to remove
  * code dependent on this for a few versions now.
- * @todo Fix me
+ * @TODO Fix me
  */
 enum EventType {
   INSERTION,
@@ -351,7 +360,6 @@ class InsertionEvent implements LogootEvent {
   type = EventType.INSERTION
   body = ''
   start?: LogootPosition = undefined
-  known_position?: number = undefined
   rclk = new LogootInt()
 
   // Previous & next insertion event
@@ -360,18 +368,10 @@ class InsertionEvent implements LogootEvent {
 
   state = EventState.PENDING
 
-  constructor(
-    body: string,
-    left?: LogootPosition,
-    right?: LogootPosition,
-    rclk?: LogootInt,
-    known_position?: number
-  ) {
+  constructor(body: string, start = new LogootPosition(), rclk?: LogootInt) {
     Object.assign(this, {
       body,
-      known_position,
-      state: EventState.PENDING,
-      start: new LogootPosition(body.length, left, right),
+      start,
       rclk: new LogootInt(rclk)
     })
   }
@@ -380,7 +380,6 @@ class InsertionEvent implements LogootEvent {
     return new InsertionEvent(
       eventnode.body,
       LogootPosition.fromJSON(eventnode.start),
-      undefined,
       LogootInt.fromJSON(eventnode.rclk)
     )
   }
@@ -398,16 +397,6 @@ class InsertionEvent implements LogootEvent {
   get end(): LogootPosition {
     return this.start.offsetLowest(this.length)
   }
-  get node(): LogootNode {
-    const node = new LogootNode()
-    Object.assign(node, {
-      start: this.start,
-      length: this.length,
-      known_position: this.known_position,
-      rclk: this.rclk
-    })
-    return node
-  }
 }
 namespace InsertionEvent {
   export type JSON = {
@@ -419,16 +408,8 @@ namespace InsertionEvent {
     export const Schema = {
       type: 'object',
       properties: {
-        removals: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              start: LogootPosition.JSON.Schema,
-              length: { type: 'number' }
-            }
-          }
-        },
+        body: { type: 'string' },
+        start: LogootPosition.JSON.Schema,
         rclk: LogootInt.JSON.Schema
       }
     }
@@ -510,15 +491,18 @@ type Conflict = {
 }
 
 /**
- * A representation of the Logootish Document that maps "real," continuous
- * `known_position`s to Logoot positions.
- * @todo Remove all code specific to the event system being used.
- * @todo Overhaul insert/remove functions to never handle events or text.
- * Instead, another module should handle everything having to do with events.
- * This would make the document universal for any data type, including, but not
- * limited to, arrays and rich text.
+ * A representation of the Logootish Document Model for mapping "real,"
+ * continuous `known_position`s to Logoot positions. This is useful when working
+ * with strings, arrays, or, just in general, anything that needs a fixed order.
+ * This does not actually store the data in question, but stores a mapping of
+ * real indices in the data to the Logoot positions of that element. This is
+ * used to transform edits between ones in the Logoot and local position spaces.
+ * One important thing to note: Logoot edits (insertions/removals) can be
+ * applied in any order. Local edits **must** be applied in a consistent order.
+ * @TODO Conflict resolution does not exist. **This will create significant
+ * changes to this API**
  */
-class Document {
+class ListDocumentModel {
   /**
    * The BST maps out where all insertion nodes are in the local document's
    * memory. It is used to go from position -> node
@@ -533,157 +517,31 @@ class Document {
   logoot_bst: LogootBst = new Bst((a, b) => a.start.cmp(b.start))
   /** A map of removals that do not yet have text to remove */
   removal_bst: LogootBst = new Bst((a, b) => a.start.cmp(b.start))
-  /** Events that need to get sent over Matrix */
-  pending_events: LogootEvent[] = []
   /**
    * See the Logoot paper for why. Unlike the Logoot implementation, this is
-   * incremented with each deletion only.
+   * incremented with each removal only and is kept constant with insertions.
    */
   vector_clock = new LogootInt()
 
   /**
-   * Used to keep track of active EventEmitter listeners having anything to do
-   * with this document
-   * @deprecated it shouldn't be here and is temporary
-   * @todo Move this to matrix-notepad
-   */
-  _active_listeners: any[] = []
-
-  private send: (e: LogootEvent) => Promise<any>
-
-  private insertLocal: (position: number, body: string) => void
-  private removeLocal: (position: number, length: number) => void
-
-  last_insertion_event: InsertionEvent = undefined
-
-  /**
-   * @param send - A callback function to send a LogootEvent
-   * @param insertLocal - A callback function to insert text
-   * @param removeLocal - A callback function to remove text
-   */
-  constructor(
-    send: (e: LogootEvent) => Promise<any>,
-    insertLocal: (position: number, body: string) => void,
-    removeLocal: (position: number, length: number) => void
-  ) {
-    this.send = send
-    this.insertLocal = insertLocal
-    this.removeLocal = removeLocal
-  }
-
-  /**
-   * Remove an event from the pending event array
-   */
-  private _removePendingEvent(event: LogootEvent): boolean {
-    const index = this.pending_events.indexOf(event)
-    if (index >= 0) {
-      this.pending_events.splice(index, 1)
-      return true
-    }
-    return false
-  }
-  /**
-   * Merge an event with other neighboring ones
-   */
-  private _tryMergeEvents(event: InsertionEvent): boolean {
-    if (event.state !== EventState.PENDING) {
-      return false
-    }
-    // TODO: Maybe do a tree lookup instead. But this is complicated since then
-    // each node has to store its associated event
-    if (event.last && event.last.state === EventState.PENDING) {
-      let oldevent = event
-      while (oldevent.last && oldevent.last.state === EventState.PENDING) {
-        oldevent.last.body += oldevent.body
-
-        oldevent.last.next = oldevent.next
-        if (oldevent.next) {
-          oldevent.next.last = oldevent.last
-        }
-
-        this._removePendingEvent(oldevent)
-
-        if (this.last_insertion_event === oldevent) {
-          this.last_insertion_event = oldevent.last
-        }
-        oldevent = oldevent.last
-      }
-      // Now try the other direction...
-      this._tryMergeEvents(oldevent)
-      return true
-    } else if (event.next && event.next.state === EventState.PENDING) {
-      let oldevent = event
-      while (oldevent.next && oldevent.next.state === EventState.PENDING) {
-        oldevent.next.body = oldevent.body + oldevent.next.body
-        oldevent.next.start = oldevent.start
-
-        oldevent.next.last = oldevent.last
-        if (oldevent.last) {
-          oldevent.last.next = oldevent.next
-        }
-
-        this._removePendingEvent(oldevent)
-
-        if (this.last_insertion_event === oldevent) {
-          this.last_insertion_event = oldevent.next
-        }
-        oldevent = oldevent.next
-      }
-      return true
-    }
-    return false
-  }
-
-  /**
-   * Send a `LogootEvent` using the document-specific logic.
-   */
-  private _pushEvent(event: LogootEvent): void {
-    this.pending_events.push(event)
-
-    const queue_send = (): void => {
-      event.state = EventState.SENDING
-      this.send(event)
-        .then(() => {
-          this._removePendingEvent(event)
-          event.state = EventState.COMPLETE
-        })
-        .catch((e) => {
-          event.state = EventState.PENDING
-          // TODO: Nothing is here *should* be Matrix specific
-          if (e.event) {
-            e.event.flagCancelled()
-          }
-          if (e && e.data && e.data.retry_after_ms) {
-            if (
-              event.type === EventType.INSERTION &&
-              this._tryMergeEvents(event as InsertionEvent)
-            ) {
-              debug.warn(
-                `Hitting the rate limit: Will resend in ${e.data.retry_after_ms} ms with multiple messages merged together`
-              )
-              return {}
-            }
-            debug.warn(
-              `Hitting the rate limit: Will resend in ${e.data.retry_after_ms} ms`
-            )
-            setTimeout(queue_send, e.data.retry_after_ms)
-          } else {
-            debug.error('Error sending event', e)
-            return e
-          }
-        })
-    }
-    queue_send()
-  }
-
-  /**
-   * Inform the document of new text in the local text copy. This will call the
-   * `send` function with the resulting event.
+   * Calculate the Logoot positions of a local insertion.
    * @param position - The index of new text
-   * @param text - The text that will be inserted
+   * @param len - How much will be inserted
+   * @returns A Logoot insertion with a Logoot position (`start`), a vector
+   * clock value (`rclk`) (**copied** from the document), and the length passed
+   * to the function (`length`). Note that the start position is **not** copied,
+   * so if it is modified, it will mess up the sorting trees. Ensure that it is
+   * copied before modifying it.
+   * @throws {FatalError} Will throw in the event that internal corruption is
+   * encountered. If this happens, please submit an issue.
+   * @throws {Error} Will throw in the event that the position being inserted is
+   * after the end of the known document model.
    */
-  insert(position: number, text: string): void {
-    debug.debug('INSERT', position, text)
+  insertLocal(
+    position: number,
+    len: number
+  ): { position: LogootPosition; rclk: LogootInt; length: number } {
+    debug.debug(`Insert into doc at ${position} + ${len}`)
 
     // The position must be -1 for lesser because it can't count the text node
     // currently in the insertion position (we're between two nodes)
@@ -699,8 +557,29 @@ class Document {
         'Corrupt BST. There are multiple nodes at a position.'
       )
     } else {
-      lesser = nodes_lesser[0]
-      greater = nodes_greater[0]
+      lesser = nodes_lesser[0] ? nodes_lesser[0].data : undefined
+      greater = nodes_greater[0] ? nodes_greater[0].data : undefined
+    }
+
+    if (lesser && lesser.known_end_position < position) {
+      throw new Error('Position cannot be added after the end of the document.')
+    }
+
+    if (lesser && lesser.length + lesser.known_position > position) {
+      // This means that we're right inside another node, so the next position
+      // will be inside the first node
+      // Now, we must split the node in half (nodes can't overlap)
+      greater = new LogootNode()
+
+      greater.length = lesser.known_end_position - position
+      lesser.length = position - lesser.known_position
+
+      greater.known_position = position
+      greater.start = lesser.start.offsetLowest(lesser.length)
+      greater.rclk = new LogootInt(lesser.rclk)
+
+      this.ldoc_bst.add(greater)
+      this.logoot_bst.add(greater)
     }
 
     // Finally, we can create positions...
@@ -708,72 +587,47 @@ class Document {
     let right_position
 
     if (lesser) {
-      left_position = lesser.data.end
+      left_position = lesser.end
     }
     if (greater) {
-      right_position = greater.data.start
+      right_position = greater.start
     }
 
-    if (lesser && lesser.data.length + lesser.data.known_position > position) {
-      // This means that we're right inside another node, so the next position
-      // will be inside the first node
-      left_position = lesser.data.start.offsetLowest(
-        position - lesser.data.known_position
-      )
-      right_position = left_position
-
-      // Now, we must split the node in half (nodes can't overlap)
-      const node = new LogootNode()
-      node.length = lesser.data.known_position + lesser.data.length - position
-      node.known_position = position + length
-      node.start = right_position.offsetLowest(length)
-      node.rclk = lesser.data.rclk
-      this.ldoc_bst.add(node)
-      this.logoot_bst.add(node)
-    }
-
-    const event = new InsertionEvent(
-      text,
-      left_position,
-      right_position,
-      this.vector_clock,
-      position
-    )
+    const node = new LogootNode()
+    node.start = new LogootPosition(len, left_position, right_position)
+    node.known_position = position
+    node.rclk = new LogootInt(this.vector_clock)
+    node.length = len
 
     // Now, make a space between the nodes
     this.ldoc_bst.operateOnAllGteq({ known_position: position }, (n) => {
-      n.data.known_position += event.length
+      n.data.known_position += len
     })
 
-    const node = event.node
     this.ldoc_bst.add(node)
     this.logoot_bst.add(node)
 
-    // Logic to help merge events together. It is VERY rough and will really
-    // only work when events are consecutive, but its better than spamming the
-    // HS and having text go letter by letter when we hit the rate limit
-    if (
-      this.last_insertion_event &&
-      event.start.cmp(this.last_insertion_event.end) === 0
-    ) {
-      event.last = this.last_insertion_event
-      this.last_insertion_event.next = event
+    return {
+      position: node.start,
+      rclk: new LogootInt(this.vector_clock),
+      length: len
     }
-    if (this._tryMergeEvents(event)) {
-      return
-    }
-    this._pushEvent(event)
-    this.last_insertion_event = event
   }
 
   /**
-   * Inform the document of removed text in the local text copy. This will call
-   * the `send` function with the resulting event.
+   * Calculate the Logoot positions and lengths of removals from a removal in
+   * the local document.
    * @param position - The index of old text
    * @param length - The length text that will be removed
+   * @returns An object containing an array of removals and the calculated
+   * vector clock. Each removal contains a `start` LogootPosition, which is not
+   * copied, so it **cannot be modified**, and a numeric `length`.
    */
-  remove(position: number, length: number): void {
-    debug.debug('REMOVE', position, length)
+  removeLocal(
+    position: number,
+    length: number
+  ): { removals: Removal[]; rclk: LogootInt } {
+    debug.debug(`Remove from doc at ${position} + ${length}`)
 
     // First, find any nodes that MAY have content removed from them
     const nodes = this.ldoc_bst
@@ -782,12 +636,19 @@ class Document {
         { known_position: position + length - 1 }
       )
       .concat(this.ldoc_bst.getLteq({ known_position: position - 1 }))
+      .sort((a, b) => a.data.known_position - b.data.known_position)
 
     const removals: Removal[] = []
     let last_end: LogootPosition
+    let cumulative_offset = 0
     nodes.forEach(({ data }) => {
+      // 'Data' refers to the node having text removed
+
+      // Length and start of new removal
       let newlen = data.length
       let newstart = data.start
+
+      // Remove the ends of the node not being removed
       if (data.known_position < position) {
         newlen -= position - data.known_position
         newstart = newstart.offsetLowest(position - data.known_position)
@@ -796,31 +657,52 @@ class Document {
         newlen -= data.known_position + data.length - (position + length)
       }
 
-      if (last_end && last_end.cmp(data.start) === 0) {
+      if (newlen <= 0) {
+        return
+      }
+
+      // Add the removal to the last one if possible
+      if (last_end && last_end.cmp(newstart) === 0) {
         removals[removals.length - 1].length += newlen
-      } else if (newlen > 0) {
+      } else {
         removals.push({
           start: newstart,
           length: newlen
         })
       }
 
-      last_end = data.end
+      // Record the last end so we can add another removal to it if possible
+      last_end = newstart.offsetLowest(newlen)
+
+      // Now, modify the node to remove the start region (if necessary)
+      if (data.known_position > position) {
+        data.start = data.start.offsetLowest(data.known_position - position)
+      }
+      // And remove the removal inside of it
       data.length -= newlen
+
+      // Now apply the running total offset and calculate it for the next run
+      data.known_position -= cumulative_offset
+      cumulative_offset += newlen
+
       if (data.length <= 0) {
         this.logoot_bst.remove(data)
         this.ldoc_bst.remove(data)
       }
     })
 
-    this.ldoc_bst.operateOnAllGteq({ known_position: position }, (n) => {
-      n.data.known_position -= length
-    })
+    // Offset the nodes that come after the removal
+    this.ldoc_bst.operateOnAllGteq(
+      { known_position: position + length },
+      (n) => {
+        n.data.known_position -= length
+      }
+    )
 
-    const event = new RemovalEvent(removals, new LogootInt(this.vector_clock))
+    const target_rclk = new LogootInt(this.vector_clock)
     this.vector_clock.add(1)
 
-    this._pushEvent(event)
+    return { removals, rclk: target_rclk }
   }
 
   /**
@@ -900,6 +782,7 @@ class Document {
       end: nend,
       length: 0,
       known_position: 0,
+      known_end_position: 0,
       rclk: new LogootInt(0)
     })
 
@@ -1066,25 +949,37 @@ class Document {
   }
 
   /**
-   * Inform the document of an incoming event from remote documents. The
-   * function `insertLocal` will be called based on the results of this.
-   * @param event_contents - The raw incoming JSON
+   * Calculate the local positions inserted from an insertion at a Logoot
+   * position from a given length and vector clock.
+   * @param nstart - The start `LogootPosition` of the insertion
+   * @param length - The length of the insertion
+   * @param this_rclk - The vector clock when the insertion took place.
+   * @returns An object with the `insertions` member set to an array with
+   * objects containing a numeric `offset`, which represents which part of the
+   * source string the insertion is pulling from, a numeric `length`, and a
+   * numeric `known_position` where to place the string. Insertions must be
+   * applied in the order of the return value.
    */
-  remoteInsert(event_contents: InsertionEvent.JSON): void {
-    const { body, start: nstart, rclk: this_rclk } = InsertionEvent.fromJSON(
-      event_contents
+  insertLogoot(
+    nstart: LogootPosition,
+    length: number,
+    this_rclk: LogootInt
+  ): {
+    insertions: { offset: number; length: number; known_position: number }[]
+  } {
+    debug.debug(
+      `Insert into doc at ${nstart.toString()} + ${length} @ ${this_rclk.toString()}`
     )
-    debug.debug('REMOTE INSERT', body, nstart.toString(), this_rclk.toString())
 
     if (this_rclk.cmp(this.vector_clock) > 0) {
       this.vector_clock = this_rclk
-      debug.info('Fast-forward vector clock to', JSON.stringify(this_rclk))
+      debug.info(`Fast-forward vector clock to ${this_rclk.toString()}`)
     }
 
     const nodes = this._mergeNode(
       this.logoot_bst,
       nstart,
-      body.length,
+      length,
       (node, conflict, lesser) => {
         // If we're inside and on a lower level than lesser, simply ignore it
         if (node === lesser && lesser.start.levels < conflict.level) {
@@ -1104,6 +999,8 @@ class Document {
         return 1
       },
       (node) => {
+        // We don't add to the known_position here because the node we're adding
+        // comes from splitting an existing node
         this.ldoc_bst.add(node)
         this.logoot_bst.add(node)
       },
@@ -1146,6 +1043,12 @@ class Document {
       })
     })
 
+    const insertions: {
+      offset: number
+      length: number
+      known_position: number
+    }[] = []
+
     nodes.forEach((node) => {
       node.rclk = this_rclk
       // Now, make a space between the nodes
@@ -1156,15 +1059,325 @@ class Document {
         n.data.known_position += node.length
       })
 
-      const node_body = body.substr(node.offset, node.length)
-      delete node.offset
-      this.insertLocal(node.known_position, node_body)
+      const insertion = {
+        known_position: node.known_position,
+        offset: node.offset,
+        length: node.length
+      }
+      insertions.push(insertion)
 
       this.ldoc_bst.add(node)
       this.logoot_bst.add(node)
     })
+
+    return { insertions }
   }
 
+  /**
+   * Calculate the regions of text to be removed from the local document from
+   * a Logoot position, length, and vector clock of a removal.
+   * @param start - The start at which to start removing.
+   * @param length - How much to remove.
+   * @param rclk - The vector clock of the removal.
+   * @returns An object containing a member `removals`, which is an array of
+   * objects containing a `known_position` at which to start removing and a
+   * `length`, both of which are numbers.
+   */
+  removeLogoot(
+    start: LogootPosition,
+    length: number,
+    rclk: LogootInt
+  ): { removals: { known_position: number; length: number }[] } {
+    const new_rclk = new LogootInt(rclk).add(1)
+    if (new_rclk.cmp(this.vector_clock) > 0) {
+      this.vector_clock = new_rclk
+      debug.info('Fast-forward vector clock to', JSON.stringify(new_rclk))
+    }
+
+    const end = start.offsetLowest(length)
+    // The level where our removal is happening (always the lowest)
+    const level = start.levels
+    debug.debug(
+      `Remove from doc at ${start.toString()} + ${length} @ ${rclk.toString()}`
+    )
+
+    const removals: { known_position: number; length: number }[] = []
+    // This is basically the same as the invocation in remoteInsert, only it
+    // doesn't add the resulting nodes to the BSTs
+    const nodes = this._mergeNode(
+      this.logoot_bst,
+      start,
+      length,
+      (node) => {
+        // TODO: Nodes with the SAME `rclk` should still have a removal added
+        // at their position because another node with the same `rclk` as the
+        // one just removed could show up.
+        if (node.rclk.cmp(rclk) <= 0) {
+          return -1
+        }
+        return 1
+      },
+      (node) => {
+        this.ldoc_bst.add(node)
+        this.logoot_bst.add(node)
+      },
+      (node, pos, length, whole) => {
+        if (whole) {
+          this.ldoc_bst.remove(node)
+          this.logoot_bst.remove(node)
+        }
+        removals.push({ known_position: pos, length })
+        this.ldoc_bst.operateOnAllGteq({ known_position: pos }, (n) => {
+          if (n.data === node) {
+            return
+          }
+          n.data.known_position -= length
+        })
+      }
+    )
+
+    // Now, use the text nodes that stay as `skip_ranges`, like in the
+    // `_mergeNode` function, to find where the removal should be added to the
+    // removal BST
+    nodes.push({
+      start: end,
+      end,
+      length: 0,
+      known_position: 0,
+      known_end_position: 0,
+      rclk: new LogootInt(),
+      offset: 0
+    })
+
+    // I've gotten lazier and lazier with variable names as this file has
+    // gotten longer. I've regressed to single letter variable names
+    let last_end = start
+    nodes.forEach((n) => {
+      const length = new LogootInt(n.end.l(level)).sub(last_end.l(level)).js_int
+      // Now, merge this removal with possible other ones in the removal_bst
+      const nodes = this._mergeNode(
+        this.removal_bst,
+        last_end,
+        length,
+        (node) => {
+          if (node.rclk.cmp(rclk) < 0) {
+            return -1
+          }
+          return 1
+        },
+        (node) => {
+          this.removal_bst.add(node)
+        },
+        (node, pos, length, whole) => {
+          if (whole) {
+            this.removal_bst.remove(node)
+          }
+        }
+      )
+
+      // Make sure the removals actually exist
+      nodes.forEach((node) => {
+        node.rclk = rclk
+        delete node.offset
+
+        this.removal_bst.add(node)
+      })
+      last_end = n.end
+    })
+
+    return { removals }
+  }
+}
+
+/**
+ * Exists only for backwards compatability.
+ * @deprecated Will be removed in next minor version bump. Semver allows this
+ * when the major version is 0.
+ * @TODO Remove this class. Create an event bus system.
+ */
+class Document {
+  /** Events that need to get sent over Matrix */
+  pending_events: LogootEvent[] = []
+
+  /**
+   * Used to keep track of active EventEmitter listeners having anything to do
+   * with this document
+   * @deprecated it shouldn't be here and is temporary
+   * @todo Move this to matrix-notepad
+   */
+  _active_listeners: any[] = []
+
+  private send: (e: LogootEvent) => Promise<any>
+
+  private insertLocal: (position: number, body: string) => void
+  private removeLocal: (position: number, length: number) => void
+
+  last_insertion_event: InsertionEvent = undefined
+
+  doc: ListDocumentModel = new ListDocumentModel()
+
+  /**
+   * @param send - A callback function to send a LogootEvent
+   * @param insertLocal - A callback function to insert text
+   * @param removeLocal - A callback function to remove text
+   */
+  constructor(
+    send: (e: LogootEvent) => Promise<any>,
+    insertLocal: (position: number, body: string) => void,
+    removeLocal: (position: number, length: number) => void
+  ) {
+    this.send = send
+    this.insertLocal = insertLocal
+    this.removeLocal = removeLocal
+  }
+
+  /**
+   * Remove an event from the pending event array
+   */
+  private _removePendingEvent(event: LogootEvent): boolean {
+    const index = this.pending_events.indexOf(event)
+    if (index >= 0) {
+      this.pending_events.splice(index, 1)
+      return true
+    }
+    return false
+  }
+  /**
+   * Merge an event with other neighboring ones
+   */
+  private _tryMergeEvents(event: InsertionEvent): boolean {
+    if (event.state !== EventState.PENDING) {
+      return false
+    }
+    // TODO: Maybe do a tree lookup instead. But this is complicated since then
+    // each node has to store its associated event
+    if (event.last && event.last.state === EventState.PENDING) {
+      let oldevent = event
+      while (oldevent.last && oldevent.last.state === EventState.PENDING) {
+        oldevent.last.body += oldevent.body
+
+        oldevent.last.next = oldevent.next
+        if (oldevent.next) {
+          oldevent.next.last = oldevent.last
+        }
+
+        this._removePendingEvent(oldevent)
+
+        if (this.last_insertion_event === oldevent) {
+          this.last_insertion_event = oldevent.last
+        }
+        oldevent = oldevent.last
+      }
+      // Now try the other direction...
+      this._tryMergeEvents(oldevent)
+      return true
+    } else if (event.next && event.next.state === EventState.PENDING) {
+      let oldevent = event
+      while (oldevent.next && oldevent.next.state === EventState.PENDING) {
+        oldevent.next.body = oldevent.body + oldevent.next.body
+        oldevent.next.start = oldevent.start
+
+        oldevent.next.last = oldevent.last
+        if (oldevent.last) {
+          oldevent.last.next = oldevent.next
+        }
+
+        this._removePendingEvent(oldevent)
+
+        if (this.last_insertion_event === oldevent) {
+          this.last_insertion_event = oldevent.next
+        }
+        oldevent = oldevent.next
+      }
+      return true
+    }
+    return false
+  }
+
+  /**
+   * Send a `LogootEvent` using the document-specific logic.
+   */
+  private _pushEvent(event: LogootEvent): void {
+    this.pending_events.push(event)
+
+    const queue_send = (): void => {
+      event.state = EventState.SENDING
+      this.send(event)
+        .then(() => {
+          this._removePendingEvent(event)
+          event.state = EventState.COMPLETE
+        })
+        .catch((e) => {
+          event.state = EventState.PENDING
+          // TODO: Nothing is here *should* be Matrix specific
+          if (e.event) {
+            e.event.flagCancelled()
+          }
+          if (e && e.data && e.data.retry_after_ms) {
+            if (
+              event.type === EventType.INSERTION &&
+              this._tryMergeEvents(event as InsertionEvent)
+            ) {
+              debug.warn(
+                `Hitting the rate limit: Will resend in ${e.data.retry_after_ms} ms with multiple messages merged together`
+              )
+              return {}
+            }
+            debug.warn(
+              `Hitting the rate limit: Will resend in ${e.data.retry_after_ms} ms`
+            )
+            setTimeout(queue_send, e.data.retry_after_ms)
+          } else {
+            debug.error('Error sending event', e)
+            return e
+          }
+        })
+    }
+    queue_send()
+  }
+
+  get ldoc_bst(): KnownPositionBst {
+    return this.ldoc_bst
+  }
+  get logoot_bst(): LogootBst {
+    return this.logoot_bst
+  }
+  get removal_bst(): LogootBst {
+    return this.removal_bst
+  }
+
+  /**
+   * Inform the document of new text in the local text copy. This will call the
+   * `send` function with the resulting event.
+   * @param position - The index of new text
+   * @param text - The text that will be inserted
+   */
+  insert(position: number, text: string): void {
+    const ins = this.doc.insertLocal(position, text.length)
+    this._pushEvent(new InsertionEvent(text, ins.position, ins.rclk))
+  }
+  /**
+   * Inform the document of removed text in the local text copy. This will call
+   * the `send` function with the resulting event.
+   * @param position - The index of old text
+   * @param length - The length text that will be removed
+   */
+  remove(position: number, length: number): void {
+    const { removals, rclk } = this.doc.removeLocal(position, length)
+    this._pushEvent(new RemovalEvent(removals, rclk))
+  }
+  /**
+   * Inform the document of an incoming event from remote documents. The
+   * function `insertLocal` will be called based on the results of this.
+   * @param event_contents - The raw incoming JSON
+   */
+  remoteInsert(event_contents: InsertionEvent.JSON): void {
+    const { body, start, rclk } = InsertionEvent.fromJSON(event_contents)
+    const { insertions } = this.doc.insertLogoot(start, body.length, rclk)
+    insertions.forEach(({ offset, length, known_position }) =>
+      this.insertLocal(known_position, body.substr(offset, length))
+    )
+  }
   /**
    * Inform the document of an incoming event from remote documents. The
    * function `removeLocal` will be called based on the results of this.
@@ -1172,102 +1385,11 @@ class Document {
    */
   remoteRemove(event_contents: RemovalEvent.JSON): void {
     const { rclk, removals } = RemovalEvent.fromJSON(event_contents)
-
-    const new_rclk = new LogootInt(rclk).add(1)
-    if (new_rclk.cmp(this.vector_clock) > 0) {
-      this.vector_clock = new_rclk
-      debug.info('Fast-forward vector clock to', JSON.stringify(new_rclk))
-    }
-
-    removals.forEach((r) => {
-      const { start } = r
-      const end = start.offsetLowest(r.length)
-      // The level where our removal is happening (always the lowest)
-      const level = start.levels
-      debug.debug('REMOTE REMOVE', start.toString(), r.length, rclk.toString())
-
-      // This is basically the same as the invocation in remoteInsert, only it
-      // doesn't add the resulting nodes to anything
-      const nodes = this._mergeNode(
-        this.logoot_bst,
-        start,
-        r.length,
-        (node) => {
-          // TODO: Nodes with the SAME `rclk` should still have a removal added
-          // at their position because another node with the same `rclk` as the
-          // one just removed could show up.
-          if (node.rclk.cmp(rclk) <= 0) {
-            return -1
-          }
-          return 1
-        },
-        (node) => {
-          this.ldoc_bst.add(node)
-          this.logoot_bst.add(node)
-        },
-        (node, pos, length, whole) => {
-          if (whole) {
-            this.ldoc_bst.remove(node)
-            this.logoot_bst.remove(node)
-          }
-          this.removeLocal(pos, length)
-          this.ldoc_bst.operateOnAllGteq({ known_position: pos }, (n) => {
-            if (n.data === node) {
-              return
-            }
-            n.data.known_position -= length
-          })
-        }
+    removals.forEach(({ start, length }) => {
+      const { removals } = this.doc.removeLogoot(start, length, rclk)
+      removals.forEach(({ known_position, length }) =>
+        this.removeLocal(known_position, length)
       )
-
-      // Now, use the text nodes that stay as `skip_ranges`, like in the
-      // `_mergeNode` function, to find where the removal should be added to the
-      // removal BST
-      nodes.push({
-        start: end,
-        end,
-        length: 0,
-        known_position: 0,
-        rclk: new LogootInt(),
-        offset: 0
-      })
-
-      // I've gotten lazier and lazier with variable names as this file has
-      // gotten longer. I've regressed to single letter variable names
-      let last_end = start
-      nodes.forEach((n) => {
-        const length = new LogootInt(n.end.l(level)).sub(last_end.l(level))
-          .js_int
-        // Now, merge this removal with possible other ones in the removal_bst
-        const nodes = this._mergeNode(
-          this.removal_bst,
-          last_end,
-          length,
-          (node) => {
-            if (node.rclk.cmp(rclk) < 0) {
-              return -1
-            }
-            return 1
-          },
-          (node) => {
-            this.removal_bst.add(node)
-          },
-          (node, pos, length, whole) => {
-            if (whole) {
-              this.removal_bst.remove(node)
-            }
-          }
-        )
-
-        // Make sure the removals actually exist
-        nodes.forEach((node) => {
-          node.rclk = rclk
-          delete node.offset
-
-          this.removal_bst.add(node)
-        })
-        last_end = n.end
-      })
     })
   }
 }
@@ -1275,9 +1397,10 @@ class Document {
 export {
   EventType,
   EventState,
-  Document,
+  ListDocumentModel,
   InsertionEvent,
   RemovalEvent,
-  LogootNode,
-  LogootPosition
+  LogootInt,
+  LogootPosition,
+  Document
 }
