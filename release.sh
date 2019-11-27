@@ -44,10 +44,12 @@ git merge dev
 
 echo Building...
 yarn run build
-echo Adding `dist`...
-git add -rf dist/ dist/*
+echo Adding dist...
+git add -f dist/ dist/*
 echo Committing...
 git commit -m "Build v$VERSION"
+echo Tagging master...
+git tag -a v$VERSION -m v$VERSION
 
 echo Building docs...
 yarn run build:docs
@@ -58,9 +60,16 @@ git rm -r assets/ classes/ enums/ interfaces/ modules/ globals.html index.html
 echo Copying TypeDoc...
 cp -r .jsdoc/* .
 echo Adding TypeDoc...
-git add -r *
+git add -A
 echo Committing...
 git commit -m "Build v$VERSION"
 
+echo Moving back to dev...
+git checkout dev
+
 echo
-echo -e "Completed. \e[1mRemember to run git push!"
+if  prompt "Push files to remote (y/n)? ";
+then
+  git push origin master dev gh-pages v$VERSION
+fi
+echo Done.
