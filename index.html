@@ -164,7 +164,7 @@ removals.forEach(<span class="hljs-function">(<span class="hljs-params">{ start,
 
 <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">dualInsert</span>(<span class="hljs-params">pos, len</span>) </span>{
   <span class="hljs-keyword">let</span> { position, length, rclk } = m1.insertLocal(pos, len)
-  <span class="hljs-keyword">return</span> m2.insertLogoot(position, length, rclk).insertions
+  <span class="hljs-keyword">return</span> m2.insertLogoot(position, length, rclk)
 }
 
 <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">dualRemove</span>(<span class="hljs-params">pos, len</span>) </span>{
@@ -175,10 +175,20 @@ removals.forEach(<span class="hljs-function">(<span class="hljs-params">{ start,
 }
 
 <span class="hljs-built_in">console</span>.log(dualInsert(<span class="hljs-number">0</span>, <span class="hljs-number">2</span>))
-<span class="hljs-comment">// Prints `[ { known_position: 0, offset: 0, length: 2 } ]`</span>
+<span class="hljs-comment">/* Prints:
+ * {
+ *   insertions: [ { known_position: 0, offset: 0, length: 2 } ],
+ *   removals: []
+ * }
+ */</span>
 
 <span class="hljs-built_in">console</span>.log(dualInsert(<span class="hljs-number">1</span>, <span class="hljs-number">2</span>))
-<span class="hljs-comment">// Prints `[ { known_position: 1, offset: 0, length: 2 } ]`</span>
+<span class="hljs-comment">/* Prints:
+ * {
+ *   insertions: [ { known_position: 1, offset: 0, length: 2 } ],
+ *   removals: []
+ * }
+ */</span>
 
 <span class="hljs-built_in">console</span>.log(dualRemove(<span class="hljs-number">0</span>, <span class="hljs-number">2</span>))
 <span class="hljs-comment">/* Prints:
@@ -192,29 +202,36 @@ removals.forEach(<span class="hljs-function">(<span class="hljs-params">{ start,
 					have the same <code>known_position</code>. This is because they are designed to be applied
 					in sequence. So once the first element is removed, it&#39;s successor becomes the
 				next one with the <code>known_position</code> equal to <code>0</code>.</p>
+				<p>One other thing to note: The <code>dualInsert</code> function returns an object with
+					<em>removals</em>. The reason for this may not be obvious at first, but let me explain:
+					The algorithm allows for these insertions to be out of order. This means that
+					removals could end up removing the wrong text. The solution is to include a
+					vector clock (<code>rclk</code>) to establish order. However, this can lead to situations
+					where old data must be removed since it has been replaced. This is what the
+				<code>removals</code> are for -- To remove old text.</p>
 				<a href="#real-concurrent-edits" id="real-concurrent-edits" style="color: inherit; text-decoration: none;">
 					<h3>Real Concurrent Edits</h3>
 				</a>
 				<p>Arrays are used here because of the easy <code>slice</code> and <code>splice</code> functions.</p>
-				<pre><code><span class="hljs-keyword">const</span> { ListDocumentModel } = require(<span class="hljs-string">'./dist/logootish-js.min.js'</span>)
+				<pre><code><span class="hljs-keyword">const</span> { ListDocumentModel } = <span class="hljs-built_in">require</span>(<span class="hljs-string">'./dist/logootish-js.min.js'</span>)
 
 <span class="hljs-comment">// First, define two parallel documents. Normally these would be on seperate</span>
 <span class="hljs-comment">// computers or at least seperate processes.</span>
 <span class="hljs-keyword">const</span> docs = [
   {
-    object: [],
-    model: <span class="hljs-keyword">new</span> ListDocumentModel()
+    <span class="hljs-attr">object</span>: [],
+    <span class="hljs-attr">model</span>: <span class="hljs-keyword">new</span> ListDocumentModel()
   },
   {
-    object: [],
-    model: <span class="hljs-keyword">new</span> ListDocumentModel()
+    <span class="hljs-attr">object</span>: [],
+    <span class="hljs-attr">model</span>: <span class="hljs-keyword">new</span> ListDocumentModel()
   }
 ]
 
 <span class="hljs-comment">// Define a function to insert `newelements` at `known_position`. The document</span>
 <span class="hljs-comment">// `current` is modified directly and used as a source for the edits, which are</span>
 <span class="hljs-comment">// translated to Logoot positions and used to modify all the `other` documents</span>
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">insert</span><span class="hljs-params">(known_position, newelements, current, <span class="hljs-rest_arg">...other</span>)</span> </span>{
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">insert</span>(<span class="hljs-params">known_position, newelements, current, ...other</span>) </span>{
   <span class="hljs-comment">// First, add the items locally...</span>
   current.object.splice(known_position, <span class="hljs-number">0</span>, ...newelements)
 
@@ -225,9 +242,21 @@ removals.forEach(<span class="hljs-function">(<span class="hljs-params">{ start,
   )
 
   <span class="hljs-comment">// Now, let the other models know and update the objects</span>
-  other.forEach(({ object, model }) =&gt; {
-    <span class="hljs-keyword">const</span> { insertions } = model.insertLogoot(position, length, rclk)
-    insertions.forEach(({ known_position, offset, length }) =&gt; {
+  other.forEach(<span class="hljs-function">(<span class="hljs-params">{ object, model }</span>) =&gt;</span> {
+    <span class="hljs-keyword">const</span> { insertions, removals } = model.insertLogoot(position, length, rclk)
+
+    <span class="hljs-comment">// It is possible that old data (data with a lower vector clock) was added</span>
+    <span class="hljs-comment">// by a past insertion. Here, we remove conflicting old data that is taking</span>
+    <span class="hljs-comment">// the place of our new data.</span>
+    <span class="hljs-comment">// The algorithm ensures that if these positions are modified in the order</span>
+    <span class="hljs-comment">// specified, it will "just work."</span>
+    removals.forEach(<span class="hljs-function">(<span class="hljs-params">{ known_position, length }</span>) =&gt;</span> {
+      <span class="hljs-comment">// Now, for each segment we have to remove...</span>
+      <span class="hljs-comment">// ... remove it from the object</span>
+      object.splice(known_position, length)
+    })
+
+    insertions.forEach(<span class="hljs-function">(<span class="hljs-params">{ known_position, offset, length }</span>) =&gt;</span> {
       <span class="hljs-comment">// The thing I didn't mention before was the offset. That's just the start</span>
       <span class="hljs-comment">// of the section of our source data that we're pulling from.</span>
       <span class="hljs-keyword">const</span> section = newelements.slice(offset, length + offset)
@@ -237,7 +266,7 @@ removals.forEach(<span class="hljs-function">(<span class="hljs-params">{ start,
 }
 
 <span class="hljs-comment">// This is pretty much the same as the `insert` function, except it removes</span>
-<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">remove</span><span class="hljs-params">(known_position, length, current, <span class="hljs-rest_arg">...other</span>)</span> </span>{
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">remove</span>(<span class="hljs-params">known_position, length, current, ...other</span>) </span>{
   <span class="hljs-comment">// First, remove the items locally...</span>
   current.object.splice(known_position, length)
 
@@ -246,10 +275,10 @@ removals.forEach(<span class="hljs-function">(<span class="hljs-params">{ start,
 
   <span class="hljs-comment">// Now, let the other models know and update the objects</span>
   <span class="hljs-comment">// Ok, yeah this is kind of a lot of nesting</span>
-  other.forEach(({ object, model }) =&gt; { <span class="hljs-comment">// For each object-model pair...</span>
-    removals.forEach(({ start, length }) =&gt; { <span class="hljs-comment">// For each removal...</span>
+  other.forEach(<span class="hljs-function">(<span class="hljs-params">{ object, model }</span>) =&gt;</span> { <span class="hljs-comment">// For each object-model pair...</span>
+    removals.forEach(<span class="hljs-function">(<span class="hljs-params">{ start, length }</span>) =&gt;</span> { <span class="hljs-comment">// For each removal...</span>
       <span class="hljs-keyword">const</span> { removals } = model.removeLogoot(start, length, rclk)
-      removals.forEach(({ known_position, length }) =&gt; {
+      removals.forEach(<span class="hljs-function">(<span class="hljs-params">{ known_position, length }</span>) =&gt;</span> {
         <span class="hljs-comment">// Now, for each segment we have to remove...</span>
         <span class="hljs-comment">// ... remove it from the object</span>
         object.splice(known_position, length)
@@ -258,20 +287,20 @@ removals.forEach(<span class="hljs-function">(<span class="hljs-params">{ start,
   })
 }
 
-console.log(<span class="hljs-string">'First addition:'</span>)
+<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'First addition:'</span>)
 insert(<span class="hljs-number">0</span>, [<span class="hljs-string">'a'</span>, <span class="hljs-string">'e'</span>, <span class="hljs-string">'f'</span>], docs[<span class="hljs-number">0</span>], docs[<span class="hljs-number">1</span>])
-console.log(docs[<span class="hljs-number">0</span>].object)
-console.log(docs[<span class="hljs-number">1</span>].object)
+<span class="hljs-built_in">console</span>.log(docs[<span class="hljs-number">0</span>].object)
+<span class="hljs-built_in">console</span>.log(docs[<span class="hljs-number">1</span>].object)
 
-console.log(<span class="hljs-string">'Second addition:'</span>)
+<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'Second addition:'</span>)
 insert(<span class="hljs-number">1</span>, [<span class="hljs-string">'b'</span>, <span class="hljs-string">'c'</span>, <span class="hljs-string">'d'</span>], docs[<span class="hljs-number">0</span>], docs[<span class="hljs-number">1</span>])
-console.log(docs[<span class="hljs-number">0</span>].object)
-console.log(docs[<span class="hljs-number">1</span>].object)
+<span class="hljs-built_in">console</span>.log(docs[<span class="hljs-number">0</span>].object)
+<span class="hljs-built_in">console</span>.log(docs[<span class="hljs-number">1</span>].object)
 
-console.log(<span class="hljs-string">'Removal:'</span>)
+<span class="hljs-built_in">console</span>.log(<span class="hljs-string">'Removal:'</span>)
 remove(<span class="hljs-number">3</span>, <span class="hljs-number">3</span>, docs[<span class="hljs-number">0</span>], docs[<span class="hljs-number">1</span>])
-console.log(docs[<span class="hljs-number">0</span>].object)
-console.log(docs[<span class="hljs-number">1</span>].object)</code></pre><p>Which prints:</p>
+<span class="hljs-built_in">console</span>.log(docs[<span class="hljs-number">0</span>].object)
+<span class="hljs-built_in">console</span>.log(docs[<span class="hljs-number">1</span>].object)</code></pre><p>Which prints:</p>
 				<pre><code><span class="hljs-symbol">First</span> addition:
 [ <span class="hljs-string">'a'</span>, <span class="hljs-string">'e'</span>, <span class="hljs-string">'f'</span> ]
 [ <span class="hljs-string">'a'</span>, <span class="hljs-string">'e'</span>, <span class="hljs-string">'f'</span> ]
@@ -280,7 +309,9 @@ console.log(docs[<span class="hljs-number">1</span>].object)</code></pre><p>Whic
 [ <span class="hljs-string">'a'</span>, <span class="hljs-string">'b'</span>, <span class="hljs-string">'c'</span>, <span class="hljs-string">'d'</span>, <span class="hljs-string">'e'</span>, <span class="hljs-string">'f'</span> ]
 <span class="hljs-symbol">Removal</span>:
 [ <span class="hljs-string">'a'</span>, <span class="hljs-string">'b'</span>, <span class="hljs-string">'c'</span> ]
-[ <span class="hljs-string">'a'</span>, <span class="hljs-string">'b'</span>, <span class="hljs-string">'c'</span> ]</code></pre><p>And there you have it! Matrix Notepad is basically the above code, except...</p>
+[ <span class="hljs-string">'a'</span>, <span class="hljs-string">'b'</span>, <span class="hljs-string">'c'</span> ]</code></pre><p>And there you have it! Two arrays are made to have the same content even though
+					edits could be made on different systems. Matrix Notepad is basically the above
+				code, except...</p>
 				<ul>
 					<li>The documents are on different systems.</li>
 					<li>Both the data from <code>insertLocal</code> or <code>removeLocal</code> is put into a Matrix event,

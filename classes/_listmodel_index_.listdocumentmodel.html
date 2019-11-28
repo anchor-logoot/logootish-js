@@ -130,7 +130,7 @@
 					<div class="tsd-signature tsd-kind-icon">ldoc_<wbr>bst<span class="tsd-signature-symbol">:</span> <a href="../modules/_listmodel_index_.html#knownpositionbst" class="tsd-signature-type">KnownPositionBst</a><span class="tsd-signature-symbol"> =&nbsp;new Bst((a, b) &#x3D;&gt; (a.known_position - b.known_position) as CompareResult)</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/10f172d/src/listmodel/index.ts#L283">src/listmodel/index.ts:283</a></li>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/listmodel/index.ts#L283">src/listmodel/index.ts:283</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -146,7 +146,7 @@
 					<div class="tsd-signature tsd-kind-icon">logoot_<wbr>bst<span class="tsd-signature-symbol">:</span> <a href="../modules/_listmodel_index_.html#logootbst" class="tsd-signature-type">LogootBst</a><span class="tsd-signature-symbol"> =&nbsp;new Bst((a, b) &#x3D;&gt; a.start.cmp(b.start))</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/10f172d/src/listmodel/index.ts#L290">src/listmodel/index.ts:290</a></li>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/listmodel/index.ts#L290">src/listmodel/index.ts:290</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -162,7 +162,7 @@
 					<div class="tsd-signature tsd-kind-icon">removal_<wbr>bst<span class="tsd-signature-symbol">:</span> <a href="../modules/_listmodel_index_.html#logootbst" class="tsd-signature-type">LogootBst</a><span class="tsd-signature-symbol"> =&nbsp;new Bst((a, b) &#x3D;&gt; a.start.cmp(b.start))</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/10f172d/src/listmodel/index.ts#L292">src/listmodel/index.ts:292</a></li>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/listmodel/index.ts#L292">src/listmodel/index.ts:292</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -177,7 +177,7 @@
 					<div class="tsd-signature tsd-kind-icon">vector_<wbr>clock<span class="tsd-signature-symbol">:</span> <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> =&nbsp;new LogootInt()</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/10f172d/src/listmodel/index.ts#L297">src/listmodel/index.ts:297</a></li>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/listmodel/index.ts#L297">src/listmodel/index.ts:297</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -200,7 +200,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/10f172d/src/listmodel/index.ts#L313">src/listmodel/index.ts:313</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/listmodel/index.ts#L313">src/listmodel/index.ts:313</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -263,7 +263,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/10f172d/src/listmodel/index.ts#L493">src/listmodel/index.ts:493</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/listmodel/index.ts#L496">src/listmodel/index.ts:496</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -298,10 +298,16 @@
 								objects containing a numeric <code>offset</code>, which represents which part of the
 								source string the insertion is pulling from, a numeric <code>length</code>, and a
 								numeric <code>known_position</code> where to place the string. Insertions must be
-							applied in the order of the return value.</p>
+								applied in the order of the return value. The object also has a <code>removals</code>
+								variable set to an array of objects containing <code>known_position</code> and
+								<code>length</code> that represent removed conflicts with existing data. These
+							<code>removals</code> should be applied before the <code>insertions</code>.</p>
 							<ul class="tsd-parameters">
 								<li class="tsd-parameter">
 									<h5>insertions<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">[]</span></h5>
+								</li>
+								<li class="tsd-parameter">
+									<h5>removals<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">[]</span></h5>
 								</li>
 							</ul>
 						</li>
@@ -317,7 +323,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/10f172d/src/listmodel/index.ts#L399">src/listmodel/index.ts:399</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/listmodel/index.ts#L399">src/listmodel/index.ts:399</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -366,7 +372,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/10f172d/src/listmodel/index.ts#L616">src/listmodel/index.ts:616</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/listmodel/index.ts#L622">src/listmodel/index.ts:622</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
