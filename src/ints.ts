@@ -30,6 +30,12 @@ abstract class IntType<FutureType> extends Comparable<FutureType | number> {
   abstract sub(n: FutureType | number): FutureType
 
   /**
+   * Assign another integer to this object
+   * @param n - The number to assign
+   */
+  abstract sub(n: FutureType | number): FutureType
+
+  /**
    * The JavaScript int type for this integer (with an exception thrown if the
    * value cannot be represented in 32 bits)
    */
@@ -51,6 +57,7 @@ abstract class IntType<FutureType> extends Comparable<FutureType | number> {
 class Int32 extends IntType<Int32> {
   // Size limit the int, enforce signing, and remove decimals
   private int32 = new Int32Array([0])
+  is_rclk = false
 
   constructor(n: Int32 | number = 0) {
     super()
@@ -70,6 +77,9 @@ class Int32 extends IntType<Int32> {
   }
 
   add(n: Int32 | number): Int32 {
+    if (this.is_rclk) {
+      console.trace('RCLK')
+    }
     if (n instanceof Int32) {
       this.int32[0] += n.int32[0]
     } else {
@@ -82,6 +92,15 @@ class Int32 extends IntType<Int32> {
       this.int32[0] -= n.int32[0]
     } else {
       this.int32[0] -= n
+    }
+    return this
+  }
+
+  assign(n: Int32 | number): Int32 {
+    if (n instanceof Int32) {
+      this.int32[0] = n.int32[0]
+    } else {
+      this.int32[0] = n
     }
     return this
   }

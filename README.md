@@ -99,7 +99,7 @@ const m2 = new ListDocumentModel()
 
 function dualInsert(pos, len) {
   let { position, length, rclk } = m1.insertLocal(pos, len)
-  return m2.insertLogoot(position, length, rclk).insertions
+  return m2.insertLogoot(position, length, rclk)
 }
 
 function dualRemove(pos, len) {
@@ -110,10 +110,20 @@ function dualRemove(pos, len) {
 }
 
 console.log(dualInsert(0, 2))
-// Prints `[ { known_position: 0, offset: 0, length: 2 } ]`
+/* Prints:
+ * {
+ *   insertions: [ { known_position: 0, offset: 0, length: 2 } ],
+ *   removals: []
+ * }
+ */
 
 console.log(dualInsert(1, 2))
-// Prints `[ { known_position: 1, offset: 0, length: 2 } ]`
+/* Prints:
+ * {
+ *   insertions: [ { known_position: 1, offset: 0, length: 2 } ],
+ *   removals: []
+ * }
+ */
 
 console.log(dualRemove(0, 2))
 /* Prints:
@@ -128,6 +138,14 @@ This way, both document models look the same! Finally, note how both removals
 have the same `known_position`. This is because they are designed to be applied
 in sequence. So once the first element is removed, it's successor becomes the
 next one with the `known_position` equal to `0`.
+
+One other thing to note: The `dualInsert` function returns an object with
+*removals*. The reason for this may not be obvious at first, but let me explain:
+The algorithm allows for these insertions to be out of order. This means that
+removals could end up removing the wrong text. The solution is to include a
+vector clock (`rclk`) to establish order. However, this can lead to situations
+where old data must be removed since it has been replaced. This is what the
+`removals` are for -- To remove old text.
 
 ### Real Concurrent Edits
 Arrays are used here because of the easy `slice` and `splice` functions.
@@ -162,7 +180,19 @@ function insert(known_position, newelements, current, ...other) {
   
   // Now, let the other models know and update the objects
   other.forEach(({ object, model }) => {
-    const { insertions } = model.insertLogoot(position, length, rclk)
+    const { insertions, removals } = model.insertLogoot(position, length, rclk)
+
+    // It is possible that old data (data with a lower vector clock) was added
+    // by a past insertion. Here, we remove conflicting old data that is taking
+    // the place of our new data.
+    // The algorithm ensures that if these positions are modified in the order
+    // specified, it will "just work."
+    removals.forEach(({ known_position, length }) => {
+      // Now, for each segment we have to remove...
+      // ... remove it from the object
+      object.splice(known_position, length)
+    })
+
     insertions.forEach(({ known_position, offset, length }) => {
       // The thing I didn't mention before was the offset. That's just the start
       // of the section of our source data that we're pulling from.
@@ -221,7 +251,9 @@ Removal:
 [ 'a', 'b', 'c' ]
 [ 'a', 'b', 'c' ]
 ```
-And there you have it! Matrix Notepad is basically the above code, except...
+And there you have it! Two arrays are made to have the same content even though
+edits could be made on different systems. Matrix Notepad is basically the above
+code, except...
 * The documents are on different systems.
 * Both the data from `insertLocal` or `removeLocal` is put into a Matrix event,
 along with the `newelements` in the case of insertions.

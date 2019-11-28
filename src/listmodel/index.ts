@@ -488,7 +488,10 @@ class ListDocumentModel {
    * objects containing a numeric `offset`, which represents which part of the
    * source string the insertion is pulling from, a numeric `length`, and a
    * numeric `known_position` where to place the string. Insertions must be
-   * applied in the order of the return value.
+   * applied in the order of the return value. The object also has a `removals`
+   * variable set to an array of objects containing `known_position` and
+   * `length` that represent removed conflicts with existing data. These
+   * `removals` should be applied before the `insertions`.
    */
   insertLogoot(
     nstart: LogootPosition,
@@ -496,16 +499,18 @@ class ListDocumentModel {
     this_rclk: LogootInt
   ): {
     insertions: { offset: number; length: number; known_position: number }[]
+    removals: { known_position: number; length: number }[]
   } {
     debug.debug(
       `Insert into doc at ${nstart.toString()} + ${length} @ ${this_rclk.toString()}`
     )
 
     if (this_rclk.cmp(this.vector_clock) > 0) {
-      this.vector_clock = this_rclk
+      this.vector_clock.assign(this_rclk)
       debug.info(`Fast-forward vector clock to ${this_rclk.toString()}`)
     }
 
+    const removals: { known_position: number; length: number }[] = []
     const nodes = _mergeNode(
       this.logoot_bst,
       nstart,
@@ -539,7 +544,8 @@ class ListDocumentModel {
           this.ldoc_bst.remove(node)
           this.logoot_bst.remove(node)
         }
-        this.removeLocal(pos, length)
+        removals.push({ known_position: pos, length })
+        // this.removeLocal(pos, length)
         this.ldoc_bst.operateOnAllGteq({ known_position: pos }, (n) => {
           if (n.data === node) {
             return
@@ -580,7 +586,7 @@ class ListDocumentModel {
     }[] = []
 
     nodes.forEach((node) => {
-      node.rclk = this_rclk
+      node.rclk = new LogootInt(this_rclk)
       // Now, make a space between the nodes
       this.ldoc_bst.operateOnAllGteq(node, (n) => {
         if (n.data === node) {
@@ -600,7 +606,7 @@ class ListDocumentModel {
       this.logoot_bst.add(node)
     })
 
-    return { insertions }
+    return { insertions, removals }
   }
 
   /**
@@ -620,7 +626,7 @@ class ListDocumentModel {
   ): { removals: { known_position: number; length: number }[] } {
     const new_rclk = new LogootInt(rclk).add(1)
     if (new_rclk.cmp(this.vector_clock) > 0) {
-      this.vector_clock = new_rclk
+      this.vector_clock.assign(new_rclk)
       debug.info('Fast-forward vector clock to', JSON.stringify(new_rclk))
     }
 
