@@ -1,10 +1,16 @@
-// What a C++ typedef would do
-// This makes it possible to completely swap out the type of the int used in the
 import { Int32 } from '../ints'
 import { CompareResult } from '../utils'
 
+// What a C++ typedef would do
+// This makes it possible to completely swap out the type of the int used in the
 // algorithm w/o actually replacing each instance (which would be a real pain)
 import LogootInt = Int32
+
+function all_keys(obj: any): (symbol | number | string)[] {
+  return (Object.keys(obj) as (symbol | number | string)[]).concat(
+    Object.getOwnPropertySymbols(obj)
+  )
+}
 
 /**
  * A position in Logoot. This is just an array of numbers with some utility
@@ -252,6 +258,7 @@ namespace LogootPosition {
   }
 }
 
+type BranchKey = symbol | string | number
 /**
  * Logoot treats each atom as seperate. However, in a real-world environment, it
  * is not practical to treat each atom seperately. To save memory and CPU time,
@@ -259,25 +266,162 @@ namespace LogootPosition {
  * `LogootNode` is technically just a series of consecutive atoms with the same
  * `rclk` (vector clock).
  */
-class LogootNode {
-  /**
-   * The position of the node in the local document.
-   */
-  known_position = 0
-  length = 0
-  start: LogootPosition = new LogootPosition()
+abstract class LogootNode {
   rclk: LogootInt = new LogootInt(0)
+  group: LogootNodeGroup
+  branch: BranchKey
+  merged_into: { [key: string]: { at_rclk: LogootInt } }
 
   /**
    * @param node - A node to copy, C++ style
    */
-  constructor(node?: LogootNode) {
-    if (node) {
+  constructor(
+    node: LogootNode | { group: LogootNodeGroup; branch: BranchKey },
+    update_group = true
+  ) {
+    if (node instanceof LogootNode) {
+      Object.assign(this, node.copy())
+    } else {
+      this.group = node.group
+      this.branch = node.branch
+      // Ensure that the group's node lookup properly reflects this node's state
+      if (update_group) {
+        this.group.br(this.branch, this)
+      }
+    }
+  }
+
+  abstract copy(): LogootNode
+
+  /**
+   * Legacy support to grab the start from the node group.
+   */
+  get start(): LogootPosition {
+    return this.group.start
+  }
+  /**
+   * Legacy support to grab the length from the node group.
+   */
+  get length(): number {
+    return this.group.length
+  }
+
+  /**
+   * Legacy support to grab the end from the node group.
+   */
+  get end(): LogootPosition {
+    return this.group.end
+  }
+
+  get br_merged_into(): { at_rclk: LogootInt; branch: BranchKey }[] {
+    return all_keys(this.merged_into).map((k) => {
+      const { at_rclk } = this.m(k)
+      return { at_rclk, branch: k }
+    })
+  }
+  m(key: BranchKey, val?: { at_rclk: LogootInt }): { at_rclk: LogootInt } {
+    if (val) {
+      this.merged_into[(key as unknown) as string] = val
+    }
+    return this.merged_into[(key as unknown) as string]
+  }
+
+  abstract toString(): string
+}
+class DataLogootNode extends LogootNode {
+  /**
+   * The position of the node in the local document.
+   */
+  known_position = 0
+  /**
+   * The end of the node in the local document.
+   */
+  get known_end_position(): number {
+    return this.known_position + this.length
+  }
+
+  copy(): DataLogootNode {
+    const node = new DataLogootNode(
+      { group: this.group, branch: this.branch },
+      false
+    )
+    node.rclk = new LogootInt(this.rclk)
+    node.known_position = this.known_position
+    all_keys(this.merged_into).forEach((k) => {
+      node.m(k, { at_rclk: new LogootInt(this.m(k).at_rclk) })
+    })
+    return node
+  }
+
+  toString(): string {
+    return (
+      'DATA' +
+      this.start.toString() +
+      `(${this.known_position}) + ${this.length} @ ${this.rclk}`
+    )
+  }
+}
+class RemovalLogootNode extends LogootNode {
+  copy(): RemovalLogootNode {
+    const node = new RemovalLogootNode(
+      { group: this.group, branch: this.branch },
+      false
+    )
+    node.rclk = new LogootInt(this.rclk)
+    all_keys(this.merged_into).forEach((k) => {
+      node.m(k, { at_rclk: new LogootInt(this.m(k).at_rclk) })
+    })
+    return node
+  }
+
+  toString(): string {
+    return `REM${this.start.toString()} + ${this.length} @ ${this.rclk}`
+  }
+}
+class BlankLogootNode extends LogootNode {
+  copy(): BlankLogootNode {
+    const node = new BlankLogootNode(
+      { group: this.group, branch: this.branch },
+      false
+    )
+    node.rclk = new LogootInt(this.rclk)
+    all_keys(this.merged_into).forEach((k) => {
+      node.m(k, { at_rclk: new LogootInt(this.m(k).at_rclk) })
+    })
+    return node
+  }
+
+  toString(): string {
+    return `BLANK${this.start.toString()} + ${this.length} @ ${this.rclk}`
+  }
+}
+type LogootNodeWithMeta = DataLogootNode & { offset: number }
+
+class ConflictGroup {
+  known_end = 0
+
+  constructor(position: number) {
+    this.known_end = position
+  }
+}
+
+class LogootNodeGroup {
+  length = 0
+  start: LogootPosition = new LogootPosition()
+  nodes: { [key: string]: LogootNode } = {}
+  conflict?: ConflictGroup
+
+  constructor(old?: LogootNodeGroup) {
+    if (old) {
       Object.assign(this, {
-        known_position: node.known_position,
-        length: node.length,
-        start: node.start.offsetLowest(new LogootInt()),
-        rclk: new LogootInt(node.rclk)
+        length: old.length,
+        start: old.start.copy(),
+        nodes: old.map_nodes((n) => {
+          const newnode = n.copy()
+          newnode.group = this
+          return newnode
+        }),
+        conflict: old.conflict
       })
     }
   }
@@ -289,23 +433,83 @@ class LogootNode {
   get end(): LogootPosition {
     return this.start.offsetLowest(this.length)
   }
-  /**
-   * The end of the node in the local document.
-   */
-  get known_end_position(): number {
-    return this.known_position + this.length
+
+  get branches(): BranchKey[] {
+    return all_keys(this.nodes)
+  }
+  get n_branches(): number {
+    return this.branches.length
+  }
+  get conflicted(): boolean {
+    return (
+      this.branches.filter((k) => {
+        return !(this.br(k) instanceof BlankLogootNode)
+      }).length > 1
+    )
+  }
+
+  each_node(cb: (n: LogootNode) => void): void {
+    this.branches.forEach((k) => {
+      cb(this.br(k))
+    })
+  }
+  map_nodes(cb: (n: LogootNode) => LogootNode): { [key: string]: LogootNode } {
+    const rval: { [key: string]: LogootNode } = {}
+    this.branches.forEach((k) => {
+      rval[(k as unknown) as string] = cb(this.br(k))
+    })
+    return rval
+  }
+
+  create_data_node(known_position: number, branch: BranchKey): DataLogootNode {
+    const node = new DataLogootNode({ group: this, branch })
+    node.known_position = known_position
+    return node
+  }
+
+  br(key: BranchKey, node?: LogootNode): LogootNode {
+    if (node) {
+      this.nodes[(key as unknown) as string] = node
+    }
+    return this.nodes[(key as unknown) as string]
+  }
+  del_br(key: BranchKey): void {
+    delete this.nodes[(key as unknown) as string]
+  }
+
+  split_around(pos: number): LogootNodeGroup {
+    const newgroup = new LogootNodeGroup(this)
+    newgroup.start = this.start.offsetLowest(pos)
+    newgroup.length = this.length - pos
+    newgroup.each_node((n) => {
+      if (n instanceof DataLogootNode) {
+        n.known_position += pos
+      }
+    })
+
+    this.length = pos
+    return newgroup
   }
 
   toString(): string {
-    return (
-      this.start.toString() +
-      (typeof this.known_position === 'number'
-        ? '(' + this.known_position + ')'
-        : '') +
-      ` + ${this.length} @ ${this.rclk}`
-    )
+    let str = `Group ${this.start.toString()} + ${this.length} {`
+    str += this.branches.map((k) => {
+      return `\n  ${String(k)}: ${this.br(k).toString()}`
+    })
+    str += '\n}'
+    return str
   }
 }
-type LogootNodeWithMeta = LogootNode & { offset: number }
 
-export { LogootInt, LogootPosition, LogootNode, LogootNodeWithMeta }
+export {
+  LogootInt,
+  LogootPosition,
+  LogootNode,
+  DataLogootNode,
+  RemovalLogootNode,
+  BlankLogootNode,
+  LogootNodeWithMeta,
+  ConflictGroup,
+  LogootNodeGroup,
+  BranchKey
+}

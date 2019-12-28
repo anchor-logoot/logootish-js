@@ -6,13 +6,17 @@ import {
   LogootInt,
   LogootPosition,
   LogootNode,
-  LogootNodeWithMeta
+  DataLogootNode,
+  LogootNodeWithMeta,
+  ConflictGroup,
+  LogootNodeGroup,
+  BranchKey
 } from './logoot'
 
 type Removal = { start: LogootPosition; length: number }
 
-type KnownPositionBst = Bst<LogootNode, { known_position: number }>
-type LogootBst = Bst<LogootNode, { start: LogootPosition }>
+type KnownPositionBst = Bst<DataLogootNode, { known_position: number }>
+type LogootBst = Bst<LogootNodeGroup, { start: LogootPosition }>
 
 type Conflict = {
   start: LogootPosition
@@ -22,6 +26,15 @@ type Conflict = {
   whole_node: boolean
   level: number
 }
+type Merge = {
+  position: LogootPosition
+  rclk: LogootInt
+  length: number
+  branch: BranchKey
+  drop: boolean
+}
+
+class InsertionConflictError extends Error {}
 
 /**
  * This is possibly the most important function in this entire program. The
@@ -49,22 +62,20 @@ type Conflict = {
  * @param informRemoval - A function to be called when a section or all of a
  * node is removed so that the caller can modify the document as necessary.
  */
-function _mergeNode(
+/* function _mergeNode(
   bst: LogootBst,
   nstart: LogootPosition,
   length: number,
-  resolveConflict: (
-    node: LogootNode,
-    conflict: Conflict,
-    lesser: LogootNode
-  ) => CompareResult,
   addNode: (node: LogootNode) => void,
   informRemoval: (
-    node: LogootNode,
+    group: LogootNodeGroup,
+    branch: BranchKey,
     pos: number,
     length: number,
     whole: boolean
-  ) => void
+  ) => void,
+  rclk: LogootInt,
+  branch: BranchKey = this.branch
 ): LogootNodeWithMeta[] {
   const level = nstart.levels
   const nend = nstart.offsetLowest(length)
@@ -79,7 +90,7 @@ function _mergeNode(
     .sort((a, b) => a.start.cmp(b.start))
 
   const nodes_lesser = bst.getLteq({ start: nstart })
-  let lesser: LogootNode
+  let lesser: LogootNodeGroup
   if (nodes_lesser.length > 1) {
     throw new FatalError('Corrupt BST. There are multiple nodes at a position.')
   } else if (nodes_lesser.length) {
@@ -91,93 +102,39 @@ function _mergeNode(
   if (lesser && !skip_ranges.includes(lesser)) {
     skip_ranges.unshift(lesser)
   }
-  // It's fine that known_position is invalid because that would only impact
-  // nodes AFTER this one (whose calculations depend upon it)
-  skip_ranges.push({
-    start: nend,
-    end: nend,
-    length: 0,
-    known_position: 0,
-    known_end_position: 0,
-    rclk: new LogootInt(0)
-  })
+  // Create an imaginary group to make sure the skip_ranges function actually
+  // runs when there are no nodes
+  const skip_range_vgrp = new LogootNodeGroup()
+  skip_range_vgrp.start = nend
+  skip_ranges.push(skip_range_vgrp)
 
-  skip_ranges = skip_ranges.filter((n) => {
-    if (n.length && n.start.levels === level) {
-      const clip_nstart = nstart.cmp(n.start) > 0
-      const clip_nend = nend.cmp(n.end) < 0
-      const start = clip_nstart ? nstart : n.start
-      const end = clip_nend ? nend : n.end
+  arraymap(skip_ranges, (ng) => {
+    if (ng.length && ng.start.levels === level) {
+      const clip_nstart = nstart.cmp(ng.start) > 0
+      const clip_nend = nend.cmp(ng.end) < 0
+      const start = clip_nstart ? nstart : ng.start
+      const end = clip_nend ? nend : ng.end
       if (start.cmp(end) === 0) {
-        return true
+        return [ng]
       }
-      const conflict = {
-        start,
-        end,
-        clip_nstart,
-        clip_nend,
-        whole_node: !(clip_nstart || clip_nend),
-        level
+      if (clip_nstart) {
+        ng = ng.split_around(nstart.l(level) - ng.start.l(level))
+        addNode(ng)
+      }
+      if (clip_nend) {
+        const newgroup = ng.split_around(ng.end.l(level) - nend.l(level))
+        addNode(newgroup)
       }
 
-      // Get the externally defined result for this conflict
-      const result = resolveConflict(n, conflict, lesser)
-
-      // Actually remove the node or part of it if it looses
-      if (result < 1) {
-        if (result < 0) {
-          // Shortcut to remove the whole node
-          if (conflict.whole_node) {
-            informRemoval(n, n.known_position, n.length, true)
-            n.length = 0
-          } else {
-            // Find the length of the middle region of the node
-            // nnnnnRRRRnnnn <- Where the 'R' is (l=4 in this case)
-            const l = new LogootInt(end.l(level)).sub(start.l(level)).js_int
-
-            // Make a copy because we will need to modify the original
-            const endnode = new LogootNode(n)
-            endnode.start = end
-            const n_end_old = n.end.offsetLowest(0)
-
-            if (clip_nstart) {
-              // This means we're dealing with an area ahead of the node with a
-              // length > 0:
-              // NNNNrrrrrnnnnn (As above, 'r' is the section of the node being
-              // removed)
-              n.length = new LogootInt(start.l(level)).sub(
-                n.start.l(level)
-              ).js_int
-
-              endnode.known_position += n.length
-              endnode.start.offsetLowest(n.known_position + n.length + l)
-              informRemoval(n, n.known_position + n.length, l, n.length <= 0)
-            } else {
-              // The removal must be right up against the edge of the node,
-              // so we can take an easy shortcut:
-              // RRRRnnnnnn
-              informRemoval(n, n.known_position, l, true)
-              endnode.start.offsetLowest(n.known_position + l)
-            }
-            if (clip_nend) {
-              // Ok, so now we have to add a new node to account for the
-              // trailing end portion: [nnnn]rrrrNNNNN <- that
-              // We also have to re-add it to the BSTs because they are sorted
-              // by start position, so if we modify the start, we could break
-              // the sorting
-              endnode.length = new LogootInt(n_end_old.l(level)).sub(
-                end.l(level)
-              ).js_int
-              if (endnode.length > 0) {
-                addNode(endnode)
-              }
-            }
-          }
+      const branches = ng.br(branch).br_merged_into
+      ng.br(branch).br_merged_into.forEach({ branch, at_rclk }) => {
+        if (at_rclk.cmp(rclk) >= 0 && rclk.cmp(ng.br(branch).rclk) >= 0) {
+          
+        } else {
         }
-        return false
-      }
+      })
     }
-    return true
+    return [ng]
   })
 
   let known_start = 0
@@ -195,11 +152,13 @@ function _mergeNode(
 
     // Figure out which endpoint to use, the end of lesser or where our position
     // is if its inside lesser
-    const lesser_pos = Math.min(...positions)
+    const lesser_pos = Math.min(...positions) // Position inside of lesser
     known_start = lesser.known_position + lesser_pos
 
-    // Split lesser in two if necessary
-    if (lesser.length - lesser_pos) {
+    // Split lesser in two if necessary. If our position inside lesser is
+    // greater than the length, we're not inside lesser. If it's less, then we
+    // are and we have to split lesser
+    if (lesser.length > lesser_pos) {
       const node = new LogootNode(lesser)
       node.start = node.start.offsetLowest(lesser_pos)
       node.length -= lesser_pos
@@ -261,6 +220,102 @@ function _mergeNode(
     }
   })
   return newnodes
+} */
+
+function _mergeNode(
+  bst: LogootBst,
+  nstart: LogootPosition,
+  length: number,
+  rclk: LogootInt,
+  branch: BranchKey,
+  informRemoval: (
+    group: LogootNodeGroup,
+    branch: BranchKey,
+    pos: number,
+    length: number,
+    whole: boolean
+  ) => void
+): void {
+  const level = nstart.levels
+  const nend = nstart.offsetLowest(length)
+
+  // These ranges are areas of the document that are already populated in the
+  // region where the insert is happening. If there are conflicts, they will be
+  // skipped. The end of this new insert must be added to the end as a fake
+  // zero-length node so that the for each loop triggers for the end.
+  const skip_ranges = bst
+    .getRange({ start: nstart }, { start: nend })
+    .map(({ data }) => data)
+    .sort((a, b) => a.start.cmp(b.start))
+
+  const nodes_lesser = bst.getLteq({ start: nstart })
+  let lesser: LogootNodeGroup
+  if (nodes_lesser.length > 1) {
+    throw new FatalError('Corrupt BST. There are multiple nodes at a position.')
+  } else if (nodes_lesser.length) {
+    lesser = nodes_lesser[0].data
+  }
+
+  // Ensure that lesser is initially defined as a skip_range (this is useful for
+  // some removals that may want to use conflicts with lesser
+  if (lesser && !skip_ranges.includes(lesser)) {
+    skip_ranges.unshift(lesser)
+  }
+
+  let known_start = 0
+  if (lesser) {
+    const positions = [lesser.length]
+    // Find where we are inside lesser. If we're outside of lesser, this will be
+    // greater than lesser's length and will be ignored
+    if (lesser.start.levels < nstart.levels) {
+      positions.push(
+        new LogootInt(nstart.l(lesser.start.levels)).sub(
+          lesser.start.l(lesser.start.levels)
+        ).js_int
+      )
+    }
+
+    // Figure out which endpoint to use, the end of lesser or where our position
+    // is if its inside lesser
+    const lesser_pos = Math.min(...positions) // Position inside of lesser
+    known_start = lesser.known_position + lesser_pos
+
+    // Split lesser in two if necessary. If our position inside lesser is
+    // greater than the length, we're not inside lesser. If it's less, then we
+    // are and we have to split lesser
+    if (lesser.length > lesser_pos) {
+      const node = new LogootNode(lesser)
+      node.start = node.start.offsetLowest(lesser_pos)
+      node.length -= lesser_pos
+      node.known_position += lesser_pos
+      addNode(node)
+
+      lesser.length = lesser_pos
+    }
+  }
+  // Ensure that lesser (which we now know does not overlap with our new
+  // positions) is in the skip_ranges
+  skip_ranges.unshift(lesser)
+
+  const ranges = []
+
+  let last_end = nstart
+  let last_known_position = known_start
+  let last_conflict: ConflictGroup
+  skip_ranges.forEach((ng) => {
+    const empty_len = (ng.start.l(level) || new LogootInt(0)).sub(
+      last_end.l(level)
+    ).js_int
+    if (empty_len > 0) {
+      ranges.push({
+        start: last_end,
+        length: empty_len,
+        group: undefined
+      })
+    }
+
+    last_conflict = ng.conflict
+  })
 }
 
 /**
@@ -289,12 +344,29 @@ class ListDocumentModel {
    */
   logoot_bst: LogootBst = new Bst((a, b) => a.start.cmp(b.start))
   /** A map of removals that do not yet have text to remove */
-  removal_bst: LogootBst = new Bst((a, b) => a.start.cmp(b.start))
+  // removal_bst: LogootBst = new Bst((a, b) => a.start.cmp(b.start))
   /**
    * See the Logoot paper for why. Unlike the Logoot implementation, this is
    * incremented with each removal only and is kept constant with insertions.
    */
   vector_clock = new LogootInt()
+  branch: BranchKey
+
+  constructor(branch: BranchKey) {
+    this.branch = branch
+  }
+
+  _splitGroup(group: LogootNodeGroup, pos: number): LogootNodeGroup {
+    const newgroup = group.split_around(pos)
+
+    newgroup.each_node((n) => {
+      if (n instanceof DataLogootNode) {
+        this.ldoc_bst.add(n as DataLogootNode)
+      }
+    })
+    this.logoot_bst.add(newgroup)
+    return newgroup
+  }
 
   /**
    * Calculate the Logoot positions of a local insertion.
@@ -321,8 +393,8 @@ class ListDocumentModel {
     const nodes_lesser = this.ldoc_bst.getLteq({ known_position: position - 1 })
     const nodes_greater = this.ldoc_bst.getGteq({ known_position: position })
 
-    let lesser
-    let greater
+    let lesser // The node before this position
+    let greater // The node after this position
 
     // Nodes are not allowed to have the same position
     if (nodes_lesser.length > 1 || nodes_greater.length > 1) {
@@ -342,22 +414,45 @@ class ListDocumentModel {
       // This means that we're right inside another node, so the next position
       // will be inside the first node
       // Now, we must split the node in half (nodes can't overlap)
-      greater = new LogootNode()
-
-      greater.length = lesser.known_end_position - position
-      lesser.length = position - lesser.known_position
-
-      greater.known_position = position
-      greater.start = lesser.start.offsetLowest(lesser.length)
-      greater.rclk = new LogootInt(lesser.rclk)
-
-      this.ldoc_bst.add(greater)
-      this.logoot_bst.add(greater)
+      const branch = lesser.branch
+      greater = this._splitGroup(
+        lesser.group,
+        position - lesser.known_position
+      ).br(branch)
     }
 
     // Finally, we can create positions...
     let left_position
     let right_position
+
+    if (
+      lesser &&
+      greater &&
+      lesser.group === greater.group &&
+      lesser.group.conflicted
+    ) {
+      if (lesser.branch === this.branch) {
+        greater = undefined
+        const greater_group = this.logoot_bst.getGteq({ start: lesser.end })
+        if (greater_group.length > 1) {
+          throw new FatalError(
+            'Corrupt BST. There are multiple nodes at a position.'
+          )
+        }
+        right_position = greater_group[0].data.start
+      } else if (greater.branch === this.branch) {
+        lesser = undefined
+        const lesser_group = this.logoot_bst.getLteq({ start: greater.start })
+        if (lesser_group.length > 1) {
+          throw new FatalError(
+            'Corrupt BST. There are multiple nodes at a position.'
+          )
+        }
+        left_position = lesser_group[0].data.start
+      } else {
+        throw new InsertionConflictError('Cannot insert into conflicting node')
+      }
+    }
 
     if (lesser) {
       left_position = lesser.end
@@ -366,11 +461,13 @@ class ListDocumentModel {
       right_position = greater.start
     }
 
-    const node = new LogootNode()
-    node.start = new LogootPosition(len, left_position, right_position)
+    const group = new LogootNodeGroup()
+    group.start = new LogootPosition(len, left_position, right_position)
+    group.length = len
+
+    const node = new DataLogootNode({ group, branch: this.branch })
     node.known_position = position
     node.rclk = new LogootInt(this.vector_clock)
-    node.length = len
 
     // Now, make a space between the nodes
     this.ldoc_bst.operateOnAllGteq({ known_position: position }, (n) => {
@@ -378,7 +475,7 @@ class ListDocumentModel {
     })
 
     this.ldoc_bst.add(node)
-    this.logoot_bst.add(node)
+    this.logoot_bst.add(group)
 
     return {
       position: node.start,
@@ -399,7 +496,7 @@ class ListDocumentModel {
   removeLocal(
     position: number,
     length: number
-  ): { removals: Removal[]; rclk: LogootInt } {
+  ): { removals: Removal[]; merges: Merge[]; rclk: LogootInt } {
     debug.debug(`Remove from doc at ${position} + ${length}`)
 
     // First, find any nodes that MAY have content removed from them
@@ -411,13 +508,19 @@ class ListDocumentModel {
       .concat(this.ldoc_bst.getLteq({ known_position: position - 1 }))
       .sort((a, b) => a.data.known_position - b.data.known_position)
 
+    const merges: Merge[] = []
+    let last_merge_end: LogootPosition
+
     const removals: Removal[] = []
-    let last_end: LogootPosition
-    let cumulative_offset = 0
+    let last_end: LogootPosition // End of the previous removal
+
+    let cumulative_offset = 0 // How much to shift over nodes
     nodes.forEach(({ data }) => {
       // 'Data' refers to the node having text removed
+      const { branch } = data
+      let { group } = data
 
-      // Length and start of new removal
+      // Length and start of the new removal
       let newlen = data.length
       let newstart = data.start
 
@@ -443,24 +546,63 @@ class ListDocumentModel {
           length: newlen
         })
       }
-
-      // Record the last end so we can add another removal to it if possible
       last_end = newstart.offsetLowest(newlen)
-
-      // Now, modify the node to remove the start region (if necessary)
-      if (data.known_position > position) {
-        data.start = data.start.offsetLowest(data.known_position - position)
+      if (group.br(this.branch) && group.n_branches > 1) {
+        if (
+          last_merge_end &&
+          last_merge_end.cmp(newstart) === 0 &&
+          merges[merges.length - 1].branch === branch &&
+          merges[merges.length - 1].rclk.cmp(data.rclk) === 0
+        ) {
+          merges[merges.length - 1].length += newlen
+        } else {
+          merges.push({
+            position: newstart,
+            length: newlen,
+            rclk: data.rclk,
+            branch,
+            drop: true
+          })
+        }
+        last_merge_end = last_end
       }
-      // And remove the removal inside of it
-      data.length -= newlen
 
-      // Now apply the running total offset and calculate it for the next run
-      data.known_position -= cumulative_offset
+      // First, seperate the overhanging start
+      if (data.known_position < position) {
+        const newgroup = this._splitGroup(group, position - data.known_position)
+
+        if (group.br(branch) instanceof DataLogootNode) {
+          const br = group.br(branch) as DataLogootNode
+          br.known_position -= cumulative_offset
+        } else {
+          throw new Error(
+            'Split node is not of the same type. This should be impossible.'
+          )
+        }
+
+        group = newgroup
+        // Switch to our middle region (we've already typechecked the branch)
+        data = group.br(branch) as DataLogootNode
+      }
+      // Add the new removal offset since we're now after the removal
       cumulative_offset += newlen
+      // Next, seperate the overhanging end
+      if (data.known_position + data.length > position + length) {
+        const newgroup = this._splitGroup(group, data.known_position + newlen)
+        if (group.br(branch) instanceof DataLogootNode) {
+          const br = newgroup.br(branch) as DataLogootNode
+          br.known_position -= cumulative_offset
+        } else {
+          throw new Error(
+            'Split node is not of the same type. This should be impossible.'
+          )
+        }
+      }
 
-      if (data.length <= 0) {
-        this.logoot_bst.remove(data)
-        this.ldoc_bst.remove(data)
+      this.ldoc_bst.remove(data)
+      group.del_br(branch)
+      if (!group.n_branches) {
+        this.logoot_bst.remove(group)
       }
     })
 
@@ -475,253 +617,7 @@ class ListDocumentModel {
     const target_rclk = new LogootInt(this.vector_clock)
     this.vector_clock.add(1)
 
-    return { removals, rclk: target_rclk }
-  }
-
-  /**
-   * Calculate the local positions inserted from an insertion at a Logoot
-   * position from a given length and vector clock.
-   * @param nstart - The start `LogootPosition` of the insertion
-   * @param length - The length of the insertion
-   * @param this_rclk - The vector clock when the insertion took place.
-   * @returns An object with the `insertions` member set to an array with
-   * objects containing a numeric `offset`, which represents which part of the
-   * source string the insertion is pulling from, a numeric `length`, and a
-   * numeric `known_position` where to place the string. Insertions must be
-   * applied in the order of the return value. The object also has a `removals`
-   * variable set to an array of objects containing `known_position` and
-   * `length` that represent removed conflicts with existing data. These
-   * `removals` should be applied before the `insertions`.
-   */
-  insertLogoot(
-    nstart: LogootPosition,
-    length: number,
-    this_rclk: LogootInt
-  ): {
-    insertions: { offset: number; length: number; known_position: number }[]
-    removals: { known_position: number; length: number }[]
-  } {
-    debug.debug(
-      `Insert into doc at ${nstart.toString()} + ${length} @ ${this_rclk.toString()}`
-    )
-
-    if (this_rclk.cmp(this.vector_clock) > 0) {
-      this.vector_clock.assign(this_rclk)
-      debug.info(`Fast-forward vector clock to ${this_rclk.toString()}`)
-    }
-
-    const removals: { known_position: number; length: number }[] = []
-    const nodes = _mergeNode(
-      this.logoot_bst,
-      nstart,
-      length,
-      (node, conflict, lesser) => {
-        // If we're inside and on a lower level than lesser, simply ignore it
-        if (node === lesser && lesser.start.levels < conflict.level) {
-          return 0
-        }
-        if (node.rclk.cmp(this_rclk) < 0) {
-          return -1
-        }
-        if (node.rclk.cmp(this_rclk) === 0) {
-          // TODO: Do something about conflicts that cause dropped data here
-          // This is HUGE and the editor WILL NOT FUNCTION WITHOUT IT!!!
-          // I really don't like the idea of pushing this until after initial
-          // release, but oh well.
-          // Also, does this even work?
-          debug.info('Dropped conflicting node')
-        }
-        return 1
-      },
-      (node) => {
-        // We don't add to the known_position here because the node we're adding
-        // comes from splitting an existing node
-        this.ldoc_bst.add(node)
-        this.logoot_bst.add(node)
-      },
-      (node, pos, length, whole) => {
-        if (whole) {
-          this.ldoc_bst.remove(node)
-          this.logoot_bst.remove(node)
-        }
-        removals.push({ known_position: pos, length })
-        // this.removeLocal(pos, length)
-        this.ldoc_bst.operateOnAllGteq({ known_position: pos }, (n) => {
-          if (n.data === node) {
-            return
-          }
-          n.data.known_position -= length
-        })
-      }
-    )
-
-    arraymap(nodes, (node) => {
-      let last_known_position = node.known_position
-      return _mergeNode(
-        this.removal_bst,
-        node.start,
-        node.length,
-        (node) => {
-          if (node.rclk.cmp(this_rclk) < 0) {
-            return 0
-          }
-          return 1
-        },
-        () => {},
-        () => {}
-      ).map((newnode) => {
-        // known_positions in the removal tree are BS, so set them correctly
-        // here. TODO: Remove known_position from removals
-        newnode.known_position = last_known_position
-        newnode.offset += node.offset
-        last_known_position += newnode.length
-        return newnode
-      })
-    })
-
-    const insertions: {
-      offset: number
-      length: number
-      known_position: number
-    }[] = []
-
-    nodes.forEach((node) => {
-      node.rclk = new LogootInt(this_rclk)
-      // Now, make a space between the nodes
-      this.ldoc_bst.operateOnAllGteq(node, (n) => {
-        if (n.data === node) {
-          return
-        }
-        n.data.known_position += node.length
-      })
-
-      const insertion = {
-        known_position: node.known_position,
-        offset: node.offset,
-        length: node.length
-      }
-      insertions.push(insertion)
-
-      this.ldoc_bst.add(node)
-      this.logoot_bst.add(node)
-    })
-
-    return { insertions, removals }
-  }
-
-  /**
-   * Calculate the regions of text to be removed from the local document from
-   * a Logoot position, length, and vector clock of a removal.
-   * @param start - The start at which to start removing.
-   * @param length - How much to remove.
-   * @param rclk - The vector clock of the removal.
-   * @returns An object containing a member `removals`, which is an array of
-   * objects containing a `known_position` at which to start removing and a
-   * `length`, both of which are numbers.
-   */
-  removeLogoot(
-    start: LogootPosition,
-    length: number,
-    rclk: LogootInt
-  ): { removals: { known_position: number; length: number }[] } {
-    const new_rclk = new LogootInt(rclk).add(1)
-    if (new_rclk.cmp(this.vector_clock) > 0) {
-      this.vector_clock.assign(new_rclk)
-      debug.info('Fast-forward vector clock to', JSON.stringify(new_rclk))
-    }
-
-    const end = start.offsetLowest(length)
-    // The level where our removal is happening (always the lowest)
-    const level = start.levels
-    debug.debug(
-      `Remove from doc at ${start.toString()} + ${length} @ ${rclk.toString()}`
-    )
-
-    const removals: { known_position: number; length: number }[] = []
-    // This is basically the same as the invocation in remoteInsert, only it
-    // doesn't add the resulting nodes to the BSTs
-    const nodes = _mergeNode(
-      this.logoot_bst,
-      start,
-      length,
-      (node) => {
-        // TODO: Nodes with the SAME `rclk` should still have a removal added
-        // at their position because another node with the same `rclk` as the
-        // one just removed could show up.
-        if (node.rclk.cmp(rclk) <= 0) {
-          return -1
-        }
-        return 1
-      },
-      (node) => {
-        this.ldoc_bst.add(node)
-        this.logoot_bst.add(node)
-      },
-      (node, pos, length, whole) => {
-        if (whole) {
-          this.ldoc_bst.remove(node)
-          this.logoot_bst.remove(node)
-        }
-        removals.push({ known_position: pos, length })
-        this.ldoc_bst.operateOnAllGteq({ known_position: pos }, (n) => {
-          if (n.data === node) {
-            return
-          }
-          n.data.known_position -= length
-        })
-      }
-    )
-
-    // Now, use the text nodes that stay as `skip_ranges`, like in the
-    // `_mergeNode` function, to find where the removal should be added to the
-    // removal BST
-    nodes.push({
-      start: end,
-      end,
-      length: 0,
-      known_position: 0,
-      known_end_position: 0,
-      rclk: new LogootInt(),
-      offset: 0
-    })
-
-    // I've gotten lazier and lazier with variable names as this file has
-    // gotten longer. I've regressed to single letter variable names
-    let last_end = start
-    nodes.forEach((n) => {
-      const length = new LogootInt(n.end.l(level)).sub(last_end.l(level)).js_int
-      // Now, merge this removal with possible other ones in the removal_bst
-      const nodes = _mergeNode(
-        this.removal_bst,
-        last_end,
-        length,
-        (node) => {
-          if (node.rclk.cmp(rclk) < 0) {
-            return -1
-          }
-          return 1
-        },
-        (node) => {
-          this.removal_bst.add(node)
-        },
-        (node, pos, length, whole) => {
-          if (whole) {
-            this.removal_bst.remove(node)
-          }
-        }
-      )
-
-      // Make sure the removals actually exist
-      nodes.forEach((node) => {
-        node.rclk = rclk
-        delete node.offset
-
-        this.removal_bst.add(node)
-      })
-      last_end = n.end
-    })
-
-    return { removals }
+    return { removals, merges, rclk: target_rclk }
   }
 }
 
@@ -731,6 +627,6 @@ export {
   KnownPositionBst,
   LogootBst,
   Removal,
-  ListDocumentModel,
-  _mergeNode
+  ListDocumentModel // ,
+  // _mergeNode
 }

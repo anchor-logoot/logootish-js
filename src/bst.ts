@@ -302,7 +302,13 @@ class Bst<T extends S, S = T> {
   toString(): string {
     let str = 'BST [\n'
     this.operateOnAll(({ data }) => {
-      str += '  ' + data.toString() + '\n'
+      str +=
+        '  ' +
+        data
+          .toString()
+          .split('\n')
+          .join('\n  ') +
+        '\n'
     })
     str += ']'
     return str
