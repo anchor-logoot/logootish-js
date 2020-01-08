@@ -17,7 +17,7 @@ if (env === 'build') {
 
 const config = {
   mode: mode,
-  entry: __dirname + '/src/index.ts',
+  entry: __dirname + '/src/listmodel/index.ts',
   devtool: 'source-map',
   output: {
     path: __dirname + '/dist',

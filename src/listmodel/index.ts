@@ -234,7 +234,11 @@ function _mergeNode(
     pos: number,
     length: number,
     whole: boolean
-  ) => void
+  ) => void,
+  canMerge: (
+    a: LogootNodeGroup,
+    b: LogootNodeGroup
+  ) => boolean
 ): void {
   const level = nstart.levels
   const nend = nstart.offsetLowest(length)
@@ -301,8 +305,10 @@ function _mergeNode(
 
   let last_end = nstart
   let last_known_position = known_start
-  let last_conflict: ConflictGroup
+  let last_group: LogootNodeGroup = lesser
   skip_ranges.forEach((ng) => {
+    const clamped_start = ng.start.clamp(nstart, nend, level)
+    const cl
     const empty_len = (ng.start.l(level) || new LogootInt(0)).sub(
       last_end.l(level)
     ).js_int
@@ -314,7 +320,7 @@ function _mergeNode(
       })
     }
 
-    last_conflict = ng.conflict
+    last_group = ng
   })
 }
 
