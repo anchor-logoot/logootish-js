@@ -103,7 +103,10 @@ function _mergeNode(
   })
 
   skip_ranges = skip_ranges.filter((n) => {
-    if (n.length && n.start.levels === level) {
+    const ol_start = nstart.cmp(n.start) > 0 && nstart.cmp(n.end) < 0
+    const ol_end = nend.cmp(n.end) < 0 && nend.cmp(n.start) > 0
+    // Ensure that the nodes are overlapping
+    if (n.length && n.start.levels === level && (ol_start || ol_end)) {
       const clip_nstart = nstart.cmp(n.start) > 0
       const clip_nend = nend.cmp(n.end) < 0
       const start = clip_nstart ? nstart : n.start
