@@ -1,16 +1,19 @@
+/**
+ * @file This contains most of the data types used by the `ListDocumentModel`.
+ * While `index.ts` does most of the heavy lifting, this file is the source of
+ * most definitions used there. The files were split to make it easier for me to
+ * switch since I can switch using tabs in my text editor.
+ * @author Nathan Pennie <kb1rd@kb1rd.net>
+ */
+/** */
+
 import { Int32 } from '../ints'
-import { CompareResult } from '../utils'
+import { CompareResult, FatalError, allKeys } from '../utils'
 
 // What a C++ typedef would do
 // This makes it possible to completely swap out the type of the int used in the
 // algorithm w/o actually replacing each instance (which would be a real pain)
 import LogootInt = Int32
-
-function all_keys(obj: any): (symbol | number | string)[] {
-  return (Object.keys(obj) as (symbol | number | string)[]).concat(
-    Object.getOwnPropertySymbols(obj)
-  )
-}
 
 /**
  * A position in Logoot. This is just an array of numbers with some utility
@@ -110,6 +113,14 @@ class LogootPosition {
     pos.array.length = 0
     eventnode.forEach((n) => {
       pos.array.push(LogootInt.fromJSON(n))
+    })
+    return pos
+  }
+  static fromInts(...ints: (LogootInt | number)[]): LogootPosition {
+    const pos = new LogootPosition()
+    pos.array.length = 0
+    ints.forEach((n) => {
+      pos.array.push(new LogootInt(n))
     })
     return pos
   }
@@ -228,6 +239,8 @@ class LogootPosition {
    * @param max - The maximum output.
    * @param preserve_levels - If defined, the output number of levels will be
    * equal to `preserve_levels`.
+   * @returns Either this position, min, or max. It is **not** copied, so if you
+   * want to modify it, you should copy it.
    */
   clamp(
     min: LogootPosition,
@@ -258,172 +271,279 @@ namespace LogootPosition {
   }
 }
 
-type BranchKey = symbol | string | number
 /**
- * Logoot treats each atom as seperate. However, in a real-world environment, it
- * is not practical to treat each atom seperately. To save memory and CPU time,
- * the algorithm groups together consecutive atoms into `LogootNode`s. A
- * `LogootNode` is technically just a series of consecutive atoms with the same
- * `rclk` (vector clock).
+ * A type used to identify a branch. This value should be used to look up a
+ * user-presentable name in another map stored outside of `logootish-js`. This
+ * is implementation-defined and allows for the broadest possible definition of
+ * a branch.
  */
-abstract class LogootNode {
-  rclk: LogootInt = new LogootInt(0)
-  group: LogootNodeGroup
-  branch: BranchKey
-  merged_into: { [key: string]: { at_rclk: LogootInt } }
+type BranchKey = symbol | string | number
 
-  /**
-   * @param node - A node to copy, C++ style
-   */
-  constructor(
-    node: LogootNode | { group: LogootNodeGroup; branch: BranchKey },
-    update_group = true
-  ) {
-    if (node instanceof LogootNode) {
-      Object.assign(this, node.copy())
-    } else {
-      this.group = node.group
-      this.branch = node.branch
-      // Ensure that the group's node lookup properly reflects this node's state
-      if (update_group) {
-        this.group.br(this.branch, this)
-      }
-    }
-  }
-
-  abstract copy(): LogootNode
-
-  /**
-   * Legacy support to grab the start from the node group.
-   */
-  get start(): LogootPosition {
-    return this.group.start
-  }
-  /**
-   * Legacy support to grab the length from the node group.
-   */
-  get length(): number {
-    return this.group.length
-  }
-
-  /**
-   * Legacy support to grab the end from the node group.
-   */
-  get end(): LogootPosition {
-    return this.group.end
-  }
-
-  get br_merged_into(): { at_rclk: LogootInt; branch: BranchKey }[] {
-    return all_keys(this.merged_into).map((k) => {
-      const { at_rclk } = this.m(k)
-      return { at_rclk, branch: k }
-    })
-  }
-  m(key: BranchKey, val?: { at_rclk: LogootInt }): { at_rclk: LogootInt } {
-    if (val) {
-      this.merged_into[(key as unknown) as string] = val
-    }
-    return this.merged_into[(key as unknown) as string]
-  }
-
-  abstract toString(): string
+/**
+ * The type of node stored in a `LogootNodeGroup`.
+ */
+enum NodeType {
+  DATA,
+  REMOVAL
 }
-class DataLogootNode extends LogootNode {
-  /**
-   * The position of the node in the local document.
-   */
+/**
+ * Names for NodeType that are printed in debug information.
+ */
+const nt_string = {
+  [NodeType.DATA]: 'DATA',
+  [NodeType.REMOVAL]: 'REMOVAL'
+}
+
+/**
+ * A group of `LogootNodeGroup`s that are considered by the `JoinFunction` (see
+ * the list document model `index.ts` file) to be related. Each Logoot node is
+ * not displayed in the order specified in `groups`. Rather, all of the nodes on
+ * a particular branch are displayed together and in the order defined by
+ * `branch_order`.
+ * @TODO Move `branch_order` into the ListDocumentModel. No reason not to have
+ * a whole-document branch order.
+ */
+class ConflictGroup {
   known_position = 0
   /**
-   * The end of the node in the local document.
+   * The order in which branches are displayed. All of the nodes that make up
+   * a single branch are placed together.
    */
-  get known_end_position(): number {
-    return this.known_position + this.length
-  }
-
-  copy(): DataLogootNode {
-    const node = new DataLogootNode(
-      { group: this.group, branch: this.branch },
-      false
-    )
-    node.rclk = new LogootInt(this.rclk)
-    node.known_position = this.known_position
-    all_keys(this.merged_into).forEach((k) => {
-      node.m(k, { at_rclk: new LogootInt(this.m(k).at_rclk) })
-    })
-    return node
-  }
-
-  toString(): string {
-    return (
-      'DATA' +
-      this.start.toString() +
-      `(${this.known_position}) + ${this.length} @ ${this.rclk}`
-    )
-  }
-}
-class RemovalLogootNode extends LogootNode {
-  copy(): RemovalLogootNode {
-    const node = new RemovalLogootNode(
-      { group: this.group, branch: this.branch },
-      false
-    )
-    node.rclk = new LogootInt(this.rclk)
-    all_keys(this.merged_into).forEach((k) => {
-      node.m(k, { at_rclk: new LogootInt(this.m(k).at_rclk) })
-    })
-    return node
-  }
-
-  toString(): string {
-    return `REM${this.start.toString()} + ${this.length} @ ${this.rclk}`
-  }
-}
-class BlankLogootNode extends LogootNode {
-  copy(): BlankLogootNode {
-    const node = new BlankLogootNode(
-      { group: this.group, branch: this.branch },
-      false
-    )
-    node.rclk = new LogootInt(this.rclk)
-    all_keys(this.merged_into).forEach((k) => {
-      node.m(k, { at_rclk: new LogootInt(this.m(k).at_rclk) })
-    })
-    return node
-  }
-
-  toString(): string {
-    return `BLANK${this.start.toString()} + ${this.length} @ ${this.rclk}`
-  }
-}
-type LogootNodeWithMeta = DataLogootNode & { offset: number }
-
-class ConflictGroup {
-  known_end = 0
+  readonly branch_order: BranchKey[] = []
+  /**
+   * A list of `LogootNodeGroups` that make up the Logoot side of the local
+   * document. A group's nodes will be split up and placed into one of the
+   * branch sections as defined in `branch_order`. These **absolutely must** be
+   * in order based on their Logoot positions.
+   */
+  groups: LogootNodeGroup[] = []
 
   constructor(position: number) {
-    this.known_end = position
+    this.known_position = position
+  }
+
+  /**
+   * Get the equivalent length of all data nodes.
+   */
+  get ldoc_length(): number {
+    return this.groups.reduce((n, group) => {
+      return n + group.ldoc_length
+    }, 0)
+  }
+  /**
+   * Find the end in the local document,
+   */
+  get ldoc_end(): number {
+    return this.known_position + this.ldoc_length
+  }
+
+  /**
+   * Get the first group's Logoot position
+   */
+  get logoot_start(): LogootPosition {
+    return this.groups[0] ? this.groups[0].start : undefined
+  }
+  /**
+   * Get the last group's Logoot position
+   */
+  get logoot_end(): LogootPosition {
+    return this.groups.length
+      ? this.groups[this.groups.length - 1].end
+      : undefined
+  }
+
+  /**
+   * Get the first branch in this group.
+   */
+  get first_branch(): BranchKey {
+    return this.branch_order[0]
+  }
+  /**
+   * Get the last branch in this group.
+   */
+  get last_branch(): BranchKey {
+    return this.branch_order.length
+      ? this.branch_order[this.branch_order.length - 1]
+      : undefined
+  }
+
+  /**
+   * True if any groups are conflicted.
+   */
+  get conflicted(): boolean {
+    return this.groups.some((g) => g.conflicted)
+  }
+  /**
+   * The length in the local document (only `DATA` nodes) of only `branches`.
+   * @param branches - A list of branches to count.
+   */
+  branchLength(branches: BranchKey[]): number {
+    return this.groups.reduce((n, group) => {
+      return n + group.branchLength(branches)
+    }, 0)
+  }
+
+  /**
+   * Find the position in the local document of a group that **is already** in
+   * this `ConflictGroup`. This is named `insertPos` because it is used to find
+   * the insertion position of a new group, but the naming is a bit confusing.
+   * @param br - The branch on which to determine the position.
+   * @param at - The LogootNodeGroup to determine the position of.
+   * @returns The position of `at`.
+   * @throws {FatalError} Will throw if `after` is not in this CG.
+   */
+  insertPos(br: BranchKey, at: LogootNodeGroup): number {
+    // First, compute the offset for all of the previous branches (ex, A and B)
+    // AAAAAAABBBBccccccdddddeeee
+    let offset =
+      this.known_position +
+      this.branchLength(
+        this.branch_order.slice(0, this.branch_order.indexOf(br) + (at ? 0 : 1))
+      )
+
+    if (!at) {
+      return offset
+    }
+
+    // Sum up all of the prior groups on our branch
+    for (let i = 0; i < this.groups.length; i++) {
+      // Once we've found our group, bail out
+      if (this.groups[i] === at) {
+        return offset
+      }
+      offset += this.groups[i].branchLength([br])
+    }
+    throw new FatalError(
+      'Tried to insert after a LogootNodeGroup that is not in this conflict group'
+    )
+  }
+
+  /**
+   * Get the nodes to the left and right of `start`. If there is already a
+   * `LogootNodeGroup` with the same position, behavior is undefined.
+   * @param start - The position for which to find neighbors of.
+   * @returns An object containing `left` and `right` `LogootNodeGroup`s, as
+   * well as a `pos` number, which is the position of `right` in `this.groups`.
+   */
+  getNeighbors({
+    start
+  }: LogootNodeGroup): {
+    left: LogootNodeGroup
+    right: LogootNodeGroup
+    pos: number
+  } {
+    let left
+    for (let i = 0; i < this.groups.length; i++) {
+      if (this.groups[i].start.cmp(start) <= 0) {
+        left = this.groups[i]
+      }
+      if (this.groups[i].start.cmp(start) > 0) {
+        return { left, right: this.groups[i], pos: i }
+      }
+    }
+    return { left, right: undefined, pos: this.groups.length }
+  }
+
+  /**
+   * Adds a group with only one branch to this CG and returns its position.
+   * @param group - The group to add.
+   * @returns The position in the local document of the insertion.
+   * @throws {TypeError} If the group has more than one branch or if the group's
+   * `ConflictGroup` is not set to `this`. Set `group.group` to this before
+   * calling to avoid this error.
+   */
+  insertSingleBranchGroup(group: LogootNodeGroup): number {
+    if (group.n_branches !== 1) {
+      throw new TypeError('Passed group with no or more than one branch')
+    }
+    if (group.group !== this) {
+      throw new TypeError('Conflict group not assigned to node group')
+    }
+
+    const br = group.branches[0]
+    if (!this.branch_order.includes(br)) {
+      this.branch_order.push(br)
+    }
+
+    const { right, pos } = this.getNeighbors(group)
+
+    const known_position = this.insertPos(br, right)
+    this.groups.splice(pos, 0, group)
+    return known_position
+  }
+
+  toString(): string {
+    let str = `Conflict @ ${this.known_position} (`
+    str += this.branch_order.map((br) => br.toString()).join(' ')
+    str += `) {`
+    str += this.groups.map((gr) => {
+      return (
+        '\n  ' +
+        gr
+          .toString()
+          .split('\n')
+          .join('\n  ')
+      )
+    })
+    str += '\n}'
+    return str
   }
 }
 
+type LogootNode = { type: NodeType; rclk: LogootInt }
+/**
+ * A group of nodes that are all on different branches and have different vector
+ * clock values, but share the same **Logoot** start, end, and length.
+ */
 class LogootNodeGroup {
   length = 0
   start: LogootPosition = new LogootPosition()
+  group: ConflictGroup
+  /**
+   * The `LogootNode`s in this group. Despite what TypeScript thinks, they key
+   * is **not** a string. It is a BranchKey. Problem is, TS doesn't support
+   * using symbols to index a type, which will hopefully fixed when
+   * [TypeScript PR #26797](https://github.com/microsoft/TypeScript/pull/26797) lands.
+   * In the mean time, using `as` to turn the BranchKey into a string is used as
+   * a hacky workaround.
+   */
   nodes: { [key: string]: LogootNode } = {}
-  conflict?: ConflictGroup
 
   constructor(old?: LogootNodeGroup) {
     if (old) {
       Object.assign(this, {
         length: old.length,
         start: old.start.copy(),
-        nodes: old.map_nodes((n) => {
-          const newnode = n.copy()
-          newnode.group = this
-          return newnode
-        }),
-        conflict: old.conflict
+        group: old.group
+      })
+      old.eachNode(({ type, rclk }, k) => {
+        this.br(k, { type, rclk: new LogootInt(rclk) })
       })
     }
+  }
+
+  /**
+   * Gets the length of all `DATA` nodes.
+   */
+  get ldoc_length(): number {
+    // For some reason, TS thinks that this will produce a BranchKey. Obviously,
+    // it doesn't, so I have to do the awkward "as unknown as number" cast :(
+    return (this.branches.reduce((n: number, br: number) => {
+      return this.br(br).type === NodeType.DATA ? n + this.length : n
+    }, 0) as unknown) as number
+  }
+
+  /**
+   * Gets the length of all `DATA` nodes on `branches`.
+   * @param branches - The branches to search.
+   * @returns The length of all `DATA` nodes
+   */
+  branchLength(branches: BranchKey[]): number {
+    return (this.branches
+      .filter((k) => branches.includes(k))
+      .reduce((n: number, br: number) => {
+        return this.br(br).type === NodeType.DATA ? n + this.length : n
+      }, 0) as unknown) as number
   }
 
   /**
@@ -435,57 +555,72 @@ class LogootNodeGroup {
   }
 
   get branches(): BranchKey[] {
-    return all_keys(this.nodes)
+    return allKeys(this.nodes)
   }
   get n_branches(): number {
     return this.branches.length
   }
+  /**
+   * Returns true if there are multiple branches
+   */
   get conflicted(): boolean {
-    return (
+    return this.n_branches > 1
+    /* return ( // TODO: Fix
       this.branches.filter((k) => {
-        return !(this.br(k) instanceof BlankLogootNode)
+        return this.br(k).type !== NodeType.MERGE_INTO
       }).length > 1
-    )
+    ) */
   }
 
-  each_node(cb: (n: LogootNode) => void): void {
+  eachNode(cb: (n: LogootNode, k: BranchKey) => void): void {
     this.branches.forEach((k) => {
-      cb(this.br(k))
+      cb(this.br(k), k)
     })
   }
-  map_nodes(cb: (n: LogootNode) => LogootNode): { [key: string]: LogootNode } {
+  mapNodes(
+    cb: (n: LogootNode, k: BranchKey) => LogootNode
+  ): {
+    [key: string]: LogootNode
+  } {
     const rval: { [key: string]: LogootNode } = {}
     this.branches.forEach((k) => {
-      rval[(k as unknown) as string] = cb(this.br(k))
+      rval[(k as unknown) as string] = cb(this.br(k), k)
     })
     return rval
   }
 
-  create_data_node(known_position: number, branch: BranchKey): DataLogootNode {
-    const node = new DataLogootNode({ group: this, branch })
-    node.known_position = known_position
-    return node
-  }
-
+  /**
+   * This is a method to access and (possibly) assign a `LogootNode` to the
+   * particular branch. This is a thing because TypeScript does not yet support
+   * using symbols as keys and I don't feel like typing
+   * `(key as unknown) as string` a billion times. See
+   * [TypeScript PR #26797](https://github.com/microsoft/TypeScript/pull/26797).
+   */
   br(key: BranchKey, node?: LogootNode): LogootNode {
     if (node) {
       this.nodes[(key as unknown) as string] = node
     }
     return this.nodes[(key as unknown) as string]
   }
-  del_br(key: BranchKey): void {
+  delBr(key: BranchKey): void {
     delete this.nodes[(key as unknown) as string]
   }
 
-  split_around(pos: number): LogootNodeGroup {
+  /**
+   * Split this LogootNodeGroup around a position `pos` units after the current
+   * start on the lowest level.
+   * @param pos - The location of where to split this group.
+   * @returns A new LogootNodeGroup. This is spliced into this conflict group,
+   * so no cleanup is necessary after this is run.
+   */
+  splitAround(pos: number): LogootNodeGroup {
     const newgroup = new LogootNodeGroup(this)
     newgroup.start = this.start.offsetLowest(pos)
     newgroup.length = this.length - pos
-    newgroup.each_node((n) => {
-      if (n instanceof DataLogootNode) {
-        n.known_position += pos
-      }
-    })
+
+    // Ensure that we're in the right order in the ConflictGroup
+    const groups = newgroup.group.groups
+    groups.splice(groups.indexOf(this) + 1, 0, newgroup)
 
     this.length = pos
     return newgroup
@@ -494,7 +629,8 @@ class LogootNodeGroup {
   toString(): string {
     let str = `Group ${this.start.toString()} + ${this.length} {`
     str += this.branches.map((k) => {
-      return `\n  ${String(k)}: ${this.br(k).toString()}`
+      const br = this.br(k)
+      return `\n  ${String(k)}: ${nt_string[br.type]} @ ${br.rclk.toString()}`
     })
     str += '\n}'
     return str
@@ -504,11 +640,7 @@ class LogootNodeGroup {
 export {
   LogootInt,
   LogootPosition,
-  LogootNode,
-  DataLogootNode,
-  RemovalLogootNode,
-  BlankLogootNode,
-  LogootNodeWithMeta,
+  NodeType,
   ConflictGroup,
   LogootNodeGroup,
   BranchKey

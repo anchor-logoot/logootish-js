@@ -114,6 +114,27 @@ class MemberPtr<T, K extends keyof T> {
   }
 }
 
+function allKeys<T, K extends keyof T>(obj: T): K[] {
+  return (Object.keys(obj) as K[]).concat(
+    Object.getOwnPropertySymbols(obj) as K[]
+  )
+}
+
+function allValues<T, V extends T[keyof T]>(obj: T): V[] {
+  return allKeys(obj).map((k) => obj[k]) as V[]
+}
+
+const BreakException = {}
+function catchBreak(fn: () => void): void {
+  try {
+    fn()
+  } catch (e) {
+    if (e !== BreakException) {
+      throw e
+    }
+  }
+}
+
 export {
   arraymap,
   FatalError,
@@ -121,5 +142,9 @@ export {
   CompareFunction,
   DualCompareFunction,
   Comparable,
-  MemberPtr
+  MemberPtr,
+  allKeys,
+  allValues,
+  BreakException,
+  catchBreak
 }

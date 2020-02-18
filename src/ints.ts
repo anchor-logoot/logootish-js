@@ -57,7 +57,6 @@ abstract class IntType<FutureType> extends Comparable<FutureType | number> {
 class Int32 extends IntType<Int32> {
   // Size limit the int, enforce signing, and remove decimals
   private int32 = new Int32Array([0])
-  is_rclk = false
 
   constructor(n: Int32 | number = 0) {
     super()
@@ -77,9 +76,6 @@ class Int32 extends IntType<Int32> {
   }
 
   add(n: Int32 | number): Int32 {
-    if (this.is_rclk) {
-      console.trace('RCLK')
-    }
     if (n instanceof Int32) {
       this.int32[0] += n.int32[0]
     } else {
@@ -113,6 +109,10 @@ class Int32 extends IntType<Int32> {
       return ((this.int32[0] >= n ? 1 : 0) +
         (this.int32[0] <= n ? -1 : 0)) as CompareResult
     }
+  }
+
+  copy(): Int32 {
+    return new Int32(this)
   }
 
   get js_int(): number {

@@ -1,6 +1,7 @@
 /**
  * @file A binary search tree implementation for finding ranges within the tree
- * and finding neighboring nodes.
+ * and finding neighboring nodes. The documentation for this is, erm, not super
+ * amazing.
  * @author Nathan Pennie <kb1rd@kb1rd.net>
  */
 /** */
@@ -36,6 +37,282 @@ type BstNodePtr<T> =
  * The type of a function that operates on nodes of the BST.
  */
 type NodeOp<T> = (node: BstNode<T>) => void
+
+/**
+ * A single point in a `RangeSearch`. The first element is the point value, the
+ * second element is a boolean that is true if the point is inclusive, and the
+ * third element the bucket string, or `undefined` to drop elements.
+ */
+type Point<T> = [T, boolean, string?]
+
+/**
+ * A representation of an inequality that can be used to search and sort the
+ * elements of an array into `bucket`s. It is a collection of `Point`s. Each
+ * `Point` will include any values less that its own and, if the point is
+ * inclusive, equal to its own.
+ */
+class RangeSearch<T> {
+  /**
+   * True if only **one** value is kept for elements before the first point.
+   * Used to find the inorder predecessor.
+   */
+  lesser_find_greatest = false
+  /**
+   * True if only **one** value is kept for elements after the last point. Used
+   * to find the inorder successor.
+   */
+  greater_find_least = false
+  private points: Point<T>[] = []
+  private last_bucket?: string
+  private cf: DualCompareFunction<T>
+
+  constructor(cf: DualCompareFunction<T>) {
+    this.cf = cf
+  }
+
+  static lteq<T>(
+    cf: DualCompareFunction<T>,
+    pd: T,
+    bucket: string
+  ): RangeSearch<T> {
+    const search = new RangeSearch<T>(cf)
+    search.points.push([pd, true, bucket])
+    search.last_bucket = undefined
+    return search
+  }
+  static lt<T>(
+    cf: DualCompareFunction<T>,
+    pd: T,
+    bucket: string
+  ): RangeSearch<T> {
+    const search = new RangeSearch<T>(cf)
+    search.points.push([pd, false, bucket])
+    search.last_bucket = undefined
+    return search
+  }
+  static gteq<T>(
+    cf: DualCompareFunction<T>,
+    pd: T,
+    bucket: string
+  ): RangeSearch<T> {
+    const search = new RangeSearch<T>(cf)
+    search.points.push([pd, false, undefined])
+    search.last_bucket = bucket
+    return search
+  }
+  static gt<T>(
+    cf: DualCompareFunction<T>,
+    pd: T,
+    bucket: string
+  ): RangeSearch<T> {
+    const search = new RangeSearch<T>(cf)
+    search.points.push([pd, true, undefined])
+    search.last_bucket = bucket
+    return search
+  }
+
+  /**
+   * Add a point to the collection.
+   * @param data - The value for comparison.
+   * @param bucket - The `bucket` to sort values into, or undefined to discard.
+   * @param inclusive - Determines if the point includes `data`.
+   */
+  push_point(data: T, bucket: string, inclusive = false): void {
+    const point: Point<T> = [data, inclusive, bucket]
+    for (let i = 0; i < this.points.length; i++) {
+      if (this.cf(data, this.points[i][0]) < 0) {
+        this.points.splice(i, 0, point)
+        return
+      }
+    }
+    this.points.push(point)
+  }
+  /**
+   * Set the default bucket for any values greater than the last point.
+   */
+  all_greater(bucket?: string): void {
+    this.last_bucket = bucket
+  }
+
+  /**
+   * A function used by Binary Search Trees to determine traversal.
+   * @param data - The value to compare.
+   * @param current - The current values that are stored.
+   * @param clear_buckets - If true, elements from `current` will be eliminated
+   * if they are affected by `lesser_find_greatest` or `greater_find_least` and
+   * an alternative closer to `data` is found.
+   * @param traverse_left - Will be called when there is the possibility that
+   * there are elements smaller than this one that will satisfy
+   * `greater_find_least`, thereby reducing the number of necessary traversals.
+   * @returns An object containing `left` and `right`, which are booleans that
+   * tell whether more data could be found to the left and right of `data`,
+   * respectively, as well as an optional `bucket` string to tell where `data`
+   * should be sorted.
+   */
+  getBucketInfo(
+    data: T,
+    current?: { [key: string]: T[] },
+    clear_buckets = false,
+    traverse_left?: () => void
+  ): {
+    left: boolean
+    right: boolean
+    bucket?: string
+  } {
+    let left = false
+    let passed_bucket = false
+    let bucket = this.last_bucket
+    let right = Boolean(this.last_bucket)
+
+    // Account for empty searches
+    if (!this.points.length && this.last_bucket) {
+      if (!left && traverse_left) {
+        traverse_left()
+      }
+      left = true
+    }
+
+    // Calculate the membership of each range before the point
+    for (let i = 0; i < this.points.length; i++) {
+      const [other, inclusive, b] = this.points[i]
+
+      if (b && !passed_bucket) {
+        if (!left && traverse_left) {
+          traverse_left()
+        }
+        left = true
+      }
+
+      // Should we add to this current bucket?
+      if (this.cf(data, other) < (inclusive ? 1 : 0)) {
+        if (!passed_bucket) {
+          passed_bucket = true
+          bucket = b
+        }
+        if (
+          i == 0 &&
+          this.lesser_find_greatest &&
+          clear_buckets &&
+          current[b] &&
+          current[b].length
+        ) {
+          if (this.cf(current[b][0], data) < 0) {
+            current[b] = []
+          } else if (this.cf(current[b][0], data) > 0) {
+            bucket = undefined
+          }
+        }
+      }
+
+      if (b && passed_bucket && this.cf(other, data) !== 0) {
+        right = true
+      }
+    }
+
+    // Ensure we account for the area after the last point
+    if (!passed_bucket && this.last_bucket) {
+      const b = this.last_bucket
+      // Traverse the left side assuming we haven't already
+      if (bucket && !left) {
+        left = true
+        traverse_left()
+      }
+      if (
+        this.greater_find_least &&
+        clear_buckets &&
+        current[b] &&
+        current[b].length
+      ) {
+        if (this.cf(current[b][0], data) > 0) {
+          current[b] = []
+        } else if (this.cf(current[b][0], data) < 0) {
+          bucket = undefined
+        }
+      }
+      right = true
+    }
+
+    // Don't traverse if unnecessary
+    left =
+      left &&
+      (!this.lesser_find_greatest ||
+        !this.points.length ||
+        !current[this.points[0][2]] ||
+        !current[this.points[0][2]].length ||
+        this.cf(current[this.points[0][2]][0], data) <= 0)
+    right =
+      right &&
+      (!this.greater_find_least ||
+        !current[this.last_bucket] ||
+        !current[this.last_bucket].length ||
+        this.cf(current[this.last_bucket][0], data) >= 0)
+
+    return { left, bucket, right }
+  }
+
+  /*
+   * Place `data` into a bucket defined by `range_buckets` based on the points
+   * that have been added to this search
+   * @param data - The value to sort.
+   * @param range_buckets - Sort `data` into one of the buckets defined as
+   * properties on this object. An array will be assigned at the bucket name if
+   * the target bucket is not already defined.
+   * @returns `range_buckets`
+   */
+  sort(
+    data: T,
+    range_buckets: { [key: string]: T[] } = {}
+  ): { [key: string]: T[] } {
+    let i
+    for (i = 0; i < this.points.length; i++) {
+      const [other, inclusive, b] = this.points[i]
+
+      if (this.cf(data, other) < (inclusive ? 1 : 0)) {
+        if (!b) {
+          return range_buckets
+        }
+        if (
+          !range_buckets[b] ||
+          (i === 0 &&
+            this.lesser_find_greatest &&
+            range_buckets[b].length &&
+            this.cf(range_buckets[b][0], data) < 0)
+        ) {
+          range_buckets[b] = []
+        }
+        range_buckets[b].push(data)
+        return range_buckets
+      }
+    }
+    i = this.points.length
+
+    const b = this.last_bucket
+    if (!b) {
+      return range_buckets
+    }
+    if (
+      !range_buckets[b] ||
+      (this.greater_find_least &&
+        range_buckets[b].length &&
+        this.cf(range_buckets[b][0], data) > 0)
+    ) {
+      range_buckets[b] = []
+    }
+    range_buckets[b].push(data)
+    return range_buckets
+  }
+
+  /*
+   * Sort the elements of `array` into buckets and return the result.
+   * @param array - The array to sort.
+   * @returns The populated buckets.
+   */
+  search_array(array: T[]): { [key: string]: T[] } {
+    const range_buckets: { [key: string]: T[] } = {}
+    array.forEach((el) => this.sort(el, range_buckets))
+    return range_buckets
+  }
+}
 
 /**
  * A binary search tree implementation for finding ranges within the tree and
@@ -81,6 +358,53 @@ class Bst<T extends S, S = T> {
     }
   }
 
+  /*
+   * Creates a range search from the local compare function.
+   * @returns A new range search.
+   */
+  create_range_search(): RangeSearch<S> {
+    return new RangeSearch<S>(this.cmp)
+  }
+
+  /*
+   * Efficiently search the BST and sort the applicable nodes into buckets.
+   * @param search - The `RangeSearch` to do
+   * @param node - The node in the tree where the search can be started. It's
+   * optional and does not need to be changed for nearly all use cases.
+   * @param map - The object to assign buckets to. It is returned.
+   * @returns An object with type `T` sorted into buckets.
+   */
+  search(
+    search: RangeSearch<S>,
+    node: BstNodePtr<T> = new MemberPtr(this, 'bst_root'),
+    map: { [key: string]: T[] } = {}
+  ): { [key: string]: T[] } {
+    if (!node.value) {
+      return map
+    }
+    const { bucket, right } = search.getBucketInfo(
+      node.value.data,
+      map,
+      true,
+      () => {
+        // Interrupting the sorting into buckets to search the left side of the
+        // tree allows us to look for elements that *might* be smaller, so we
+        // can avoid needlessly searching the right side of the tree
+        this.search(search, new MemberPtr(node.value, 'left'), map)
+      }
+    )
+    if (bucket) {
+      if (!map[bucket]) {
+        map[bucket] = []
+      }
+      map[bucket].push(node.value.data)
+    }
+    if (right) {
+      this.search(search, new MemberPtr(node.value, 'right'), map)
+    }
+    return map
+  }
+
   /**
    * A method designed mostly for internal use that finds the next element in
    * the tree if all of the elements were placed in order.
@@ -119,25 +443,31 @@ class Bst<T extends S, S = T> {
    * @param object - The object to remove or a search type that is evaluated
    * to the same value as an object in the tree. Equivalence is determined
    * exclusively using the compare function.
+   * @param filter - An optional function that has the final say in whether a
+   * node is removed. While an `object` is provided for quick tree traversal, it
+   * is not always desirable to remove *every* node with that particular value.
+   * This function allows the user to override that behavior.
    * @param node - The node in the tree where the search can be started. It's
    * optional and does not need to be changed for nearly all use cases.
    */
   remove(
     object: S,
+    filter: (data: T) => boolean = (): boolean => true,
     node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')
   ): void {
     if (node.value) {
       const result = this.cmp(node.value.data, object)
+      const should_remove = filter(node.value.data)
       if (result > 0) {
-        this.remove(object, new MemberPtr(node.value, 'left'))
+        this.remove(object, filter, new MemberPtr(node.value, 'left'))
       } else if (result < 0) {
-        this.remove(object, new MemberPtr(node.value, 'right'))
-      } else if (node.value.left && node.value.right) {
+        this.remove(object, filter, new MemberPtr(node.value, 'right'))
+      } else if (node.value.left && node.value.right && should_remove) {
         const successor = this._getInorderSuccessor(node.value.data, node)
 
-        this.remove(successor.data, successor.ptr)
+        this.remove(successor.data, undefined, successor.ptr)
         node.value.data = successor.data
-      } else {
+      } else if (should_remove) {
         node.value = node.value.left || node.value.right
       }
     }
@@ -315,4 +645,4 @@ class Bst<T extends S, S = T> {
   }
 }
 
-export { Bst, BstNode }
+export { Bst, RangeSearch, BstNode }
