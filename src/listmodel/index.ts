@@ -415,6 +415,10 @@ class ListDocumentModel {
     const level = nstart.levels
     const nend = nstart.offsetLowest(length)
 
+    if (this.clock.cmp(nrclk) < 0) {
+      this.clock.assign(nrclk)
+    }
+
     // Search:
     // n < nstart          -> _lesser
     // nstart <= n < nend  -> _skip_ranges
@@ -739,7 +743,9 @@ class ListDocumentModel {
       if (
         group.start.levels === level &&
         group_length > 0 &&
-        (!group.br(br) || nrclk.cmp(group.br(br).rclk) > 0)
+        (!group.br(br) ||
+          // Data nodes have the lowest priority
+          nrclk.cmp(group.br(br).rclk) > (type === NodeType.DATA ? 0 : -1))
       ) {
         // Split off the trailing start
         if (group.start.cmp(nstart) < 0) {
@@ -840,7 +846,7 @@ class ListDocumentModel {
       br,
       start,
       length,
-      new LogootInt(rclk).add(1),
+      rclk,
       NodeType.REMOVAL,
       this.canJoin
     )
