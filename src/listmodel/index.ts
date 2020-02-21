@@ -36,14 +36,38 @@ type Removal = {
   length: number
   rclk: LogootInt
 }
+
+type RemovalOperation = {
+  type: 'r'
+  start: number
+  length: number
+}
+type InsertionOperation = {
+  type: 'i'
+  start: number
+  offset: number
+  length: number
+}
+type TranslationOperation = {
+  type: 't'
+  source: number
+  length: number
+  dest: number
+}
+type MarkOperation = {
+  type: 'm'
+  start: number
+  length: number
+  conflicting: boolean
+}
 /**
  * An operation returned by `_mergeNode` to be run on the local document.
  */
 type Operation =
-  | { type: 'r'; start: number; length: number }
-  | { type: 'i'; start: number; offset: number; length: number }
-  | { type: 't'; source: number; length: number; dest: number }
-  | { type: 'm'; start: number; length: number; conflicting: boolean }
+  | RemovalOperation
+  | InsertionOperation
+  | TranslationOperation
+  | MarkOperation
 
 /**
  * An error thrown when an insertion is attempted at the boundary between two
@@ -444,6 +468,7 @@ class ListDocumentModel {
     ) {
       const lesser_end = lesser.splitAround(
         nstart
+          .copy()
           .level(lesser.start.levels)
           .sub(lesser.start.level(lesser.start.levels)).js_int
       )
@@ -648,11 +673,16 @@ class ListDocumentModel {
       const empty_length = group_level_start.copy().sub(last_start).js_int
       const empty_offset = last_start.copy().sub(nstart.l(level)).js_int
 
-      if (empty_length > 0) {
+      if (
+        empty_length > 0 ||
+        // If the next node has fewer levels, the empty space is *technically*
+        // infinite, but empty_length won't show this
+        (group.start.levels < level && length - empty_offset > 0)
+      ) {
         const newgroup = new LogootNodeGroup()
         newgroup.start = nstart.copy()
         newgroup.start.l(level).assign(last_start)
-        newgroup.length = empty_length
+        newgroup.length = empty_length || length - empty_offset
         newgroup.br(br, { type, rclk: nrclk })
 
         // Now, we actually insert the node where it should be according to the
