@@ -12,7 +12,6 @@ import {
   BreakException,
   catchBreak
 } from '../utils'
-import { debug } from '../debug'
 import { Bst } from '../bst'
 
 import {
