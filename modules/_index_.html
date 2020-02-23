@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>&quot;index&quot; | logootish-js</title>
+	<title>&quot;index&quot; | logootish-js - v0.3.0</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -22,7 +22,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../index.html" class="title">logootish-js</a>
+					<a href="../index.html" class="title">logootish-js - v0.3.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -70,11 +70,14 @@
 				<div class="tsd-comment tsd-typography">
 					<dl class="tsd-comment-tags">
 						<dt>file</dt>
-						<dd><p>This is the core of the Logootish algorithm. It contains all position
-							manipulation code.</p>
+						<dd><p>This file imports the ListDocumentModel and defines event handling
+							systems.</p>
+						</dd>
+						<dt>todo</dt>
+						<dd><p>Move event abstraction layer here</p>
 						</dd>
 						<dt>author</dt>
-						<dd><p>Nathan Pennie <a href="mailto:&#107;&#98;&#x31;&#114;&#x64;&#64;&#107;&#x62;&#49;&#x72;&#100;&#x2e;&#110;&#101;&#x74;">&#107;&#98;&#x31;&#114;&#x64;&#64;&#107;&#x62;&#49;&#x72;&#100;&#x2e;&#110;&#101;&#x74;</a></p>
+						<dd><p>Nathan Pennie <a href="mailto:&#x6b;&#98;&#49;&#114;&#100;&#64;&#107;&#x62;&#x31;&#x72;&#100;&#x2e;&#110;&#101;&#116;">&#x6b;&#98;&#49;&#114;&#100;&#64;&#107;&#x62;&#x31;&#x72;&#100;&#x2e;&#110;&#101;&#116;</a></p>
 						</dd>
 					</dl>
 				</div>
@@ -87,53 +90,14 @@
 							<h3>Enumerations</h3>
 							<ul class="tsd-index-list">
 								<li class="tsd-kind-enum tsd-parent-kind-external-module tsd-is-not-exported"><a href="../enums/_index_.eventstate.html" class="tsd-kind-icon">Event<wbr>State</a></li>
-								<li class="tsd-kind-enum tsd-parent-kind-external-module tsd-is-not-exported"><a href="../enums/_index_.eventtype.html" class="tsd-kind-icon">Event<wbr>Type</a></li>
-							</ul>
-						</section>
-						<section class="tsd-index-section tsd-is-not-exported">
-							<h3>Classes</h3>
-							<ul class="tsd-index-list">
-								<li class="tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported"><a href="../classes/_index_.document.html" class="tsd-kind-icon">Document</a></li>
-								<li class="tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported"><a href="../classes/_index_.insertionevent.html" class="tsd-kind-icon">Insertion<wbr>Event</a></li>
-								<li class="tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported"><a href="../classes/_index_.removalevent.html" class="tsd-kind-icon">Removal<wbr>Event</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section tsd-is-not-exported">
 							<h3>Interfaces</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-interface tsd-parent-kind-external-module tsd-is-not-exported"><a href="../interfaces/_index_.logootevent.html" class="tsd-kind-icon">Logoot<wbr>Event</a></li>
+								<li class="tsd-kind-interface tsd-parent-kind-external-module tsd-is-not-exported"><a href="../interfaces/_index_.logootishevent.html" class="tsd-kind-icon">Logootish<wbr>Event</a></li>
 							</ul>
 						</section>
-						<section class="tsd-index-section tsd-is-not-exported">
-							<h3>Type aliases</h3>
-							<ul class="tsd-index-list">
-								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported"><a href="_index_.html#removaljson" class="tsd-kind-icon">RemovalJSON</a></li>
-							</ul>
-						</section>
-					</div>
-				</section>
-			</section>
-			<section class="tsd-panel-group tsd-member-group tsd-is-not-exported">
-				<h2>Type aliases</h2>
-				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
-					<a name="removaljson" class="tsd-anchor"></a>
-					<h3>RemovalJSON</h3>
-					<div class="tsd-signature tsd-kind-icon">RemovalJSON<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/index.ts#L116">src/index.ts:116</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-type-declaration">
-						<h4>Type declaration</h4>
-						<ul class="tsd-parameters">
-							<li class="tsd-parameter">
-								<h5>length<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
-							</li>
-							<li class="tsd-parameter">
-								<h5>start<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_logoot_.logootposition.html#json-1" class="tsd-signature-type">JSON</a></h5>
-							</li>
-						</ul>
 					</div>
 				</section>
 			</section>
@@ -172,23 +136,8 @@
 					<li class=" tsd-kind-enum tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="../enums/_index_.eventstate.html" class="tsd-kind-icon">Event<wbr>State</a>
 					</li>
-					<li class=" tsd-kind-enum tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="../enums/_index_.eventtype.html" class="tsd-kind-icon">Event<wbr>Type</a>
-					</li>
-					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="../classes/_index_.document.html" class="tsd-kind-icon">Document</a>
-					</li>
-					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="../classes/_index_.insertionevent.html" class="tsd-kind-icon">Insertion<wbr>Event</a>
-					</li>
-					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="../classes/_index_.removalevent.html" class="tsd-kind-icon">Removal<wbr>Event</a>
-					</li>
 					<li class=" tsd-kind-interface tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="../interfaces/_index_.logootevent.html" class="tsd-kind-icon">Logoot<wbr>Event</a>
-					</li>
-					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="_index_.html#removaljson" class="tsd-kind-icon">RemovalJSON</a>
+						<a href="../interfaces/_index_.logootishevent.html" class="tsd-kind-icon">Logootish<wbr>Event</a>
 					</li>
 				</ul>
 			</nav>

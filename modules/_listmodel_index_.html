@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>&quot;listmodel/index&quot; | logootish-js</title>
+	<title>&quot;listmodel/index&quot; | logootish-js - v0.3.0</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -22,7 +22,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../index.html" class="title">logootish-js</a>
+					<a href="../index.html" class="title">logootish-js - v0.3.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -66,6 +66,19 @@
 <div class="container container-main">
 	<div class="row">
 		<div class="col-8 col-content">
+			<section class="tsd-panel tsd-comment">
+				<div class="tsd-comment tsd-typography">
+					<dl class="tsd-comment-tags">
+						<dt>file</dt>
+						<dd><p>This file contains the bulky position manipulation logic for any list-
+							based CRDT (arrays, text, rich text, etc.)</p>
+						</dd>
+						<dt>author</dt>
+						<dd><p>Nathan Pennie <a href="mailto:&#x6b;&#98;&#49;&#114;&#100;&#x40;&#107;&#x62;&#x31;&#x72;&#x64;&#46;&#110;&#101;&#116;">&#x6b;&#98;&#49;&#114;&#100;&#x40;&#107;&#x62;&#x31;&#x72;&#x64;&#46;&#110;&#101;&#116;</a></p>
+						</dd>
+					</dl>
+				</div>
+			</section>
 			<section class="tsd-panel-group tsd-index-group">
 				<h2>Index</h2>
 				<section class="tsd-panel tsd-index-panel">
@@ -73,22 +86,28 @@
 						<section class="tsd-index-section tsd-is-not-exported">
 							<h3>Classes</h3>
 							<ul class="tsd-index-list">
+								<li class="tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported"><a href="../classes/_listmodel_index_.insertionconflicterror.html" class="tsd-kind-icon">Insertion<wbr>Conflict<wbr>Error</a></li>
 								<li class="tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported"><a href="../classes/_listmodel_index_.listdocumentmodel.html" class="tsd-kind-icon">List<wbr>Document<wbr>Model</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section tsd-is-not-exported">
 							<h3>Type aliases</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_index_.html#conflict" class="tsd-kind-icon">Conflict</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_index_.html#insertionoperation" class="tsd-kind-icon">Insertion<wbr>Operation</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_index_.html#joinfunction" class="tsd-kind-icon">Join<wbr>Function</a></li>
 								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_index_.html#knownpositionbst" class="tsd-kind-icon">Known<wbr>Position<wbr>Bst</a></li>
 								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_index_.html#logootbst" class="tsd-kind-icon">Logoot<wbr>Bst</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_index_.html#markoperation" class="tsd-kind-icon">Mark<wbr>Operation</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_index_.html#operation" class="tsd-kind-icon">Operation</a></li>
 								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_index_.html#removal" class="tsd-kind-icon">Removal</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_index_.html#removaloperation" class="tsd-kind-icon">Removal<wbr>Operation</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_index_.html#translationoperation" class="tsd-kind-icon">Translation<wbr>Operation</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section tsd-is-not-exported">
 							<h3>Functions</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_index_.html#_mergenode" class="tsd-kind-icon">_merge<wbr>Node</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_index_.html#minimaljoinfunction" class="tsd-kind-icon">Minimal<wbr>Join<wbr>Function</a></li>
 							</ul>
 						</section>
 					</div>
@@ -97,65 +116,12 @@
 			<section class="tsd-panel-group tsd-member-group tsd-is-not-exported">
 				<h2>Type aliases</h2>
 				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
-					<a name="conflict" class="tsd-anchor"></a>
-					<h3>Conflict</h3>
-					<div class="tsd-signature tsd-kind-icon">Conflict<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<a name="insertionoperation" class="tsd-anchor"></a>
+					<h3>Insertion<wbr>Operation</h3>
+					<div class="tsd-signature tsd-kind-icon">Insertion<wbr>Operation<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/listmodel/index.ts#L17">src/listmodel/index.ts:17</a></li>
-						</ul>
-					</aside>
-					<div class="tsd-type-declaration">
-						<h4>Type declaration</h4>
-						<ul class="tsd-parameters">
-							<li class="tsd-parameter">
-								<h5>clip_<wbr>nend<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></h5>
-							</li>
-							<li class="tsd-parameter">
-								<h5>clip_<wbr>nstart<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></h5>
-							</li>
-							<li class="tsd-parameter">
-								<h5>end<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_logoot_.logootposition.html" class="tsd-signature-type">LogootPosition</a></h5>
-							</li>
-							<li class="tsd-parameter">
-								<h5>level<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
-							</li>
-							<li class="tsd-parameter">
-								<h5>start<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_logoot_.logootposition.html" class="tsd-signature-type">LogootPosition</a></h5>
-							</li>
-							<li class="tsd-parameter">
-								<h5>whole_<wbr>node<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></h5>
-							</li>
-						</ul>
-					</div>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
-					<a name="knownpositionbst" class="tsd-anchor"></a>
-					<h3>Known<wbr>Position<wbr>Bst</h3>
-					<div class="tsd-signature tsd-kind-icon">Known<wbr>Position<wbr>Bst<span class="tsd-signature-symbol">:</span> <a href="../classes/_bst_.bst.html" class="tsd-signature-type">Bst</a><span class="tsd-signature-symbol">&lt;</span><a href="../classes/_listmodel_logoot_.logootnode.html" class="tsd-signature-type">LogootNode</a><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/listmodel/index.ts#L14">src/listmodel/index.ts:14</a></li>
-						</ul>
-					</aside>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
-					<a name="logootbst" class="tsd-anchor"></a>
-					<h3>Logoot<wbr>Bst</h3>
-					<div class="tsd-signature tsd-kind-icon">Logoot<wbr>Bst<span class="tsd-signature-symbol">:</span> <a href="../classes/_bst_.bst.html" class="tsd-signature-type">Bst</a><span class="tsd-signature-symbol">&lt;</span><a href="../classes/_listmodel_logoot_.logootnode.html" class="tsd-signature-type">LogootNode</a><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/listmodel/index.ts#L15">src/listmodel/index.ts:15</a></li>
-						</ul>
-					</aside>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
-					<a name="removal" class="tsd-anchor"></a>
-					<h3>Removal</h3>
-					<div class="tsd-signature tsd-kind-icon">Removal<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/listmodel/index.ts#L12">src/listmodel/index.ts:12</a></li>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/index.ts#L44">src/listmodel/index.ts:44</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-type-declaration">
@@ -165,7 +131,209 @@
 								<h5>length<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
 							</li>
 							<li class="tsd-parameter">
+								<h5>offset<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>start<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">"i"</span></h5>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="joinfunction" class="tsd-anchor"></a>
+					<h3>Join<wbr>Function</h3>
+					<div class="tsd-signature tsd-kind-icon">Join<wbr>Function<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">function</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/index.ts#L84">src/listmodel/index.ts:84</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>A function that determines if two <code>LogootNodeGroup</code>s should be in the same
+							<code>ConflictGroup</code>. The two arguments must be in order.</p>
+						</div>
+						<dl class="tsd-comment-tags">
+							<dt>param</dt>
+							<dd><p>The first <code>LogootNodeGroup</code></p>
+							</dd>
+							<dt>param</dt>
+							<dd><p>The second <code>LogootNodeGroup</code></p>
+							</dd>
+							<dt>returns</dt>
+							<dd><p>True if the two groups can be joined.</p>
+							</dd>
+						</dl>
+					</div>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter-siganture">
+								<ul class="tsd-signatures tsd-kind-type-literal tsd-parent-kind-type-alias tsd-is-not-exported">
+									<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>a<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_logoot_.logootnodegroup.html" class="tsd-signature-type">LogootNodeGroup</a>, b<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_logoot_.logootnodegroup.html" class="tsd-signature-type">LogootNodeGroup</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+								</ul>
+								<ul class="tsd-descriptions">
+									<li class="tsd-description">
+										<h4 class="tsd-parameters-title">Parameters</h4>
+										<ul class="tsd-parameters">
+											<li>
+												<h5>a: <a href="../classes/_listmodel_logoot_.logootnodegroup.html" class="tsd-signature-type">LogootNodeGroup</a></h5>
+											</li>
+											<li>
+												<h5>b: <a href="../classes/_listmodel_logoot_.logootnodegroup.html" class="tsd-signature-type">LogootNodeGroup</a></h5>
+											</li>
+										</ul>
+										<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="knownpositionbst" class="tsd-anchor"></a>
+					<h3>Known<wbr>Position<wbr>Bst</h3>
+					<div class="tsd-signature tsd-kind-icon">Known<wbr>Position<wbr>Bst<span class="tsd-signature-symbol">:</span> <a href="../classes/_bst_.bst.html" class="tsd-signature-type">Bst</a><span class="tsd-signature-symbol">&lt;</span><a href="../classes/_listmodel_logoot_.conflictgroup.html" class="tsd-signature-type">ConflictGroup</a><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/index.ts#L26">src/listmodel/index.ts:26</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="logootbst" class="tsd-anchor"></a>
+					<h3>Logoot<wbr>Bst</h3>
+					<div class="tsd-signature tsd-kind-icon">Logoot<wbr>Bst<span class="tsd-signature-symbol">:</span> <a href="../classes/_bst_.bst.html" class="tsd-signature-type">Bst</a><span class="tsd-signature-symbol">&lt;</span><a href="../classes/_listmodel_logoot_.logootnodegroup.html" class="tsd-signature-type">LogootNodeGroup</a><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">object</span><span class="tsd-signature-symbol">&gt;</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/index.ts#L27">src/listmodel/index.ts:27</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="markoperation" class="tsd-anchor"></a>
+					<h3>Mark<wbr>Operation</h3>
+					<div class="tsd-signature tsd-kind-icon">Mark<wbr>Operation<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/index.ts#L56">src/listmodel/index.ts:56</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter">
+								<h5>conflicting<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>length<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>start<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">"m"</span></h5>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="operation" class="tsd-anchor"></a>
+					<h3>Operation</h3>
+					<div class="tsd-signature tsd-kind-icon">Operation<span class="tsd-signature-symbol">:</span> <a href="_listmodel_index_.html#removaloperation" class="tsd-signature-type">RemovalOperation</a><span class="tsd-signature-symbol"> | </span><a href="_listmodel_index_.html#insertionoperation" class="tsd-signature-type">InsertionOperation</a><span class="tsd-signature-symbol"> | </span><a href="_listmodel_index_.html#translationoperation" class="tsd-signature-type">TranslationOperation</a><span class="tsd-signature-symbol"> | </span><a href="_listmodel_index_.html#markoperation" class="tsd-signature-type">MarkOperation</a></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/index.ts#L65">src/listmodel/index.ts:65</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>An operation returned by <code>_mergeNode</code> to be run on the local document.</p>
+						</div>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="removal" class="tsd-anchor"></a>
+					<h3>Removal</h3>
+					<div class="tsd-signature tsd-kind-icon">Removal<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/index.ts#L32">src/listmodel/index.ts:32</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>A Logoot removal.</p>
+						</div>
+					</div>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter">
+								<h5>branch<span class="tsd-signature-symbol">: </span><a href="_listmodel_logoot_.html#branchkey" class="tsd-signature-type">BranchKey</a></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>length<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>rclk<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">LogootInt</span></h5>
+							</li>
+							<li class="tsd-parameter">
 								<h5>start<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_logoot_.logootposition.html" class="tsd-signature-type">LogootPosition</a></h5>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="removaloperation" class="tsd-anchor"></a>
+					<h3>Removal<wbr>Operation</h3>
+					<div class="tsd-signature tsd-kind-icon">Removal<wbr>Operation<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/index.ts#L39">src/listmodel/index.ts:39</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter">
+								<h5>length<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>start<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">"r"</span></h5>
+							</li>
+						</ul>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="translationoperation" class="tsd-anchor"></a>
+					<h3>Translation<wbr>Operation</h3>
+					<div class="tsd-signature tsd-kind-icon">Translation<wbr>Operation<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/index.ts#L50">src/listmodel/index.ts:50</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter">
+								<h5>dest<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>length<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>source<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>type<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">"t"</span></h5>
 							</li>
 						</ul>
 					</div>
@@ -174,148 +342,34 @@
 			<section class="tsd-panel-group tsd-member-group tsd-is-not-exported">
 				<h2>Functions</h2>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
-					<a name="_mergenode" class="tsd-anchor"></a>
-					<h3>_merge<wbr>Node</h3>
+					<a name="minimaljoinfunction" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> Minimal<wbr>Join<wbr>Function</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
-						<li class="tsd-signature tsd-kind-icon">_merge<wbr>Node<span class="tsd-signature-symbol">(</span>bst<span class="tsd-signature-symbol">: </span><a href="_listmodel_index_.html#logootbst" class="tsd-signature-type">LogootBst</a>, nstart<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_logoot_.logootposition.html" class="tsd-signature-type">LogootPosition</a>, length<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, resolveConflict<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span>, addNode<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span>, informRemoval<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">function</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_listmodel_logoot_.html#logootnodewithmeta" class="tsd-signature-type">LogootNodeWithMeta</a><span class="tsd-signature-symbol">[]</span></li>
+						<li class="tsd-signature tsd-kind-icon">Minimal<wbr>Join<wbr>Function<span class="tsd-signature-symbol">(</span>a<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_logoot_.logootnodegroup.html" class="tsd-signature-type">LogootNodeGroup</a>, b<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_logoot_.logootnodegroup.html" class="tsd-signature-type">LogootNodeGroup</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/listmodel/index.ts#L52">src/listmodel/index.ts:52</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/index.ts#L89">src/listmodel/index.ts:89</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
 								<div class="lead">
-									<p>This is possibly the most important function in this entire program. The
-										role of this function is to determine which parts of a node will have
-										precedence over nodes currently in a Logoot binary search tree. Any new
-										node must be filtered to determine which parts can actually make it into
-										the document. For example, if there is a node with a higher <code>rclk</code>
-										currently in the BST, that portion that overlaps with the node must be cut
-										out. If the reverse is true, the node must be removed. This is done by
-										first filtering the nodes in the region in question using a user-defined
-										priority function. Nodes are either kept, ignored, or removed. These nodes
-										are then used as regions of the input to skip over (variable named
-									<code>skip_ranges</code>) and the resulting node(s) are returned.</p>
+									<p>A <code>JoinFunction</code> that joins two nodes if they have the same branches that are
+									in conflict.</p>
 								</div>
 							</div>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>bst: <a href="_listmodel_index_.html#logootbst" class="tsd-signature-type">LogootBst</a></h5>
-									<div class="tsd-comment tsd-typography">
-										<p>The binary search tree containing current nodes to consider</p>
-									</div>
+									<h5>a: <a href="../classes/_listmodel_logoot_.logootnodegroup.html" class="tsd-signature-type">LogootNodeGroup</a></h5>
 								</li>
 								<li>
-									<h5>nstart: <a href="../classes/_listmodel_logoot_.logootposition.html" class="tsd-signature-type">LogootPosition</a></h5>
-									<div class="tsd-comment tsd-typography">
-										<p>The start of the region in question</p>
-									</div>
-								</li>
-								<li>
-									<h5>length: <span class="tsd-signature-type">number</span></h5>
-									<div class="tsd-comment tsd-typography">
-										<p>The length of the region in question</p>
-									</div>
-								</li>
-								<li>
-									<h5>resolveConflict: <span class="tsd-signature-type">function</span></h5>
-									<div class="tsd-comment tsd-typography">
-										<p>A callback function determining what happens to a
-											node currently in the BST in the region in question. If it returns 1, the
-											node is kept. If it is 0, the node is ignored and is not skipped over. If
-											it is -1, the section in question of the node is removed and the
-										<code>informRemoval</code> function is called so further removals can be performed.</p>
-									</div>
-									<ul class="tsd-parameters">
-										<li class="tsd-parameter-siganture">
-											<ul class="tsd-signatures tsd-kind-type-literal tsd-is-not-exported">
-												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>node<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_logoot_.logootnode.html" class="tsd-signature-type">LogootNode</a>, conflict<span class="tsd-signature-symbol">: </span><a href="_listmodel_index_.html#conflict" class="tsd-signature-type">Conflict</a>, lesser<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_logoot_.logootnode.html" class="tsd-signature-type">LogootNode</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_utils_.html#compareresult" class="tsd-signature-type">CompareResult</a></li>
-											</ul>
-											<ul class="tsd-descriptions">
-												<li class="tsd-description">
-													<h4 class="tsd-parameters-title">Parameters</h4>
-													<ul class="tsd-parameters">
-														<li>
-															<h5>node: <a href="../classes/_listmodel_logoot_.logootnode.html" class="tsd-signature-type">LogootNode</a></h5>
-														</li>
-														<li>
-															<h5>conflict: <a href="_listmodel_index_.html#conflict" class="tsd-signature-type">Conflict</a></h5>
-														</li>
-														<li>
-															<h5>lesser: <a href="../classes/_listmodel_logoot_.logootnode.html" class="tsd-signature-type">LogootNode</a></h5>
-														</li>
-													</ul>
-													<h4 class="tsd-returns-title">Returns <a href="_utils_.html#compareresult" class="tsd-signature-type">CompareResult</a></h4>
-												</li>
-											</ul>
-										</li>
-									</ul>
-								</li>
-								<li>
-									<h5>addNode: <span class="tsd-signature-type">function</span></h5>
-									<div class="tsd-comment tsd-typography">
-										<p>A function only called when a node is split into pieces
-										and additional nodes must be added as side-effects of the operation.</p>
-									</div>
-									<ul class="tsd-parameters">
-										<li class="tsd-parameter-siganture">
-											<ul class="tsd-signatures tsd-kind-type-literal tsd-is-not-exported">
-												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>node<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_logoot_.logootnode.html" class="tsd-signature-type">LogootNode</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
-											</ul>
-											<ul class="tsd-descriptions">
-												<li class="tsd-description">
-													<h4 class="tsd-parameters-title">Parameters</h4>
-													<ul class="tsd-parameters">
-														<li>
-															<h5>node: <a href="../classes/_listmodel_logoot_.logootnode.html" class="tsd-signature-type">LogootNode</a></h5>
-														</li>
-													</ul>
-													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
-												</li>
-											</ul>
-										</li>
-									</ul>
-								</li>
-								<li>
-									<h5>informRemoval: <span class="tsd-signature-type">function</span></h5>
-									<div class="tsd-comment tsd-typography">
-										<p>A function to be called when a section or all of a
-										node is removed so that the caller can modify the document as necessary.</p>
-									</div>
-									<ul class="tsd-parameters">
-										<li class="tsd-parameter-siganture">
-											<ul class="tsd-signatures tsd-kind-type-literal tsd-is-not-exported">
-												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span>node<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_logoot_.logootnode.html" class="tsd-signature-type">LogootNode</a>, pos<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, length<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span>, whole<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
-											</ul>
-											<ul class="tsd-descriptions">
-												<li class="tsd-description">
-													<h4 class="tsd-parameters-title">Parameters</h4>
-													<ul class="tsd-parameters">
-														<li>
-															<h5>node: <a href="../classes/_listmodel_logoot_.logootnode.html" class="tsd-signature-type">LogootNode</a></h5>
-														</li>
-														<li>
-															<h5>pos: <span class="tsd-signature-type">number</span></h5>
-														</li>
-														<li>
-															<h5>length: <span class="tsd-signature-type">number</span></h5>
-														</li>
-														<li>
-															<h5>whole: <span class="tsd-signature-type">boolean</span></h5>
-														</li>
-													</ul>
-													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
-												</li>
-											</ul>
-										</li>
-									</ul>
+									<h5>b: <a href="../classes/_listmodel_logoot_.logootnodegroup.html" class="tsd-signature-type">LogootNodeGroup</a></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_listmodel_logoot_.html#logootnodewithmeta" class="tsd-signature-type">LogootNodeWithMeta</a><span class="tsd-signature-symbol">[]</span></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -353,10 +407,16 @@
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
 					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="../classes/_listmodel_index_.insertionconflicterror.html" class="tsd-kind-icon">Insertion<wbr>Conflict<wbr>Error</a>
+					</li>
+					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="../classes/_listmodel_index_.listdocumentmodel.html" class="tsd-kind-icon">List<wbr>Document<wbr>Model</a>
 					</li>
 					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="_listmodel_index_.html#conflict" class="tsd-kind-icon">Conflict</a>
+						<a href="_listmodel_index_.html#insertionoperation" class="tsd-kind-icon">Insertion<wbr>Operation</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="_listmodel_index_.html#joinfunction" class="tsd-kind-icon">Join<wbr>Function</a>
 					</li>
 					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="_listmodel_index_.html#knownpositionbst" class="tsd-kind-icon">Known<wbr>Position<wbr>Bst</a>
@@ -365,10 +425,22 @@
 						<a href="_listmodel_index_.html#logootbst" class="tsd-kind-icon">Logoot<wbr>Bst</a>
 					</li>
 					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="_listmodel_index_.html#markoperation" class="tsd-kind-icon">Mark<wbr>Operation</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="_listmodel_index_.html#operation" class="tsd-kind-icon">Operation</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="_listmodel_index_.html#removal" class="tsd-kind-icon">Removal</a>
 					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="_listmodel_index_.html#removaloperation" class="tsd-kind-icon">Removal<wbr>Operation</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="_listmodel_index_.html#translationoperation" class="tsd-kind-icon">Translation<wbr>Operation</a>
+					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="_listmodel_index_.html#_mergenode" class="tsd-kind-icon">_merge<wbr>Node</a>
+						<a href="_listmodel_index_.html#minimaljoinfunction" class="tsd-kind-icon">Minimal<wbr>Join<wbr>Function</a>
 					</li>
 				</ul>
 			</nav>

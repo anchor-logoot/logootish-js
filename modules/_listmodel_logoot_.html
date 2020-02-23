@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>&quot;listmodel/logoot&quot; | logootish-js</title>
+	<title>&quot;listmodel/logoot&quot; | logootish-js - v0.3.0</title>
 	<meta name="description" content="">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -22,7 +22,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="../index.html" class="title">logootish-js</a>
+					<a href="../index.html" class="title">logootish-js - v0.3.0</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -66,21 +66,50 @@
 <div class="container container-main">
 	<div class="row">
 		<div class="col-8 col-content">
+			<section class="tsd-panel tsd-comment">
+				<div class="tsd-comment tsd-typography">
+					<dl class="tsd-comment-tags">
+						<dt>file</dt>
+						<dd><p>This contains most of the data types used by the <code>ListDocumentModel</code>.
+								While <code>index.ts</code> does most of the heavy lifting, this file is the source of
+								most definitions used there. The files were split to make it easier for me to
+							switch since I can switch using tabs in my text editor.</p>
+						</dd>
+						<dt>author</dt>
+						<dd><p>Nathan Pennie <a href="mailto:&#107;&#x62;&#x31;&#114;&#x64;&#64;&#107;&#98;&#x31;&#x72;&#100;&#x2e;&#110;&#101;&#x74;">&#107;&#x62;&#x31;&#114;&#x64;&#64;&#107;&#98;&#x31;&#x72;&#100;&#x2e;&#110;&#101;&#x74;</a></p>
+						</dd>
+					</dl>
+				</div>
+			</section>
 			<section class="tsd-panel-group tsd-index-group">
 				<h2>Index</h2>
 				<section class="tsd-panel tsd-index-panel">
 					<div class="tsd-index-content">
 						<section class="tsd-index-section tsd-is-not-exported">
+							<h3>Enumerations</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-enum tsd-parent-kind-external-module tsd-is-not-exported"><a href="../enums/_listmodel_logoot_.nodetype.html" class="tsd-kind-icon">Node<wbr>Type</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section tsd-is-not-exported">
 							<h3>Classes</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported"><a href="../classes/_listmodel_logoot_.logootnode.html" class="tsd-kind-icon">Logoot<wbr>Node</a></li>
+								<li class="tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported"><a href="../classes/_listmodel_logoot_.conflictgroup.html" class="tsd-kind-icon">Conflict<wbr>Group</a></li>
+								<li class="tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported"><a href="../classes/_listmodel_logoot_.logootnodegroup.html" class="tsd-kind-icon">Logoot<wbr>Node<wbr>Group</a></li>
 								<li class="tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported"><a href="../classes/_listmodel_logoot_.logootposition.html" class="tsd-kind-icon">Logoot<wbr>Position</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section tsd-is-not-exported">
 							<h3>Type aliases</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_logoot_.html#logootnodewithmeta" class="tsd-kind-icon">Logoot<wbr>Node<wbr>With<wbr>Meta</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_logoot_.html#branchkey" class="tsd-kind-icon">Branch<wbr>Key</a></li>
+								<li class="tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_logoot_.html#logootnode" class="tsd-kind-icon">Logoot<wbr>Node</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section tsd-is-not-exported">
+							<h3>Object literals</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-object-literal tsd-parent-kind-external-module tsd-is-not-exported"><a href="_listmodel_logoot_.html#nt_string" class="tsd-kind-icon">nt_<wbr>string</a></li>
 							</ul>
 						</section>
 					</div>
@@ -89,14 +118,72 @@
 			<section class="tsd-panel-group tsd-member-group tsd-is-not-exported">
 				<h2>Type aliases</h2>
 				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
-					<a name="logootnodewithmeta" class="tsd-anchor"></a>
-					<h3>Logoot<wbr>Node<wbr>With<wbr>Meta</h3>
-					<div class="tsd-signature tsd-kind-icon">Logoot<wbr>Node<wbr>With<wbr>Meta<span class="tsd-signature-symbol">:</span> <a href="../classes/_listmodel_logoot_.logootnode.html" class="tsd-signature-type">LogootNode</a><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-type">object</span></div>
+					<a name="branchkey" class="tsd-anchor"></a>
+					<h3>Branch<wbr>Key</h3>
+					<div class="tsd-signature tsd-kind-icon">Branch<wbr>Key<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">symbol</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/fd1834c/src/listmodel/logoot.ts#L309">src/listmodel/logoot.ts:309</a></li>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/logoot.ts#L280">src/listmodel/logoot.ts:280</a></li>
 						</ul>
 					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>A type used to identify a branch. This value should be used to look up a
+								user-presentable name in another map stored outside of <code>logootish-js</code>. This
+								is implementation-defined and allows for the broadest possible definition of
+							a branch.</p>
+						</div>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="logootnode" class="tsd-anchor"></a>
+					<h3>Logoot<wbr>Node</h3>
+					<div class="tsd-signature tsd-kind-icon">Logoot<wbr>Node<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/logoot.ts#L493">src/listmodel/logoot.ts:493</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-type-declaration">
+						<h4>Type declaration</h4>
+						<ul class="tsd-parameters">
+							<li class="tsd-parameter">
+								<h5>rclk<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">LogootInt</span></h5>
+							</li>
+							<li class="tsd-parameter">
+								<h5>type<span class="tsd-signature-symbol">: </span><a href="../enums/_listmodel_logoot_.nodetype.html" class="tsd-signature-type">NodeType</a></h5>
+							</li>
+						</ul>
+					</div>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group tsd-is-not-exported">
+				<h2>Object literals</h2>
+				<section class="tsd-panel tsd-member tsd-kind-object-literal tsd-parent-kind-external-module tsd-is-not-exported">
+					<a name="nt_string" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagConst">Const</span> nt_<wbr>string</h3>
+					<div class="tsd-signature tsd-kind-icon">nt_<wbr>string<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">object</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/logoot.ts#L292">src/listmodel/logoot.ts:292</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Names for NodeType that are printed in debug information.</p>
+						</div>
+					</div>
+					<section class="tsd-panel tsd-member tsd-kind-variable tsd-parent-kind-object-literal tsd-is-not-exported">
+						<a name="nt_string.__computed" class="tsd-anchor"></a>
+						<h3>__computed</h3>
+						<div class="tsd-signature tsd-kind-icon">__computed<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> =&nbsp;&quot;REMOVAL&quot;</span></div>
+						<aside class="tsd-sources">
+							<ul>
+								<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/logoot.ts#L293">src/listmodel/logoot.ts:293</a></li>
+								<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/1636d7d/src/listmodel/logoot.ts#L294">src/listmodel/logoot.ts:294</a></li>
+							</ul>
+						</aside>
+					</section>
 				</section>
 			</section>
 		</div>
@@ -131,14 +218,26 @@
 			</nav>
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
+					<li class=" tsd-kind-enum tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="../enums/_listmodel_logoot_.nodetype.html" class="tsd-kind-icon">Node<wbr>Type</a>
+					</li>
 					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="../classes/_listmodel_logoot_.logootnode.html" class="tsd-kind-icon">Logoot<wbr>Node</a>
+						<a href="../classes/_listmodel_logoot_.conflictgroup.html" class="tsd-kind-icon">Conflict<wbr>Group</a>
+					</li>
+					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="../classes/_listmodel_logoot_.logootnodegroup.html" class="tsd-kind-icon">Logoot<wbr>Node<wbr>Group</a>
 					</li>
 					<li class=" tsd-kind-class tsd-parent-kind-external-module tsd-is-not-exported">
 						<a href="../classes/_listmodel_logoot_.logootposition.html" class="tsd-kind-icon">Logoot<wbr>Position</a>
 					</li>
 					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
-						<a href="_listmodel_logoot_.html#logootnodewithmeta" class="tsd-kind-icon">Logoot<wbr>Node<wbr>With<wbr>Meta</a>
+						<a href="_listmodel_logoot_.html#branchkey" class="tsd-kind-icon">Branch<wbr>Key</a>
+					</li>
+					<li class=" tsd-kind-type-alias tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="_listmodel_logoot_.html#logootnode" class="tsd-kind-icon">Logoot<wbr>Node</a>
+					</li>
+					<li class=" tsd-kind-object-literal tsd-parent-kind-external-module tsd-is-not-exported">
+						<a href="_listmodel_logoot_.html#nt_string" class="tsd-kind-icon">nt_<wbr>string</a>
 					</li>
 				</ul>
 			</nav>
