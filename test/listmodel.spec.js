@@ -403,5 +403,64 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         expect(e.string).to.equal('acbd')
       })
     })
+    it('CGs with same start position should be offset', () => {
+      e.runOperations(
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(10),
+          1,
+          new LogootInt(0),
+          NodeType.REMOVAL,
+          ldm.canJoin
+        ),
+        'a'
+      )
+      e.runOperations(
+        ldm._mergeNode(
+          u2,
+          LogootPosition.fromInts(12),
+          1,
+          new LogootInt(0),
+          NodeType.REMOVAL,
+          ldm.canJoin
+        ),
+        'b'
+      )
+      e.runOperations(
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(9),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        ),
+        'b'
+      )
+      e.runOperations(
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(8),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        ),
+        'a'
+      )
+      e.runOperations(
+        ldm._mergeNode(
+          u2,
+          LogootPosition.fromInts(13),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        ),
+        'c'
+      )
+      console.log(ldm.ldoc_bst.toString())
+      expect(e.string).to.equal('abc')
+    })
   })
 })
