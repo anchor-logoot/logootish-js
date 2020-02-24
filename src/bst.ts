@@ -515,6 +515,8 @@ class Bst<T extends S, S = T> {
    * Perform an operation on all of the elements greater than or equal to a
    * search type or object.
    * @param value - The search type or object at which to start a search.
+   * @param sequential - If true, `operation` will be called sequentially. If
+   * false, `operation` will be called for the root node first, then children.
    * @param operation - The function to run on each node.
    * @param node - The node in the tree where the search can be started. It's
    * optional and does not need to be changed for nearly all use cases.
@@ -522,20 +524,28 @@ class Bst<T extends S, S = T> {
   operateOnAllGteq(
     value: S,
     operation: NodeOp<T>,
+    sequential = true,
     node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')
   ): void {
     if (node.value) {
       if (this.gteqcmp(node.value.data, value)) {
-        operation(node.value)
+        if (!sequential) {
+          operation(node.value)
+        }
         this.operateOnAllGteq(
           value,
           operation,
+          sequential,
           new MemberPtr(node.value, 'left')
         )
+        if (sequential) {
+          operation(node.value)
+        }
       }
       this.operateOnAllGteq(
         value,
         operation,
+        sequential,
         new MemberPtr(node.value, 'right')
       )
     }
@@ -544,6 +554,8 @@ class Bst<T extends S, S = T> {
    * Perform an operation on all of the elements less than or equal to a
    * search type or object.
    * @param value - The search type or object at which to end a search.
+   * @param sequential - If true, `operation` will be called sequentially. If
+   * false, `operation` will be called for the root node first, then children.
    * @param operation - The function to run on each node.
    * @param node - The node in the tree where the search can be started. It's
    * optional and does not need to be changed for nearly all use cases.
@@ -551,35 +563,70 @@ class Bst<T extends S, S = T> {
   operateOnAllLteq(
     value: S,
     operation: NodeOp<T>,
+    sequential = true,
     node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')
   ): void {
     if (node.value) {
       if (this.gteqcmp(value, node.value.data)) {
-        operation(node.value)
+        if (!sequential) {
+          operation(node.value)
+        }
         this.operateOnAllLteq(
           value,
           operation,
+          sequential,
+          new MemberPtr(node.value, 'left')
+        )
+        if (sequential) {
+          operation(node.value)
+        }
+        this.operateOnAllLteq(
+          value,
+          operation,
+          sequential,
           new MemberPtr(node.value, 'right')
         )
+      } else {
+        this.operateOnAllLteq(
+          value,
+          operation,
+          sequential,
+          new MemberPtr(node.value, 'left')
+        )
       }
-      this.operateOnAllLteq(value, operation, new MemberPtr(node.value, 'left'))
     }
   }
 
   /**
    * Perform an operation on all nodes.
    * @param operation - The function to run on each node.
+   * @param sequential - If true, `operation` will be called sequentially. If
+   * false, `operation` will be called for the root node first, then children.
    * @param node - The node in the tree where the search can be started. It's
    * optional and does not need to be changed for nearly all use cases.
    */
   operateOnAll(
     operation: NodeOp<T>,
+    sequential = true,
     node: BstNodePtr<T> = new MemberPtr(this, 'bst_root')
   ): void {
     if (node.value) {
-      this.operateOnAll(operation, new MemberPtr(node.value, 'left'))
-      operation(node.value)
-      this.operateOnAll(operation, new MemberPtr(node.value, 'right'))
+      if (!sequential) {
+        operation(node.value)
+      }
+      this.operateOnAll(
+        operation,
+        sequential,
+        new MemberPtr(node.value, 'left')
+      )
+      if (sequential) {
+        operation(node.value)
+      }
+      this.operateOnAll(
+        operation,
+        sequential,
+        new MemberPtr(node.value, 'right')
+      )
     }
   }
 

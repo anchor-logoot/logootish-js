@@ -117,7 +117,23 @@ class ListDocumentModel {
    * memory. It is used to go from position -> node
    */
   ldoc_bst: KnownPositionBst = new Bst(
-    (a, b) => (a.known_position - b.known_position) as CompareResult
+    (a: ConflictGroup, b: ConflictGroup): CompareResult => {
+      if (a.known_position > b.known_position) {
+        return 1
+      } else if (a.known_position < b.known_position) {
+        return -1
+      } else {
+        // I can factor in a calculated start like this because CGs will always
+        // be in order by calculated start as well, but it's much easier to
+        // look them up by known_position.
+        const astart = a.logoot_start
+        const bstart = b.logoot_start
+        if (astart && bstart) {
+          return astart.cmp(bstart)
+        }
+      }
+      return 0
+    }
   )
   /**
    * This BST maps Logoot position identifiers to their text node to allow
@@ -711,7 +727,7 @@ class ListDocumentModel {
             last_group ? last_group.group.ldoc_end : 0
           )
           newgroup.group.branch_order.push(br)
-          this.ldoc_bst.add(newgroup.group)
+
           conflict_order.splice(
             last_group ? conflict_order.indexOf(last_group.group) + 1 : 0,
             0,
@@ -735,6 +751,9 @@ class ListDocumentModel {
 
         last_group = newgroup
         this.logoot_bst.add(newgroup)
+        if (!last_join && !next_join) {
+          this.ldoc_bst.add(newgroup.group)
+        }
       }
 
       const group_length = group_level_end.copy().sub(group_level_start).js_int
@@ -810,7 +829,8 @@ class ListDocumentModel {
     // Now, update all nodes after the ones in conflict_order
     this.ldoc_bst.operateOnAllGteq(
       { known_position: original_known_end },
-      ({ data }) => {
+      (node) => {
+        const { data } = node
         if (!data.groups.length) {
           throw new FatalError('An empty conflict group was found in the BST')
         }
@@ -820,7 +840,8 @@ class ListDocumentModel {
         if (!conflict_order.includes(data)) {
           data.known_position += known_position_shift
         }
-      }
+      },
+      false
     )
 
     return operations
