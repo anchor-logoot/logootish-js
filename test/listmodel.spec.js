@@ -2,133 +2,406 @@ import chai from 'chai'
 import {
   LogootInt,
   LogootPosition,
-  ListDocumentModel
+  ListDocumentModel,
+  NodeType
 } from '../dist/logootish-js.js'
 
 chai.expect()
 
 const expect = chai.expect
 
-describe('ListDocumentModel', () => {
-  describe('local insert', () => {
-    it('single insert, length = 1', () => {
-      const m = new ListDocumentModel()
-      const { position, length, rclk } = m.insertLocal(0, 1)
+class TestOperationExecuter {
+  constructor() {
+    this.data = []
+  }
 
-      const expected_pos = new LogootPosition()
-      expect(position.cmp(expected_pos)).to.equal(0)
-      expect(length).to.equal(1)
-      expect(rclk.cmp(new LogootInt(0))).to.equal(0)
-    })
-    it('single insert, length = 0', () => {
-      const m = new ListDocumentModel()
-      const { position, length, rclk } = m.insertLocal(0, 0)
-
-      const expected_pos = new LogootPosition()
-      expect(position.cmp(expected_pos)).to.equal(0)
-      expect(length).to.equal(0)
-      expect(rclk.cmp(new LogootInt(0))).to.equal(0)
-    })
-    it('consecutive insert, length = 1', () => {
-      const m = new ListDocumentModel()
-      const zero_pos = new LogootPosition()
-      {
-        const { position, length, rclk } = m.insertLocal(0, 1)
-
-        expect(position.cmp(zero_pos)).to.equal(0)
-        expect(length).to.equal(1)
-        expect(rclk.cmp(new LogootInt(0))).to.equal(0)
-      }
-      {
-        const { position, length, rclk } = m.insertLocal(1, 1)
-
-        expect(position.cmp(zero_pos.offsetLowest(1))).to.equal(0)
-        expect(length).to.equal(1)
-        expect(rclk.cmp(new LogootInt(0))).to.equal(0)
-      }
-    })
-    it('bordered insert', () => {
-      const m = new ListDocumentModel()
-      const expected_pos = new LogootPosition()
-        .offsetLowest(1)
-        .equivalentPositionAtLevel(1)
-
-      m.insertLocal(0, 1)
-      m.insertLocal(1, 1)
-      {
-        const { position, length, rclk } = m.insertLocal(1, 1)
-
-        expect(position.cmp(expected_pos)).to.equal(0)
-        expect(length).to.equal(1)
-        expect(rclk.cmp(new LogootInt(0))).to.equal(0)
+  runOperations(ops, origin='') {
+    ops.forEach(({ type, start, length, offset, conflicting }) => {
+      if (type === 'i') {
+        const text = origin.substr(offset, length)
+        if (text.length !== length) {
+          throw new Error(
+            'Algorithm provided out-of-range sections of source data'
+          )
+        }
+        this.data.splice(
+          start,
+          0,
+          ...text.split('').map((data) => ({ data, cfl: false }))
+        )
+      } else if (type === 'r') {
+        const removed = this.data.splice(start, length)
+        if (removed !== length) {
+          throw new Error(
+            'Algorithm provided out-of-range removal'
+          )
+        }
+      } else if (type === 'm') {
+        const nodes = this.data.slice(start, start + length)
+        if (nodes.length !== length) {
+          throw new Error(
+            'Algorithm provided out-of-range mark'
+          )
+        }
+        nodes.forEach((n) => {
+          n.cfl = conflicting
+        })
+      } else {
+        throw new Error(
+          `Algorithm provided invalid type ${type}`
+        )
       }
     })
-    it('mid-node insert', () => {
-      const m = new ListDocumentModel()
-      const expected_pos = new LogootPosition()
-        .offsetLowest(1)
-        .equivalentPositionAtLevel(1)
+  }
 
-      m.insertLocal(0, 2)
-      {
-        const { position, length, rclk } = m.insertLocal(1, 1)
+  get string() {
+    return this.data.map(({ data }) => data).join('')
+  }
+  get mark_string() {
+    return this.data.map(({ cfl }) => (cfl ? 'c' : ' ')).join('')
+  }
+}
 
-        expect(position.cmp(expected_pos)).to.equal(0)
-        expect(length).to.equal(1)
-        expect(rclk.cmp(new LogootInt(0))).to.equal(0)
-      }
+describe('ListDocumentModel with MinimalJoinFunction', () => {
+  const u1 = Symbol('U1')
+  const u2 = Symbol('U2')
+  const u3 = Symbol('U3')
+  let ldm
+  let e
+  beforeEach('create LDM', () => {
+    e = new TestOperationExecuter()
+    ldm = new ListDocumentModel(u1)
+  })
+
+  describe('_mergeNode', () => {
+    describe('basic insertions', () => {
+      it('should insert a single node at 0', () => {
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(0),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'a'
+        )
+        expect(e.string).to.equal('a')
+      })
+      it('should insert at 0 regardless of original LogootPosition', () => {
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(1,2,3,4),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'a'
+        )
+        expect(e.string).to.equal('a')
+      })
+      it('should insert longer nodes', () => {
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(0),
+            5,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'abcde'
+        )
+        expect(e.string).to.equal('abcde')
+      })
+      it('should insert for different users w/o conflict', () => {
+        e.runOperations(
+          ldm._mergeNode(
+            u2,
+            LogootPosition.fromInts(0),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'a'
+        )
+        expect(e.string).to.equal('a')
+        expect(e.mark_string).to.equal(' ')
+      })
     })
-    it('pollution test', () => {
-      // Check for objects being modified after they were returned.
-      const m = new ListDocumentModel()
-      const zpos = new LogootPosition()
-      const deep_pos = zpos.offsetLowest(1).equivalentPositionAtLevel(1)
-      const deep_pos2 = deep_pos.offsetLowest(1).equivalentPositionAtLevel(2)
-
-      const n1 = m.insertLocal(0, 1)
-      const n2 = m.insertLocal(1, 1)
-      const n3 = m.insertLocal(1, 2)
-      const n4 = m.insertLocal(2, 1)
-
-      expect(n1.position.cmp(zpos)).to.equal(0)
-      expect(n1.length).to.equal(1)
-      expect(n1.rclk.cmp(new LogootInt(0))).to.equal(0)
-
-      expect(n2.position.cmp(zpos.offsetLowest(1))).to.equal(0)
-      expect(n2.length).to.equal(1)
-      expect(n2.rclk.cmp(new LogootInt(0))).to.equal(0)
-
-      expect(n3.position.cmp(deep_pos)).to.equal(0)
-      expect(n3.length).to.equal(2)
-      expect(n3.rclk.cmp(new LogootInt(0))).to.equal(0)
-
-      expect(n4.position.cmp(deep_pos2)).to.equal(0)
-      expect(n4.length).to.equal(1)
-      expect(n4.rclk.cmp(new LogootInt(0))).to.equal(0)
+    describe('multi-node', () => {
+      it('should insert consecutive nodes', () => {
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(0),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'a'
+        )
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(1),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'b'
+        )
+        expect(e.string).to.equal('ab')
+      })
+      it('should ignore insertion order', () => {
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(1),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'b'
+        )
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(0),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'a'
+        )
+        expect(e.string).to.equal('ab')
+      })
+      it('should properly handle different levels', () => {
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(1, 0),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'a'
+        )
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(1),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'b'
+        )
+        expect(e.string).to.equal('ab')
+      })
     })
-    it('hello world practical', () => {
-      // This is a version of one of my original tests when I was still playing
-      // around with the algorithm. I would type `world`, then add `ho `, then
-      // add the `ell`. This would pick up most large errors.
-      const m = new ListDocumentModel()
-      const zpos = new LogootPosition()
-      const deep_pos = zpos.inverseOffsetLowest(2).equivalentPositionAtLevel(1)
-
-      const n1 = m.insertLocal(0, 5) // `world`
-      const n2 = m.insertLocal(0, 3) // `ho `
-      const n3 = m.insertLocal(1, 3) // `ell`
-
-      expect(n1.position.cmp(zpos)).to.equal(0)
-      expect(n1.length).to.equal(5)
-      expect(n1.rclk.cmp(new LogootInt(0))).to.equal(0)
-
-      expect(n2.position.cmp(zpos.inverseOffsetLowest(3))).to.equal(0)
-      expect(n2.length).to.equal(3)
-      expect(n2.rclk.cmp(new LogootInt(0))).to.equal(0)
-
-      expect(n3.position.cmp(deep_pos)).to.equal(0)
-      expect(n3.length).to.equal(3)
-      expect(n3.rclk.cmp(new LogootInt(0))).to.equal(0)
+    describe('between-node', () => {
+      it('two nodes, same level, with flanking space', () => {
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(0),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'a'
+        )
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(4),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'b'
+        )
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(2),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'c'
+        )
+        expect(e.string).to.equal('acb')
+      })
+      it('two nodes, insertion on lower level', () => {
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(0),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'a'
+        )
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(1),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'b'
+        )
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(1,5),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'c'
+        )
+        expect(e.string).to.equal('acb')
+      })
+      it('two nodes, left and insertion on lower level', () => {
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(1,4),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'a'
+        )
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(1),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'b'
+        )
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(1,5),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'c'
+        )
+        expect(e.string).to.equal('acb')
+      })
+      it('two nodes, right and insertion on lower level', () => {
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(0),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'a'
+        )
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(1,6),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'b'
+        )
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(1,5),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'c'
+        )
+        expect(e.string).to.equal('acb')
+      })
+      it('should not corrupt start position of lesser', () => {
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(10),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'a'
+        )
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(11),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'b'
+        )
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(11,0),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'c'
+        )
+        e.runOperations(
+          ldm._mergeNode(
+            u1,
+            LogootPosition.fromInts(12),
+            1,
+            new LogootInt(0),
+            NodeType.DATA,
+            ldm.canJoin
+          ),
+          'd'
+        )
+        expect(e.string).to.equal('acbd')
+      })
     })
   })
 })
