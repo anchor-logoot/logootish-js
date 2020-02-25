@@ -16,7 +16,7 @@ class TestOperationExecuter {
   }
 
   runOperations(ops, origin='') {
-    ops.forEach(({ type, start, length, offset, conflicting }) => {
+    ops.forEach(({ type, start, length, offset, conflicting, source, dest }) => {
       if (type === 'i') {
         const text = origin.substr(offset, length)
         if (text.length !== length) {
@@ -31,11 +31,24 @@ class TestOperationExecuter {
         )
       } else if (type === 'r') {
         const removed = this.data.splice(start, length)
-        if (removed !== length) {
+        if (removed.length !== length) {
           throw new Error(
             'Algorithm provided out-of-range removal'
           )
         }
+      } else if (type === 't') {
+        const els = this.data.splice(source, length)
+        if (els.length !== length) {
+          throw new Error(
+            'Algorithm provided out-of-range source translation'
+          )
+        }
+        if (dest > this.data.length) {
+          throw new Error(
+            'Algorithm provided out-of-range destination translation'
+          )
+        }
+        this.data.splice(dest, 0, ...els)
       } else if (type === 'm') {
         const nodes = this.data.slice(start, start + length)
         if (nodes.length !== length) {
@@ -403,6 +416,11 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         expect(e.string).to.equal('acbd')
       })
     })
+
+    // ---------------------------------------------------------------------- //
+    // The following tests are ones that I developed to test specific bugs that
+    // people have encountered, but I haven't yet made the categories that they
+    // would belong to like above. For now, they are here.
     it('CGs with same start position should be offset', () => {
       e.runOperations(
         ldm._mergeNode(
@@ -459,8 +477,43 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         ),
         'c'
       )
-      console.log(ldm.ldoc_bst.toString())
       expect(e.string).to.equal('abc')
+    })
+    it('insertion on top of other with lower level in middle', () => {
+      e.runOperations(
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(1),
+          5,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        ),
+        'abceg'
+      )
+      e.runOperations(
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(4,0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        ),
+        'd'
+      )
+      e.runOperations(
+        ldm._mergeNode(
+          u2,
+          LogootPosition.fromInts(4),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        ),
+        'f'
+      )
+      expect(e.string).to.equal('abcdefg')
     })
   })
 })

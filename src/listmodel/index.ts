@@ -485,13 +485,15 @@ class ListDocumentModel {
       lesser.start.cmp(nstart) < 0 &&
       lesser.end.cmp(nend) > 0
     ) {
-      const lesser_end = lesser.splitAround(
-        nstart
-          .copy()
-          .level(lesser.start.levels)
-          .sub(lesser.start.level(lesser.start.levels)).js_int
-      )
-      skip_ranges.push(lesser_end)
+      const split_pos = nstart
+        .copy()
+        .level(lesser.start.levels)
+        .sub(lesser.start.level(lesser.start.levels)).js_int
+      if (split_pos > 0 && split_pos < lesser.length) {
+        const lesser_end = lesser.splitAround(split_pos)
+        skip_ranges.push(lesser_end)
+        this.logoot_bst.add(lesser_end)
+      }
     } else if (greater) {
       skip_ranges.push(greater)
     }
