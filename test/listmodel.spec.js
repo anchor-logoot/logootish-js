@@ -514,6 +514,44 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         'f'
       )
       expect(e.string).to.equal('abcdefg')
+      expect(e.mark_string).to.equal('    cc ')
+    })
+    it('low level conflict after high level node', () => {
+      e.runOperations(
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(3),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        ),
+        'a'
+      )
+      e.runOperations(
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(4,0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        ),
+        'b'
+      )
+      e.runOperations(
+        ldm._mergeNode(
+          u2,
+          LogootPosition.fromInts(4,0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        ),
+        'c'
+      )
+      expect(e.string).to.equal('abc')
+      expect(e.mark_string).to.equal(' cc')
     })
   })
 })

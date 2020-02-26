@@ -464,7 +464,7 @@ class ListDocumentModel {
     } else if (_greater && _greater.length) {
       greater = _greater[0]
     }
-    const skip_ranges = _skip_ranges
+    let skip_ranges = _skip_ranges
       ? _skip_ranges.sort((a, b) => a.start.cmp(b.start))
       : []
 
@@ -498,12 +498,18 @@ class ListDocumentModel {
       skip_ranges.push(greater)
     }
 
+    // Nodes on higher levels do not matter in our collision search, only in the
+    // sorting done by the BSTs. Lower levels matter since we must skip them.
+    // TODO: Maybe a better search algo could come up with a pre-filtered
+    // `skip_ranges` for me
+    skip_ranges = skip_ranges.filter(({ start }) => start.levels >= level)
+
     // Ensure that there's something at the end of the list so that it will
     // always run regardless and if there are nodes, that there is always a node
     // last in the array at the end position
     if (
       !skip_ranges.length ||
-      skip_ranges[skip_ranges.length - 1].end.cmp(nend) < 0
+      skip_ranges[skip_ranges.length - 1].start.cmp(nend) < 0
     ) {
       const vgroup = new LogootNodeGroup()
       vgroup.start = nend
@@ -694,11 +700,15 @@ class ListDocumentModel {
       const empty_length = group_level_start.copy().sub(last_start).js_int
       const empty_offset = last_start.copy().sub(nstart.l(level)).js_int
 
+      // First, add a new group to the empty space (if there is any)
       if (
         empty_length > 0 ||
         // If the next node has fewer levels, the empty space is *technically*
         // infinite, but empty_length won't show this
-        (group.start.levels < level && length - empty_offset > 0)
+        (group.start.levels < level &&
+          length - empty_offset > 0 &&
+          group.start.cmp(nstart) > 0 &&
+          last_start.cmp(nstart.l(level)) < 0)
       ) {
         const newgroup = new LogootNodeGroup()
         newgroup.start = nstart.copy()
@@ -760,6 +770,7 @@ class ListDocumentModel {
 
       const group_length = group_level_end.copy().sub(group_level_start).js_int
       const group_offset = group_level_start.copy().sub(nstart.l(level)).js_int
+      // Now, add the new node to the existing group
       if (
         group.start.levels === level &&
         group_length > 0 &&
