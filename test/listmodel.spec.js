@@ -85,12 +85,25 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
     e = new TestOperationExecuter()
     ldm = new ListDocumentModel(u1)
   })
+  const mergeNode = (...args) => {
+    const ops = ldm._mergeNode(...args)
+    try {
+      ldm.selfTest()
+    } catch (e) {
+      console.log()
+      console.error('Found BST corruption. Dumping BSTs...')
+      console.error(ldm.ldoc_bst.toString())
+      console.error(ldm.logoot_bst.toString())
+      throw e
+    }
+    return ops
+  }
 
   describe('_mergeNode', () => {
     describe('basic insertions', () => {
       it('should insert a single node at 0', () => {
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(0),
             1,
@@ -104,7 +117,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
       })
       it('should insert at 0 regardless of original LogootPosition', () => {
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(1,2,3,4),
             1,
@@ -118,7 +131,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
       })
       it('should insert longer nodes', () => {
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(0),
             5,
@@ -132,7 +145,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
       })
       it('should insert for different users w/o conflict', () => {
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u2,
             LogootPosition.fromInts(0),
             1,
@@ -149,7 +162,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
     describe('multi-node', () => {
       it('should insert consecutive nodes', () => {
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(0),
             1,
@@ -160,7 +173,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           'a'
         )
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(1),
             1,
@@ -174,7 +187,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
       })
       it('should ignore insertion order', () => {
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(1),
             1,
@@ -185,7 +198,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           'b'
         )
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(0),
             1,
@@ -199,7 +212,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
       })
       it('should properly handle different levels', () => {
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(1, 0),
             1,
@@ -210,7 +223,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           'a'
         )
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(1),
             1,
@@ -226,7 +239,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
     describe('between-node', () => {
       it('two nodes, same level, with flanking space', () => {
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(0),
             1,
@@ -237,7 +250,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           'a'
         )
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(4),
             1,
@@ -248,7 +261,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           'b'
         )
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(2),
             1,
@@ -262,7 +275,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
       })
       it('two nodes, insertion on lower level', () => {
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(0),
             1,
@@ -273,7 +286,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           'a'
         )
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(1),
             1,
@@ -284,7 +297,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           'b'
         )
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(1,5),
             1,
@@ -298,7 +311,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
       })
       it('two nodes, left and insertion on lower level', () => {
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(1,4),
             1,
@@ -309,7 +322,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           'a'
         )
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(1),
             1,
@@ -320,7 +333,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           'b'
         )
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(1,5),
             1,
@@ -334,7 +347,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
       })
       it('two nodes, right and insertion on lower level', () => {
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(0),
             1,
@@ -345,7 +358,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           'a'
         )
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(1,6),
             1,
@@ -356,7 +369,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           'b'
         )
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(1,5),
             1,
@@ -370,7 +383,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
       })
       it('should not corrupt start position of lesser', () => {
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(10),
             1,
@@ -381,7 +394,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           'a'
         )
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(11),
             1,
@@ -392,7 +405,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           'b'
         )
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(11,0),
             1,
@@ -403,7 +416,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           'c'
         )
         e.runOperations(
-          ldm._mergeNode(
+          mergeNode(
             u1,
             LogootPosition.fromInts(12),
             1,
@@ -423,7 +436,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
     // would belong to like above. For now, they are here.
     it('CGs with same start position should be offset', () => {
       e.runOperations(
-        ldm._mergeNode(
+        mergeNode(
           u1,
           LogootPosition.fromInts(10),
           1,
@@ -434,7 +447,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         'a'
       )
       e.runOperations(
-        ldm._mergeNode(
+        mergeNode(
           u2,
           LogootPosition.fromInts(12),
           1,
@@ -445,7 +458,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         'b'
       )
       e.runOperations(
-        ldm._mergeNode(
+        mergeNode(
           u1,
           LogootPosition.fromInts(9),
           1,
@@ -456,7 +469,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         'b'
       )
       e.runOperations(
-        ldm._mergeNode(
+        mergeNode(
           u1,
           LogootPosition.fromInts(8),
           1,
@@ -467,7 +480,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         'a'
       )
       e.runOperations(
-        ldm._mergeNode(
+        mergeNode(
           u2,
           LogootPosition.fromInts(13),
           1,
@@ -481,7 +494,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
     })
     it('insertion on top of other with lower level in middle', () => {
       e.runOperations(
-        ldm._mergeNode(
+        mergeNode(
           u1,
           LogootPosition.fromInts(1),
           5,
@@ -492,7 +505,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         'abceg'
       )
       e.runOperations(
-        ldm._mergeNode(
+        mergeNode(
           u1,
           LogootPosition.fromInts(4,0),
           1,
@@ -503,7 +516,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         'd'
       )
       e.runOperations(
-        ldm._mergeNode(
+        mergeNode(
           u2,
           LogootPosition.fromInts(4),
           1,
@@ -518,7 +531,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
     })
     it('low level conflict after high level node', () => {
       e.runOperations(
-        ldm._mergeNode(
+        mergeNode(
           u1,
           LogootPosition.fromInts(3),
           1,
@@ -529,7 +542,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         'a'
       )
       e.runOperations(
-        ldm._mergeNode(
+        mergeNode(
           u1,
           LogootPosition.fromInts(4,0),
           1,
@@ -540,7 +553,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         'b'
       )
       e.runOperations(
-        ldm._mergeNode(
+        mergeNode(
           u2,
           LogootPosition.fromInts(4,0),
           1,

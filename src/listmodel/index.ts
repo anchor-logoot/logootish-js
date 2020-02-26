@@ -494,26 +494,9 @@ class ListDocumentModel {
         skip_ranges.push(lesser_end)
         this.logoot_bst.add(lesser_end)
       }
-    } else if (greater) {
-      skip_ranges.push(greater)
     }
-
-    // Nodes on higher levels do not matter in our collision search, only in the
-    // sorting done by the BSTs. Lower levels matter since we must skip them.
-    // TODO: Maybe a better search algo could come up with a pre-filtered
-    // `skip_ranges` for me
-    skip_ranges = skip_ranges.filter(({ start }) => start.levels >= level)
-
-    // Ensure that there's something at the end of the list so that it will
-    // always run regardless and if there are nodes, that there is always a node
-    // last in the array at the end position
-    if (
-      !skip_ranges.length ||
-      skip_ranges[skip_ranges.length - 1].start.cmp(nend) < 0
-    ) {
-      const vgroup = new LogootNodeGroup()
-      vgroup.start = nend
-      skip_ranges.push(vgroup)
+    if (greater && !skip_ranges.includes(greater)) {
+      skip_ranges.push(greater)
     }
 
     // Keep track of all the conflict groups we're automatically modifying
@@ -530,6 +513,28 @@ class ListDocumentModel {
     conflict_order = conflict_order.sort(
       (a, b) => a.known_position - b.known_position
     )
+
+    // Nodes on higher levels do not matter in our collision search, only in the
+    // sorting done by the BSTs. Lower levels matter since we must skip them.
+    // HOWEVER, we do need a greater node so that the algorithm will detect the
+    // next CG and (maybe) join into it
+    // TODO: Maybe a better search algo could come up with a pre-filtered
+    // `skip_ranges` for me
+    skip_ranges = skip_ranges.filter(
+      ({ start }) => start.levels >= level || start.cmp(nend) >= 0
+    )
+
+    // Ensure that there's something at the end of the list so that it will
+    // always run regardless and if there are nodes, that there is always a node
+    // last in the array at the end position
+    if (
+      !skip_ranges.length ||
+      skip_ranges[skip_ranges.length - 1].start.cmp(nend) < 0
+    ) {
+      const vgroup = new LogootNodeGroup()
+      vgroup.start = nend
+      skip_ranges.push(vgroup)
+    }
 
     const original_known_end = conflict_order.length
       ? conflict_order[conflict_order.length - 1].ldoc_end
@@ -842,8 +847,7 @@ class ListDocumentModel {
     // Now, update all nodes after the ones in conflict_order
     this.ldoc_bst.operateOnAllGteq(
       { known_position: original_known_end },
-      (node) => {
-        const { data } = node
+      ({ data }) => {
         if (!data.groups.length) {
           throw new FatalError('An empty conflict group was found in the BST')
         }
@@ -883,6 +887,35 @@ class ListDocumentModel {
       NodeType.REMOVAL,
       this.canJoin
     )
+  }
+
+  /**
+   * An extremely expensive operation that scans the BSTs for obvious signs of
+   * corruption (empty CGs, non-continuous ldoc, out-of-order ldoc, etc.)
+   * @throws {FatalError} If any corruption detected
+   */
+  selfTest(): void {
+    let last_pos: LogootPosition
+    let last_kp = 0
+    this.ldoc_bst.operateOnAll(({ data }) => {
+      if (!data.groups.length) {
+        throw new FatalError('Node with no groups detected.')
+      }
+      if (data.known_position !== last_kp) {
+        throw new Error(
+          `Ldoc is out of order. Found known position ${data.known_position} after ${last_kp}`
+        )
+      }
+      last_kp = data.ldoc_end
+      data.groups.forEach(({ start }) => {
+        if (last_pos && last_pos.cmp(start) > 0) {
+          throw new FatalError(
+            `Ldoc is out of order. Found ${start.toString()} after ${last_pos.toString()}.`
+          )
+        }
+        last_pos = start
+      })
+    })
   }
 }
 
