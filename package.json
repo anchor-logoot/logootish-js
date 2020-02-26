@@ -1,9 +1,15 @@
 {
-  "name": "logootish-js",
-  "version": "0.3.0",
-  "private": true,
+  "name": "@kb1rd/logootish-js",
+  "version": "0.3.1",
   "description": "Logootish algorithm for matrix-notepad",
   "main": "dist/logootish-js.min.js",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/KB1RD/logootish-js.git"
+  },
   "scripts": {
     "build": "webpack --env dev && webpack --env build",
     "build:docs": "typedoc --mode modules --out .jsdoc src/",
@@ -13,7 +19,7 @@
     "test:cover": "cross-env NODE_ENV=test nyc mocha --require babel-register --colors test/*.js",
     "_version": "echo VERSION: $npm_package_version"
   },
-  "license": "GPLv3",
+  "license": "GPL-3.0-or-later",
   "devDependencies": {
     "@babel/cli": "^7.0.0-beta.51",
     "@babel/core": "^7.0.0-beta.51",
