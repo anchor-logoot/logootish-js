@@ -622,7 +622,11 @@ class ListDocumentModel {
     }
 
     // Split a conflict group and translate the child nodes
-    const splitCg = (cg: ConflictGroup, ng: LogootNodeGroup): ConflictGroup => {
+    const splitCg = (
+      cg: ConflictGroup,
+      ng: LogootNodeGroup,
+      postprocess: (ncg: ConflictGroup) => void = (): void => undefined
+    ): ConflictGroup => {
       if (!cg.groups.includes(ng)) {
         throw new FatalError('Node group not in conflict group.')
       }
@@ -661,6 +665,7 @@ class ListDocumentModel {
       ncg.groups = cg.groups.splice(cg.groups.indexOf(ng) + 1, cg.groups.length)
       ncg.groups.forEach((group) => (group.group = ncg))
 
+      postprocess(ncg)
       this.ldoc_bst.add(ncg)
       conflict_order.splice(conflict_order.indexOf(cg) + 1, 0, ncg)
 
@@ -794,7 +799,7 @@ class ListDocumentModel {
         // Split off the trailing end
         if (group.end.cmp(nend) > 0) {
           const newgroup = group.splitAround(
-            group.end.l(level).sub(nend.l(level)).js_int
+            group.length - group.end.l(level).sub(nend.l(level)).js_int
           )
           this.logoot_bst.add(newgroup)
           next_group = newgroup
@@ -818,7 +823,11 @@ class ListDocumentModel {
           insert(group.group, known_position, group_offset, group.length)
         }
 
-        const fixJoined = (a: LogootNodeGroup, b: LogootNodeGroup): void => {
+        const fixJoined = (
+          a: LogootNodeGroup,
+          b: LogootNodeGroup,
+          post = false
+        ): void => {
           if (!a || !b) {
             return
           }
@@ -827,13 +836,24 @@ class ListDocumentModel {
           if (!joined && should_join) {
             joinCg(a.group, b.group)
           } else if (joined && !should_join) {
-            splitCg(a.group, a)
+            // The BST allows chaning of the `known_position` after adding a
+            // node, **so long as the nodes are in the same order.** Since not
+            // all node positions have been updated, we cannot add the node with
+            // the pre-incremented position
+            const ncg = splitCg(a.group, a, (ncg) => {
+              if (type === NodeType.DATA && post) {
+                ncg.known_position -= group.length
+              }
+            })
+            if (type === NodeType.DATA && post) {
+              ncg.known_position += group.length
+            }
           }
         }
 
         // Double check that these nodes still should be joined
-        fixJoined(last_group, group)
-        fixJoined(group, next_group)
+        fixJoined(last_group, group, false)
+        fixJoined(group, next_group, true)
       }
 
       last_start = group.end.clamp(nstart, nend, level).level(level)
@@ -908,7 +928,7 @@ class ListDocumentModel {
       }
       last_kp = data.ldoc_end
       data.groups.forEach(({ start }) => {
-        if (last_pos && last_pos.cmp(start) > 0) {
+        if (last_pos && last_pos.cmp(start) >= 0) {
           throw new FatalError(
             `Ldoc is out of order. Found ${start.toString()} after ${last_pos.toString()}.`
           )

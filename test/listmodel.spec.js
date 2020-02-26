@@ -566,5 +566,52 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
       expect(e.string).to.equal('abc')
       expect(e.mark_string).to.equal(' cc')
     })
+    it('node splits shouldn\'t be added with their real known_position', () => {
+      e.runOperations(
+        mergeNode(
+          u1,
+          LogootPosition.fromInts(0),
+          3,
+          new LogootInt(0),
+          NodeType.REMOVAL,
+          ldm.canJoin
+        ),
+        'a'
+      )
+      e.runOperations(
+        mergeNode(
+          u1,
+          LogootPosition.fromInts(4),
+          1,
+          new LogootInt(0),
+          NodeType.REMOVAL,
+          ldm.canJoin
+        ),
+        'a'
+      )
+      e.runOperations(
+        mergeNode(
+          u2,
+          LogootPosition.fromInts(3),
+          1,
+          new LogootInt(0),
+          NodeType.REMOVAL,
+          ldm.canJoin
+        ),
+        'a'
+      )
+      e.runOperations(
+        mergeNode(
+          u3,
+          LogootPosition.fromInts(1),
+          1,
+          new LogootInt(1),
+          NodeType.DATA,
+          ldm.canJoin
+        ),
+        'a'
+      )
+      expect(e.string).to.equal('a')
+    })
   })
 })
