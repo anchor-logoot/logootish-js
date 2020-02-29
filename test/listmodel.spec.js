@@ -4,7 +4,7 @@ import {
   LogootPosition,
   ListDocumentModel,
   NodeType
-} from '../dist/logootish-js.js'
+} from '../dist/@kb1rd/logootish-js.js'
 
 chai.expect()
 

@@ -425,7 +425,7 @@ class Bst<T extends S, S = T> {
     }
     if (node.value) {
       if (this.gteqcmp(node.value.data, object)) {
-        if (!this.eqcmp(node.value.data, object)) {
+        if (node.value.data !== object) {
           setSuccessor({ ptr: node, data: node.value.data })
         }
         setSuccessor(
@@ -458,17 +458,20 @@ class Bst<T extends S, S = T> {
     if (node.value) {
       const result = this.cmp(node.value.data, object)
       const should_remove = filter(node.value.data)
-      if (result > 0) {
+      if (result >= 0) {
         this.remove(object, filter, new MemberPtr(node.value, 'left'))
       } else if (result < 0) {
         this.remove(object, filter, new MemberPtr(node.value, 'right'))
-      } else if (node.value.left && node.value.right && should_remove) {
-        const successor = this._getInorderSuccessor(node.value.data, node)
+      }
+      if (result === 0 && should_remove) {
+        if (node.value.left && node.value.right) {
+          const successor = this._getInorderSuccessor(node.value.data, node)
 
-        this.remove(successor.data, undefined, successor.ptr)
-        node.value.data = successor.data
-      } else if (should_remove) {
-        node.value = node.value.left || node.value.right
+          this.remove(successor.data, undefined, successor.ptr)
+          node.value.data = successor.data
+        } else {
+          node.value = node.value.left || node.value.right
+        }
       }
     }
   }

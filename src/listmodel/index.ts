@@ -23,6 +23,8 @@ import {
   BranchKey
 } from './logoot'
 
+import { debug } from '../debug'
+
 type KnownPositionBst = Bst<ConflictGroup, { known_position: number }>
 type LogootBst = Bst<LogootNodeGroup, { start: LogootPosition }>
 
@@ -725,6 +727,7 @@ class ListDocumentModel {
         newgroup.start.l(level).assign(last_start)
         newgroup.length = empty_length || length - empty_offset
         newgroup.br(br, { type, rclk: nrclk })
+        debug.info(`Creating new group at ${newgroup.start.toString()}`)
 
         // Now, we actually insert the node where it should be according to the
         // node canJoin function
@@ -804,6 +807,7 @@ class ListDocumentModel {
           this.logoot_bst.add(newgroup)
           next_group = newgroup
         }
+        debug.info(`Adding to existing group at ${group.start.toString()}`)
 
         // Ensure that this group is in the branch order
         if (!group.group.branch_order.includes(br)) {
