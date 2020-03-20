@@ -6,7 +6,7 @@
  */
 /** */
 
-import { DualCompareFunction, MemberPtr } from './utils'
+import { DualCompareFunction, MemberPtr, CompareResult } from './utils'
 
 /**
  * The node type used by the binary search tree
@@ -458,9 +458,12 @@ class Bst<T extends S, S = T> {
     if (node.value) {
       const result = this.cmp(node.value.data, object)
       const should_remove = filter(node.value.data)
-      if (result >= 0) {
+      if (result > 0) {
         this.remove(object, filter, new MemberPtr(node.value, 'left'))
       } else if (result < 0) {
+        this.remove(object, filter, new MemberPtr(node.value, 'right'))
+      } else {
+        this.remove(object, filter, new MemberPtr(node.value, 'left'))
         this.remove(object, filter, new MemberPtr(node.value, 'right'))
       }
       if (result === 0 && should_remove) {
@@ -695,4 +698,180 @@ class Bst<T extends S, S = T> {
   }
 }
 
-export { Bst, RangeSearch, BstNode }
+type DBstSearchable = { value: number }
+abstract class DBstNode<T extends DBstNode<T>> {
+  parent_node?: T
+  left_node?: T
+  right_node?: T
+  value = 0
+
+  get absolute_value(): number {
+    return this.value + (this.parent_node ? this.parent_node.absolute_value : 0)
+  }
+
+  /**
+   * Order nodes that have the same `value` may be ordered differently using
+   * this function.
+   */
+  abstract preferential_cmp(other: DBstSearchable | T): CompareResult
+
+  addChild(node: T): void {
+    node.value -= this.value
+    if (node.value > 0 || this.preferential_cmp(node) > 0) {
+      if (this.right_node) {
+        this.right_node.addChild(node)
+      } else {
+        this.right_node = node as T
+        // T will always be an instance of DBstNode<T>
+        ;(node as DBstNode<T>).parent_node = (this as unknown) as T
+      }
+    } else {
+      if (this.left_node) {
+        this.left_node.addChild(node)
+      } else {
+        this.left_node = node as T
+        ;(node as DBstNode<T>).parent_node = (this as unknown) as T
+      }
+    }
+  }
+
+  get smallest_child(): T {
+    if (this.left_node) {
+      return this.left_node.smallest_child
+    } else if (this.right_node) {
+      return this.right_node.smallest_child
+    }
+    return (this as unknown) as T
+  }
+  get largest_child(): T {
+    if (this.right_node) {
+      return this.right_node.largest_child
+    } else if (this.left_node) {
+      return this.left_node.largest_child
+    }
+    return (this as unknown) as T
+  }
+
+  get inorder_successor(): T {
+    let last: DBstNode<T>
+    // "Unexpected aliasing of 'this' to local variable" is wrong
+    // eslint-disable-next-line
+    let node: DBstNode<T> = this
+    do {
+      if (node.right_node && node.right_node !== last) {
+        return node.right_node.smallest_child
+      }
+      last = node
+    } while ((node = node.parent_node as DBstNode<T>))
+    return undefined
+  }
+
+  replaceWith(data: T): T {
+    if (data) {
+      data.value = data.value - this.absolute_value + this.value
+    }
+    if (this.parent_node) {
+      if (this.value <= 0) {
+        this.parent_node.left_node = data
+      } else {
+        this.parent_node.right_node = data
+      }
+    }
+    const absval = this.absolute_value
+    if (data) {
+      data.parent_node = this.parent_node
+      data.right_node = this.right_node
+      data.left_node = this.left_node
+    }
+    if (this.right_node) {
+      this.right_node.parent_node = data
+      this.right_node.value = this.value + this.right_node.value - data.value
+    }
+    if (this.left_node) {
+      this.left_node.parent_node = data
+      this.left_node.value = this.value + this.left_node.value - data.value
+    }
+    this.value = absval
+    this.parent_node = undefined
+    this.right_node = undefined
+    this.left_node = undefined
+    return (this as unknown) as T
+  }
+
+  removeChild(
+    value: number,
+    filter: (data: T) => boolean = (): boolean => true,
+    vals: T[] = [],
+    parentUpdate: (np: T) => void = (): void => undefined
+  ): T[] {
+    const tryRmLeft = (): void => {
+      if (this.left_node) {
+        this.left_node.removeChild(value - this.left_node.value, filter, vals)
+      }
+    }
+    const tryRmRight = (): void => {
+      if (this.right_node) {
+        this.right_node.removeChild(value - this.right_node.value, filter, vals)
+      }
+    }
+    if (value <= 0) {
+      tryRmLeft()
+    } else if (value > 0) {
+      tryRmRight()
+    }
+    if (value === 0 && filter((this as unknown) as T)) {
+      vals.push((this as unknown) as T)
+      let cnode: T
+      if (this.right_node && this.left_node) {
+        cnode = this.inorder_successor
+        cnode.parent_node.removeChild(cnode.value, (n) => n === cnode)
+      } else if (this.right_node) {
+        cnode = this.right_node
+        cnode.value = cnode.absolute_value
+        cnode.parent_node = undefined
+        this.right_node = undefined
+      } else if (this.left_node) {
+        cnode = this.left_node
+        cnode.value = cnode.absolute_value
+        cnode.parent_node = undefined
+        this.left_node = undefined
+      } else {
+        cnode = undefined
+      }
+      this.replaceWith(cnode)
+      parentUpdate(cnode)
+    }
+    return vals
+  }
+}
+
+class DBst<T extends DBstNode<T>> {
+  bst_root?: T = undefined
+
+  add(node: T): void {
+    if (!this.bst_root) {
+      this.bst_root = node
+    } else {
+      this.bst_root.addChild(node)
+    }
+  }
+  remove(
+    value: number,
+    filter: (data: T) => boolean = (): boolean => true
+  ): T[] {
+    const vals: T[] = []
+    if (this.bst_root) {
+      this.bst_root.removeChild(
+        value - this.bst_root.value,
+        filter,
+        vals,
+        (p: T) => {
+          this.bst_root = p
+        }
+      )
+    }
+    return vals
+  }
+}
+
+export { Bst, RangeSearch, BstNode, DBst, DBstSearchable, DBstNode }
