@@ -7,6 +7,7 @@
  */
 /** */
 
+import { DBstNode, DBstSearchable } from '../bst'
 import { Int32 } from '../ints'
 import { CompareResult, FatalError, allKeys } from '../utils'
 
@@ -303,8 +304,7 @@ const nt_string = {
  * @TODO Move `branch_order` into the ListDocumentModel. No reason not to have
  * a whole-document branch order.
  */
-class ConflictGroup {
-  known_position = 0
+class ConflictGroup extends DBstNode<ConflictGroup> {
   /**
    * The order in which branches are displayed. All of the nodes that make up
    * a single branch are placed together.
@@ -319,7 +319,11 @@ class ConflictGroup {
   groups: LogootNodeGroup[] = []
 
   constructor(position: number) {
-    this.known_position = position
+    super(position)
+  }
+
+  get known_position(): number {
+    return this.absolute_value
   }
 
   /**
@@ -350,6 +354,13 @@ class ConflictGroup {
     return this.groups.length
       ? this.groups[this.groups.length - 1].end
       : undefined
+  }
+
+  preferential_cmp(other: DBstSearchable | ConflictGroup): CompareResult {
+    if ((other as { logoot_start: LogootPosition }).logoot_start) {
+      return this.logoot_start.cmp((other as ConflictGroup).logoot_start)
+    }
+    return 0
   }
 
   /**

@@ -2,6 +2,14 @@
  * @file Various utilities that don't belong anywhere else.
  * @author Nathan Pennie <kb1rd@kb1rd.net>
  */
+/** */
+
+import {
+  CompareResult,
+  CompareFunction,
+  DualCompareFunction,
+  Comparable
+} from './compare'
 
 /**
  * Like the built-in map function, but it replaces the element with an arbitrary
@@ -28,61 +36,6 @@ function arraymap<T>(array: T[], fn: (el: T) => T[]): T[] {
  */
 class FatalError extends Error {
   fatal = true
-}
-
-/**
- * One of zero, one, or negative one.
- */
-type CompareResult = -1 | 0 | 1
-/**
- * A function type that takes `T` and returns a CompareResult.
- */
-type CompareFunction<T> = (other: T) => CompareResult
-/**
- * A function type that takes two of a type `T` and returns a CompareResult.
- */
-type DualCompareFunction<T> = (a: T, b: T) => CompareResult
-
-/**
- * A utility abstract class with no implementation for the function `cmp` and
- * implementations for `gt`, `gteq`, `eq`, `lteq`, and `lt` functions.
- * @template T The other type that can be compared.
- */
-abstract class Comparable<T> {
-  /**
-   * Compare this object to another one.
-   */
-  abstract cmp(other: T): CompareResult
-  /**
-   * @return True if this object is greater than the one provided.
-   */
-  gt(n: T): boolean {
-    return this.cmp(n) === 1
-  }
-  /**
-   * @return True if this object is greater than or equal to the one provided.
-   */
-  gteq(n: T): boolean {
-    return this.cmp(n) >= 0
-  }
-  /**
-   * @return True if this object is equal to the one provided.
-   */
-  eq(n: T): boolean {
-    return this.cmp(n) === 0
-  }
-  /**
-   * @return True if this object is less than or equal to the one provided.
-   */
-  lteq(n: T): boolean {
-    return this.cmp(n) <= 0
-  }
-  /**
-   * @return True if this object is less than the one provided.
-   */
-  lt(n: T): boolean {
-    return this.cmp(n) === -1
-  }
 }
 
 /**

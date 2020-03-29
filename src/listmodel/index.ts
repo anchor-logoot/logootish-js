@@ -5,6 +5,7 @@
  */
 /** */
 
+import { NumberRange } from '../compare'
 import {
   FatalError,
   CompareResult,
@@ -12,7 +13,7 @@ import {
   BreakException,
   catchBreak
 } from '../utils'
-import { Bst } from '../bst'
+import { Bst, DBst } from '../bst'
 
 import {
   LogootInt,
@@ -25,7 +26,7 @@ import {
 
 import { debug } from '../debug'
 
-type KnownPositionBst = Bst<ConflictGroup, { known_position: number }>
+type KnownPositionBst = DBst<ConflictGroup>
 type LogootBst = Bst<LogootNodeGroup, { start: LogootPosition }>
 
 /**
@@ -118,25 +119,7 @@ class ListDocumentModel {
    * The BST maps out where all insertion nodes are in the local document's
    * memory. It is used to go from position -> node
    */
-  ldoc_bst: KnownPositionBst = new Bst(
-    (a: ConflictGroup, b: ConflictGroup): CompareResult => {
-      if (a.known_position > b.known_position) {
-        return 1
-      } else if (a.known_position < b.known_position) {
-        return -1
-      } else {
-        // I can factor in a calculated start like this because CGs will always
-        // be in order by calculated start as well, but it's much easier to
-        // look them up by known_position.
-        const astart = a.logoot_start
-        const bstart = b.logoot_start
-        if (astart && bstart) {
-          return astart.cmp(bstart)
-        }
-      }
-      return 0
-    }
-  )
+  ldoc_bst: KnownPositionBst = new DBst()
   /**
    * This BST maps Logoot position identifiers to their text node to allow
    * lookup of text position from Logoot ID
@@ -503,18 +486,14 @@ class ListDocumentModel {
 
     // Keep track of all the conflict groups we're automatically modifying
     let conflict_order: ConflictGroup[] = []
-    skip_ranges.forEach(({ group }) => {
-      if (
-        group &&
-        !conflict_order.includes(group) &&
-        group.branch_order.length
-      ) {
-        conflict_order.push(group)
-      }
-    })
-    conflict_order = conflict_order.sort(
-      (a, b) => a.known_position - b.known_position
-    )
+    if (skip_ranges.length) {
+      const ke = skip_ranges[skip_ranges.length - 1].group.ldoc_end
+
+      conflict_order = this.ldoc_bst
+        .search(new NumberRange(skip_ranges[0].group.known_position, ke))
+        .buckets.range.sort((a, b) => a[0] - b[0])
+        .map(([, cg]) => cg)
+    }
 
     // Nodes on higher levels do not matter in our collision search, only in the
     // sorting done by the BSTs. Lower levels matter since we must skip them.
@@ -538,43 +517,14 @@ class ListDocumentModel {
       skip_ranges.push(vgroup)
     }
 
-    const original_known_end = conflict_order.length
+    /* const original_known_end = conflict_order.length
       ? conflict_order[conflict_order.length - 1].ldoc_end
-      : 0
+      : 0 */
 
     // Track all the operations that have been performed and the offset that
     // should be placed on nodes after this one. This will modify the nodes
     // in `conflict_order`
     const operations: Operation[] = []
-    let known_position_shift = 0
-    const applyShift = (
-      cg: ConflictGroup,
-      start: number,
-      length: number,
-      ic: boolean
-    ): void => {
-      known_position_shift += length
-
-      // Record the Logoot start of this new CG
-      const lstart = cg.logoot_start
-      for (let i = conflict_order.length - 1; i > 0; i--) {
-        const n = conflict_order[i]
-        // Bail out if we've passed our position
-        if (ic) {
-          if (n.known_position < start || n.logoot_start.cmp(lstart) < 0) {
-            return
-          }
-        } else {
-          if (n.known_position <= start || n.logoot_start.cmp(lstart) <= 0) {
-            return
-          }
-        }
-        // Add to the known_position, ignoring the current node
-        if (n !== cg) {
-          conflict_order[i].known_position += length
-        }
-      }
-    }
     const remove = (cg: ConflictGroup, start: number, length: number): void => {
       if (length === 0) {
         return
@@ -584,7 +534,11 @@ class ListDocumentModel {
         start,
         length
       })
-      applyShift(cg, start, -length, true)
+      const successor = cg.inorder_successor
+      if (successor) {
+        successor.addSpaceBefore(-length)
+      }
+      // applyShift(cg, start, -length, true)
     }
     const insert = (
       cg: ConflictGroup,
@@ -601,7 +555,11 @@ class ListDocumentModel {
         offset,
         length
       })
-      applyShift(cg, start, length, true)
+      const successor = cg.inorder_successor
+      if (successor) {
+        successor.addSpaceBefore(length)
+      }
+      // applyShift(cg, start, length, true)
     }
     const translate = (source: number, length: number, dest: number): void => {
       if (length === 0) {
@@ -659,7 +617,7 @@ class ListDocumentModel {
 
         const moved_length = cg.branchLength([br]) - excerpt_length
 
-        ncg.known_position -= moved_length
+        ncg.value -= moved_length
         known_position += excerpt_length
         translate(known_position, moved_length, known_end - moved_length)
       })
@@ -696,7 +654,7 @@ class ListDocumentModel {
       ncg.branch_order.length = 0
       ncg.groups = []
       // Ensure that we remove **only** this node from the BST
-      this.ldoc_bst.remove(ncg, (other) => other === ncg)
+      this.ldoc_bst.remove(ncg.known_position, (other) => other === ncg)
       conflict_order.splice(conflict_order.indexOf(ncg), 1)
     }
 
@@ -846,11 +804,11 @@ class ListDocumentModel {
             // the pre-incremented position
             const ncg = splitCg(a.group, a, (ncg) => {
               if (type === NodeType.DATA && post) {
-                ncg.known_position -= group.length
+                ncg.value -= group.length
               }
             })
             if (type === NodeType.DATA && post) {
-              ncg.known_position += group.length
+              ncg.value += group.length
             }
           }
         }
@@ -864,26 +822,10 @@ class ListDocumentModel {
       last_group = group
     })
 
+    // TODO: Actually figure out which CGs have changed state
     conflict_order.forEach(({ known_position, ldoc_length, conflicted }) => {
       mark(known_position, ldoc_length, conflicted)
     })
-
-    // Now, update all nodes after the ones in conflict_order
-    this.ldoc_bst.operateOnAllGteq(
-      { known_position: original_known_end },
-      ({ data }) => {
-        if (!data.groups.length) {
-          throw new FatalError('An empty conflict group was found in the BST')
-        }
-        if (data.logoot_start.cmp(nend) < 0) {
-          return
-        }
-        if (!conflict_order.includes(data)) {
-          data.known_position += known_position_shift
-        }
-      },
-      false
-    )
 
     return operations
   }
@@ -921,7 +863,7 @@ class ListDocumentModel {
   selfTest(): void {
     let last_pos: LogootPosition
     let last_kp = 0
-    this.ldoc_bst.operateOnAll(({ data }) => {
+    this.ldoc_bst.operateOnAll((data) => {
       if (!data.groups.length) {
         throw new FatalError('Node with no groups detected.')
       }

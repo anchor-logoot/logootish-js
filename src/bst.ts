@@ -7,6 +7,7 @@
 /** */
 
 import { DualCompareFunction, MemberPtr, CompareResult } from './utils'
+import { TypeRange, NumberRange } from './compare'
 
 /**
  * The node type used by the binary search tree
@@ -37,6 +38,34 @@ type BstNodePtr<T> =
  * The type of a function that operates on nodes of the BST.
  */
 type NodeOp<T> = (node: BstNode<T>) => void
+
+class TypeRangeSearch<T, R> {
+  readonly buckets: {
+    lesser: [T, R][]
+    range: [T, R][]
+    greater: [T, R][]
+  } = { lesser: [], range: [], greater: [] }
+  constructor(public range: TypeRange<T>) {}
+
+  addToBucket(bucket: 'lesser' | 'range' | 'greater', val: T, obj: R): void {
+    this.buckets[bucket].push([val, obj])
+  }
+  setBucket(bucket: 'lesser' | 'greater', val: T, obj: R): void {
+    let cval: CompareResult
+    if (
+      !this.buckets[bucket].length ||
+      (cval = this.range.cf(val, this.buckets[bucket][0][0])) === 0
+    ) {
+      this.buckets[bucket].push([val, obj])
+      return
+    }
+    if (bucket === 'lesser' && cval > 0) {
+      this.buckets.lesser = [[val, obj]]
+    } else if (bucket === 'greater' && cval < 0) {
+      this.buckets.greater = [[val, obj]]
+    }
+  }
+}
 
 /**
  * A single point in a `RangeSearch`. The first element is the point value, the
@@ -703,7 +732,8 @@ abstract class DBstNode<T extends DBstNode<T>> {
   parent_node?: T
   left_node?: T
   right_node?: T
-  value = 0
+
+  constructor(public value: number = 0) {}
 
   get absolute_value(): number {
     return this.value + (this.parent_node ? this.parent_node.absolute_value : 0)
@@ -717,7 +747,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
 
   addChild(node: T): void {
     node.value -= this.value
-    if (node.value > 0 || this.preferential_cmp(node) > 0) {
+    if (node.value > 0 || this.preferential_cmp(node) < 0) {
       if (this.right_node) {
         this.right_node.addChild(node)
       } else {
@@ -843,17 +873,100 @@ abstract class DBstNode<T extends DBstNode<T>> {
     }
     return vals
   }
+
+  addSpaceBefore(s: number): void {
+    let next = (this as unknown) as T
+    let cumulative = 0
+    while (next) {
+      if (next.left_node) {
+        next.left_node.value -= s
+      }
+      // Increment `next` value if it's greater than `this`
+      if (cumulative >= 0 && this.preferential_cmp(next) <= 0) {
+        cumulative -= next.value
+        next.value += s
+      } else if (next.left_node) {
+        cumulative -= next.value
+        next.left_node.value += s
+      } else {
+        cumulative -= next.value
+      }
+      next = next.parent_node
+    }
+  }
+
+  search(s: TypeRangeSearch<number, T>, cval: number): void {
+    cval += this.value
+    ;(s.range as NumberRange).push_offset(-this.value)
+
+    const traverse_left = (): void => {
+      this.left_node.search(s, cval)
+    }
+    const traverse_right = (): void => {
+      this.right_node.search(s, cval)
+    }
+
+    const sec = s.range.getRangeSection(0)
+    if (sec < 0) {
+      // We're under the target range...
+
+      // Try assigning this to a bucket (if the current value is greater, this)
+      // will be ignored.
+      s.setBucket('lesser', cval, (this as unknown) as T)
+      // Always traverse right since it could be greater
+      if (this.right_node) {
+        traverse_right()
+      }
+      // Traverse left if the left node is equal (zero offset)
+      if (this.left_node && this.left_node.value === 0) {
+        traverse_left()
+      }
+    } else if (sec > 0) {
+      // We're above the target range...
+
+      // The same as above, but with the `greater` bucket
+      s.setBucket('greater', cval, (this as unknown) as T)
+      // Always try to find a smaller node
+      if (this.left_node) {
+        traverse_left()
+      }
+    } else {
+      // We're in the target range...
+
+      s.addToBucket('range', cval, (this as unknown) as T)
+      // Now, we have to traverse left **and** right
+      if (this.left_node) {
+        traverse_left()
+      }
+      if (this.right_node) {
+        traverse_right()
+      }
+    }
+
+    ;(s.range as NumberRange).pop_offset(-this.value)
+  }
+
+  operateOnAll(cb: (data: T) => void) {
+    if (this.left_node) {
+      this.left_node.operateOnAll(cb)
+    }
+    cb((this as unknown) as T)
+    if (this.right_node) {
+      this.right_node.operateOnAll(cb)
+    }
+  }
 }
 
 class DBst<T extends DBstNode<T>> {
   bst_root?: T = undefined
 
-  add(node: T): void {
+  add(node: T): T {
     if (!this.bst_root) {
       this.bst_root = node
     } else {
       this.bst_root.addChild(node)
     }
+    return node
   }
   remove(
     value: number,
@@ -871,6 +984,34 @@ class DBst<T extends DBstNode<T>> {
       )
     }
     return vals
+  }
+  search(range: NumberRange): TypeRangeSearch<number, T> {
+    const search = new TypeRangeSearch<number, T>(range)
+    if (this.bst_root) {
+      this.bst_root.search(search, 0)
+    }
+    return search
+  }
+
+  operateOnAll(cb: (data: T) => void) {
+    if (this.bst_root) {
+      this.bst_root.operateOnAll(cb)
+    }
+  }
+
+  toString(): string {
+    let str = 'DBST [\n'
+    this.operateOnAll((data) => {
+      str +=
+        '  ' +
+        data
+          .toString()
+          .split('\n')
+          .join('\n  ') +
+        '\n'
+    })
+    str += ']'
+    return str
   }
 }
 
