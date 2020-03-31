@@ -788,8 +788,12 @@ abstract class DBstNode<T extends DBstNode<T>> {
     // eslint-disable-next-line
     let node: DBstNode<T> = this
     do {
-      if (node.right_node && node.right_node !== last) {
-        return node.right_node.smallest_child
+      if (node.right_node !== last) {
+        if (node.right_node) {
+          return node.right_node.smallest_child
+        } else if (node !== this) {
+          return (node as unknown) as T
+        }
       }
       last = node
     } while ((node = node.parent_node as DBstNode<T>))
@@ -946,7 +950,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
     ;(s.range as NumberRange).pop_offset(-this.value)
   }
 
-  operateOnAll(cb: (data: T) => void) {
+  operateOnAll(cb: (data: T) => void): void {
     if (this.left_node) {
       this.left_node.operateOnAll(cb)
     }
@@ -993,7 +997,7 @@ class DBst<T extends DBstNode<T>> {
     return search
   }
 
-  operateOnAll(cb: (data: T) => void) {
+  operateOnAll(cb: (data: T) => void): void {
     if (this.bst_root) {
       this.bst_root.operateOnAll(cb)
     }

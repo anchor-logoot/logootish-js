@@ -6,6 +6,8 @@ import {
   NodeType
 } from '../dist/@kb1rd/logootish-js.js'
 
+import practical_t1 from './listmodel_practical/t1'
+
 chai.expect()
 
 const expect = chai.expect
@@ -85,8 +87,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
     e = new TestOperationExecuter()
     ldm = new ListDocumentModel(u1)
   })
-  const mergeNode = (...args) => {
-    const ops = ldm._mergeNode(...args)
+  const selfTest = () => {
     try {
       ldm.selfTest()
     } catch (e) {
@@ -96,7 +97,32 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
       console.error(ldm.logoot_bst.toString())
       throw e
     }
+  }
+  const mergeNode = (...args) => {
+    const ops = ldm._mergeNode(...args)
+    selfTest()
     return ops
+  }
+
+  const runPracticalTest = (t) => {
+    describe(t.name, () => {
+      t.tests.forEach((test, i) => {
+        it(`test #${i}`, () => {
+          const logger = new ListDocumentModel.JsonableLogger()
+          logger.restoreFromJSON(test)
+          const ops = logger.replayAll(ldm, (ldm, o) => {
+            console.log()
+            console.log('----------------')
+            console.log(
+              `${o.type} ${o.br}${o.start} + ${o.length} @ ${o.rclk}`
+            )
+            selfTest()
+            console.log(ldm.ldoc_bst.toString())
+            console.log(ldm.logoot_bst.toString())
+          })
+        })
+      })
+    })
   }
 
   describe('_mergeNode', () => {
@@ -612,6 +638,10 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         'a'
       )
       expect(e.string).to.equal('a')
+    })
+
+    describe('practical tests', () => {
+      runPracticalTest(practical_t1)
     })
   })
 })

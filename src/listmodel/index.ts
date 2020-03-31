@@ -6,13 +6,7 @@
 /** */
 
 import { NumberRange } from '../compare'
-import {
-  FatalError,
-  CompareResult,
-  allValues,
-  BreakException,
-  catchBreak
-} from '../utils'
+import { FatalError, allValues, BreakException, catchBreak } from '../utils'
 import { Bst, DBst } from '../bst'
 
 import {
@@ -136,6 +130,7 @@ class ListDocumentModel {
   clock = new LogootInt()
   branch: BranchKey
 
+  debug_logger?: ListDocumentModel.Logger
   canJoin: JoinFunction
 
   constructor(branch: BranchKey, jf: JoinFunction = MinimalJoinFunction) {
@@ -412,6 +407,16 @@ class ListDocumentModel {
     type: NodeType,
     canJoin: JoinFunction
   ): Operation[] {
+    if (this.debug_logger) {
+      this.debug_logger.log({
+        br,
+        start: nstart,
+        length,
+        rclk: nrclk,
+        type
+      })
+    }
+
     const level = nstart.levels
     const nend = nstart.offsetLowest(length)
 
@@ -555,6 +560,7 @@ class ListDocumentModel {
         offset,
         length
       })
+      console.log(cg, cg.parent_node, cg.left_node, cg.right_node)
       const successor = cg.inorder_successor
       if (successor) {
         successor.addSpaceBefore(length)
@@ -722,21 +728,25 @@ class ListDocumentModel {
         }
 
         if (type === NodeType.DATA) {
+          const ipos = newgroup.group.insertSingleBranchGroup(newgroup)
+          if (!last_join && !next_join) {
+            this.ldoc_bst.add(newgroup.group)
+          }
           insert(
             newgroup.group,
-            newgroup.group.insertSingleBranchGroup(newgroup),
+            ipos,
             empty_offset,
             newgroup.length
           )
         } else {
           newgroup.group.insertSingleBranchGroup(newgroup)
+          if (!last_join && !next_join) {
+            this.ldoc_bst.add(newgroup.group)
+          }
         }
 
         last_group = newgroup
         this.logoot_bst.add(newgroup)
-        if (!last_join && !next_join) {
-          this.ldoc_bst.add(newgroup.group)
-        }
       }
 
       const group_length = group_level_end.copy().sub(group_level_start).js_int
@@ -882,6 +892,104 @@ class ListDocumentModel {
         last_pos = start
       })
     })
+  }
+}
+
+namespace ListDocumentModel {
+  export type LogOperation = {
+    br: BranchKey
+    start: LogootPosition
+    length: number
+    rclk: LogootInt
+    type: NodeType
+  }
+  export interface Logger {
+    log(op: LogOperation): void
+    replayAll(
+      ldm: ListDocumentModel,
+      post?: (ldm: ListDocumentModel) => void
+    ): void
+  }
+  export class JsonableLogger implements Logger {
+    ops: LogOperation[] = []
+    log(op: LogOperation): void {
+      this.ops.push(op)
+    }
+    replayAll(
+      ldm: ListDocumentModel,
+      post: (
+        ldm: ListDocumentModel,
+        logop: LogOperation,
+        newops: Operation[]
+      ) => void = (): void => undefined
+    ): Operation[] {
+      let ops: Operation[] = []
+      let newops: Operation[]
+      this.ops.forEach((o) => {
+        newops = ldm._mergeNode(
+          o.br,
+          o.start,
+          o.length,
+          o.rclk,
+          o.type,
+          ldm.canJoin
+        )
+        ops = ops.concat(newops)
+        post(ldm, o, newops)
+      })
+      return ops
+    }
+
+    restoreFromJSON(j: JsonableLogger.JSON[]): JsonableLogger {
+      this.ops = j.map((o) => ({
+        br: `BR[${o.b.toString(16)}]`,
+        start: LogootPosition.fromJSON(o.s),
+        length: o.l,
+        rclk: LogootInt.fromJSON(o.r),
+        type:
+          o.t === 'D'
+            ? NodeType.DATA
+            : o.t === 'R'
+            ? NodeType.REMOVAL
+            : ((): NodeType => {
+                throw new TypeError('Node type was not one of DATA or REMOVAL')
+              })()
+      }))
+      return this
+    }
+    toJSON(): JsonableLogger.JSON[] {
+      const brk_tbl: { [key: string]: number } = {}
+      let _brk_i = 0
+      const map_brk = (k: BranchKey): number => {
+        if (brk_tbl[(k as unknown) as string] === undefined) {
+          brk_tbl[(k as unknown) as string] = _brk_i++
+        }
+        return brk_tbl[(k as unknown) as string]
+      }
+      return this.ops.map((o) => ({
+        b: map_brk(o.br),
+        s: o.start.toJSON(),
+        l: o.length,
+        r: o.rclk.toJSON(),
+        t:
+          o.type === NodeType.DATA
+            ? 'D'
+            : NodeType.REMOVAL
+            ? 'R'
+            : ((): string => {
+                throw new TypeError('Node type was not one of DATA or REMOVAL')
+              })()
+      }))
+    }
+  }
+  export namespace JsonableLogger {
+    export type JSON = {
+      b: number
+      s: LogootPosition.JSON
+      l: number
+      r: LogootInt.JSON
+      t: string
+    }
   }
 }
 
