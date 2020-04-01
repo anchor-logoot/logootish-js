@@ -767,36 +767,48 @@ abstract class DBstNode<T extends DBstNode<T>> {
 
   get smallest_child(): T {
     if (this.left_node) {
-      return this.left_node.smallest_child
+      return this.left_node.smallest_child || this.left_node
     } else if (this.right_node) {
-      return this.right_node.smallest_child
+      return this.right_node.smallest_child || this.right_node
     }
-    return (this as unknown) as T
+    return undefined
+  }
+  get smallest_smaller_child(): T {
+    if (this.left_node) {
+      return this.left_node.smallest_child || this.left_node
+    }
+    return undefined
   }
   get largest_child(): T {
     if (this.right_node) {
-      return this.right_node.largest_child
+      return this.right_node.largest_child || this.right_node
     } else if (this.left_node) {
-      return this.left_node.largest_child
+      return this.left_node.largest_child || this.left_node
     }
-    return (this as unknown) as T
+    return undefined
+  }
+  get largest_larger_child(): T {
+    if (this.right_node) {
+      return this.right_node.largest_child || this.right_node
+    }
+    return undefined
   }
 
   get inorder_successor(): T {
-    let last: DBstNode<T>
-    // "Unexpected aliasing of 'this' to local variable" is wrong
-    // eslint-disable-next-line
-    let node: DBstNode<T> = this
-    do {
-      if (node.right_node !== last) {
-        if (node.right_node) {
-          return node.right_node.smallest_child
-        } else if (node !== this) {
-          return (node as unknown) as T
-        }
+    if (this.right_node) {
+      return this.right_node.smallest_smaller_child || this.right_node
+    }
+    let node = (this as undefined) as T
+    while(node) {
+      if (
+        node.value <= 0 &&
+        node.parent_node &&
+        node.parent_node.left_node === node
+      ) {
+        return node.parent_node
       }
-      last = node
-    } while ((node = node.parent_node as DBstNode<T>))
+      node = node.parent_node
+    }
     return undefined
   }
 
@@ -810,25 +822,24 @@ abstract class DBstNode<T extends DBstNode<T>> {
       } else {
         this.parent_node.right_node = data
       }
+      if (data) {
+        data.parent_node = this.parent_node
+      }
     }
-    const absval = this.absolute_value
-    if (data) {
-      data.parent_node = this.parent_node
-      data.right_node = this.right_node
+
+    if (data && this.left_node && this.left_node !== data) {
       data.left_node = this.left_node
+      data.left_node.parent_node = data
     }
-    if (this.right_node) {
-      this.right_node.parent_node = data
-      this.right_node.value = this.value + this.right_node.value - data.value
+    if (data && this.right_node && this.right_node !== data) {
+      data.right_node = this.right_node
+      data.right_node.parent_node = data
     }
-    if (this.left_node) {
-      this.left_node.parent_node = data
-      this.left_node.value = this.value + this.left_node.value - data.value
-    }
-    this.value = absval
-    this.parent_node = undefined
-    this.right_node = undefined
-    this.left_node = undefined
+
+    delete this.parent_node
+    delete this.right_node
+    delete this.left_node
+
     return (this as unknown) as T
   }
 
@@ -862,13 +873,9 @@ abstract class DBstNode<T extends DBstNode<T>> {
       } else if (this.right_node) {
         cnode = this.right_node
         cnode.value = cnode.absolute_value
-        cnode.parent_node = undefined
-        this.right_node = undefined
       } else if (this.left_node) {
         cnode = this.left_node
         cnode.value = cnode.absolute_value
-        cnode.parent_node = undefined
-        this.left_node = undefined
       } else {
         cnode = undefined
       }
@@ -882,16 +889,14 @@ abstract class DBstNode<T extends DBstNode<T>> {
     let next = (this as unknown) as T
     let cumulative = 0
     while (next) {
-      if (next.left_node) {
-        next.left_node.value -= s
-      }
       // Increment `next` value if it's greater than `this`
       if (cumulative >= 0 && this.preferential_cmp(next) <= 0) {
         cumulative -= next.value
         next.value += s
-      } else if (next.left_node) {
-        cumulative -= next.value
-        next.left_node.value += s
+        // Ensure that the left node's position is not changed
+        if (next.left_node) {
+          next.left_node.value -= s
+        }
       } else {
         cumulative -= next.value
       }

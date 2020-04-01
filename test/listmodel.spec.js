@@ -107,7 +107,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
   const runPracticalTest = (t) => {
     describe(t.name, () => {
       t.tests.forEach((test, i) => {
-        it(`test #${i}`, () => {
+        it(`test #${i + 1}`, () => {
           const logger = new ListDocumentModel.JsonableLogger()
           logger.restoreFromJSON(test)
           const ops = logger.replayAll(ldm, (ldm, o) => {
@@ -225,7 +225,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         )
         e.runOperations(
           mergeNode(
-            u1,
+            u2,
             LogootPosition.fromInts(0),
             1,
             new LogootInt(0),

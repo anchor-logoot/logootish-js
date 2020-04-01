@@ -417,6 +417,8 @@ class ListDocumentModel {
       })
     }
 
+    debug.info(`Merging ${type} ${String(br)} ${nstart} + ${length} @ ${nrclk}`)
+
     const level = nstart.levels
     const nend = nstart.offsetLowest(length)
 
@@ -543,7 +545,6 @@ class ListDocumentModel {
       if (successor) {
         successor.addSpaceBefore(-length)
       }
-      // applyShift(cg, start, -length, true)
     }
     const insert = (
       cg: ConflictGroup,
@@ -560,12 +561,10 @@ class ListDocumentModel {
         offset,
         length
       })
-      console.log(cg, cg.parent_node, cg.left_node, cg.right_node)
       const successor = cg.inorder_successor
       if (successor) {
         successor.addSpaceBefore(length)
       }
-      // applyShift(cg, start, length, true)
     }
     const translate = (source: number, length: number, dest: number): void => {
       if (length === 0) {
@@ -732,12 +731,7 @@ class ListDocumentModel {
           if (!last_join && !next_join) {
             this.ldoc_bst.add(newgroup.group)
           }
-          insert(
-            newgroup.group,
-            ipos,
-            empty_offset,
-            newgroup.length
-          )
+          insert(newgroup.group, ipos, empty_offset, newgroup.length)
         } else {
           newgroup.group.insertSingleBranchGroup(newgroup)
           if (!last_join && !next_join) {
