@@ -112,14 +112,16 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           const logger = new ListDocumentModel.JsonableLogger()
           logger.restoreFromJSON(test)
           const ops = logger.replayAll(ldm, (ldm, o) => {
-            console.log()
+            // TODO: Find a way to only display console.logs and debug.logs if
+            // a test has failed
+            /* console.log()
             console.log('----------------')
             console.log(
               `${o.type} ${o.br}${o.start} + ${o.length} @ ${o.rclk}`
-            )
+            ) */
             selfTest()
-            console.log(ldm.ldoc_bst.toString())
-            console.log(ldm.logoot_bst.toString())
+            /* console.log(ldm.ldoc_bst.toString())
+            console.log(ldm.logoot_bst.toString()) */
           })
         })
       })
