@@ -291,11 +291,17 @@ class TypeRange<T> implements BaseRangeContainer<T> {
    * @param t The object to compare
    */
   getRangeSection(t: T): CompareResult {
-    if (this.min && this.cf(t, this.min) < (this.bounds.closed_left ? 0 : 1)) {
-      return -1
-    }
-    if (this.max && this.cf(this.max, t) < (this.bounds.closed_right ? 0 : 1)) {
+    if (
+      this.def_max &&
+      this.cf(this.max, t) < (this.bounds.closed_right ? 0 : 1)
+    ) {
       return 1
+    }
+    if (
+      this.def_min &&
+      this.cf(t, this.min) < (this.bounds.closed_left ? 0 : 1)
+    ) {
+      return -1
     }
     return 0
   }

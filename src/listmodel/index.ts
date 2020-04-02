@@ -5,7 +5,7 @@
  */
 /** */
 
-import { NumberRange } from '../compare'
+import { NumberRange, RangeBounds } from '../compare'
 import { FatalError, allValues, BreakException, catchBreak } from '../utils'
 import { Bst, DBst } from '../bst'
 
@@ -172,23 +172,24 @@ class ListDocumentModel {
     // Search:
     // n < start   -> _lesser
     // start <= n  -> _greater
-    const range_search = this.ldoc_bst.create_range_search()
-    range_search.lesser_find_greatest = true
-    range_search.greater_find_least = true
-    range_search.push_point({ known_position: start }, '_lesser', false)
-    range_search.all_greater('_greater')
-    const { _lesser, _greater } = this.ldoc_bst.search(range_search)
+    const { buckets } = this.ldoc_bst.search(
+      new NumberRange(start, start, RangeBounds.LOGO)
+    )
 
     let lesser: ConflictGroup
     let greater: ConflictGroup
-    if (_lesser && _lesser.length) {
+    if (buckets.lesser && buckets.lesser.length) {
       // The earliest one will not be a only a removal if nodes are ordered
       // properly. We can ignore the removals in between
-      lesser = _lesser.sort((a, b) => a.logoot_start.cmp(b.logoot_start))[0]
+      lesser = buckets.lesser
+        .map(([, cg]) => cg)
+        .sort((a, b) => a.logoot_start.cmp(b.logoot_start))[0]
     }
-    if (_greater && _greater.length) {
+    if (buckets.greater && buckets.greater.length) {
       // Now grab the last element...
-      greater = _greater.sort((a, b) => b.logoot_start.cmp(a.logoot_start))[0]
+      greater = buckets.greater
+        .map(([, cg]) => cg)
+        .sort((a, b) => b.logoot_start.cmp(a.logoot_start))[0]
     }
 
     let before_position
@@ -196,11 +197,14 @@ class ListDocumentModel {
 
     const lesser_length = lesser ? lesser.ldoc_length : 0
     if (lesser && lesser.known_position + lesser_length === start) {
+      // Between two CGs...
       if (
         greater &&
         lesser.last_branch === greater.first_branch &&
         lesser.last_branch !== this.branch
       ) {
+        // If we're between two CGs and they both are on the same branch, it's
+        // impossible to tell on which the insertion should be made
         throw new InsertionConflictError()
       }
       before_position = lesser.logoot_end
@@ -226,20 +230,23 @@ class ListDocumentModel {
           // Search:
           // n < lesser.known_position   -> _lesser
           // lesser.known_position <= n  -x
-          const range_search = this.ldoc_bst.create_range_search()
-          range_search.lesser_find_greatest = true
-          range_search.push_point(
-            { known_position: lesser.known_position },
-            '_lesser',
-            false
+          // TODO: Don't find `greater`. Maybe make a range that ignores one
+          // bound?
+          // TODO: What about the case where two CGs have the same start
+          // position?
+          const { buckets } = this.ldoc_bst.search(
+            new NumberRange(
+              lesser.known_position,
+              lesser.known_position,
+              RangeBounds.LOGC
+            )
           )
-          const { _lesser } = this.ldoc_bst.search(range_search)
 
           let most_lesser
-          if (_lesser && _lesser.length) {
-            most_lesser = _lesser.sort((a, b) =>
-              a.logoot_start.cmp(b.logoot_start)
-            )[0]
+          if (buckets.lesser && buckets.lesser.length) {
+            most_lesser = buckets.lesser
+              .map(([, cg]) => cg)
+              .sort((a, b) => a.logoot_start.cmp(b.logoot_start))[0]
           }
           // Now, go in between the two nodes just as we would've above
           before_position = most_lesser.logoot_end
@@ -296,19 +303,17 @@ class ListDocumentModel {
     // Search:
     // n < start   -> _lesser
     // start <= n  -> _greater
-    const range_search = this.ldoc_bst.create_range_search()
-    range_search.lesser_find_greatest = true
-    range_search.greater_find_least = true
-    range_search.push_point({ known_position: start }, '_lesser', false)
-    range_search.push_point({ known_position: start + length }, '_range', false)
-    range_search.all_greater(undefined)
-    const { _lesser, _range } = this.ldoc_bst.search(range_search)
+    const { buckets } = this.ldoc_bst.search(
+      new NumberRange(start, start + length, RangeBounds.LOGC)
+    )
 
-    const nodes = _range || []
-    if (_lesser && _lesser.length) {
+    const nodes = buckets.range.map(([, cg]) => cg)
+    if (buckets.lesser && buckets.lesser.length) {
       // The earliest one will not be a only a removal if nodes are ordered
       // properly. We can ignore the removals in between
-      const l = _lesser.sort((a, b) => a.logoot_start.cmp(b.logoot_start))[0]
+      const l = buckets.lesser
+        .map(([, cg]) => cg)
+        .sort((a, b) => a.logoot_start.cmp(b.logoot_start))[0]
       if (l.ldoc_end > start) {
         nodes.unshift(l)
       }
@@ -587,10 +592,7 @@ class ListDocumentModel {
     }
 
     // Split a conflict group and translate the child nodes
-    const splitCg = (
-      cg: ConflictGroup,
-      ng: LogootNodeGroup
-    ): ConflictGroup => {
+    const splitCg = (cg: ConflictGroup, ng: LogootNodeGroup): ConflictGroup => {
       if (!cg.groups.includes(ng)) {
         throw new FatalError('Node group not in conflict group.')
       }
@@ -787,11 +789,7 @@ class ListDocumentModel {
           insert(group.group, known_position, group_offset, group.length)
         }
 
-        const fixJoined = (
-          a: LogootNodeGroup,
-          b: LogootNodeGroup,
-          post = false
-        ): void => {
+        const fixJoined = (a: LogootNodeGroup, b: LogootNodeGroup): void => {
           if (!a || !b) {
             return
           }
@@ -804,13 +802,13 @@ class ListDocumentModel {
             // node, **so long as the nodes are in the same order.** Since not
             // all node positions have been updated, we cannot add the node with
             // the pre-incremented position
-            const ncg = splitCg(a.group, a)
+            splitCg(a.group, a)
           }
         }
 
         // Double check that these nodes still should be joined
-        fixJoined(last_group, group, false)
-        fixJoined(group, next_group, true)
+        fixJoined(last_group, group)
+        fixJoined(group, next_group)
       }
 
       last_start = group.end.clamp(nstart, nend, level).level(level)
