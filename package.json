@@ -1,6 +1,6 @@
 {
   "name": "@kb1rd/logootish-js",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Logootish algorithm for matrix-notepad",
   "main": "dist/@kb1rd/logootish-js.min.js",
   "publishConfig": {

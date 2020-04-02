@@ -105,8 +105,6 @@ const MinimalJoinFunction = (
  * used to transform edits between ones in the Logoot and local position spaces.
  * One important thing to note: Logoot edits (insertions/removals) can be
  * applied in any order. Local edits **must** be applied in a consistent order.
- * @TODO Conflict resolution does not exist. **This will create significant
- * changes to this API**
  */
 class ListDocumentModel {
   /**
@@ -130,7 +128,13 @@ class ListDocumentModel {
   clock = new LogootInt()
   branch: BranchKey
 
+  /**
+   * An optional instance of the `ListDocumentModel.Logger` class to log all
+   * operations that modify the BST (all calls to `_mergeNode`) to help with
+   * bug identification when applicable.
+   */
   debug_logger?: ListDocumentModel.Logger
+
   canJoin: JoinFunction
 
   constructor(branch: BranchKey, jf: JoinFunction = MinimalJoinFunction) {
