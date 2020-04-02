@@ -357,6 +357,11 @@ class ConflictGroup extends DBstNode<ConflictGroup> {
   }
 
   preferential_cmp(other: DBstSearchable | ConflictGroup): CompareResult {
+    if (!this.groups.length) {
+      throw new FatalError(
+        'Tried to call `preferential_cmp` on a CG with no LNGs'
+      )
+    }
     if ((other as { logoot_start: LogootPosition }).logoot_start) {
       return this.logoot_start.cmp((other as ConflictGroup).logoot_start)
     }

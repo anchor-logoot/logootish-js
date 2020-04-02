@@ -642,6 +642,16 @@ class ListDocumentModel {
     }
     // Join a conflict group and translate the child nodes
     const joinCg = (lcg: ConflictGroup, ncg: ConflictGroup): void => {
+      // Ensure that we remove **only** this node from the BST
+      if (
+        this.ldoc_bst.remove(ncg.known_position, (other) => other === ncg)
+          .length !== 1
+      ) {
+        throw new FatalError(
+          'Could not find other node to remove node that has been joined'
+        )
+      }
+
       ncg.branch_order.forEach((br) => {
         if (!lcg.branch_order.includes(br)) {
           lcg.branch_order.push(br)
@@ -662,8 +672,6 @@ class ListDocumentModel {
 
       ncg.branch_order.length = 0
       ncg.groups = []
-      // Ensure that we remove **only** this node from the BST
-      this.ldoc_bst.remove(ncg.known_position, (other) => other === ncg)
       conflict_order.splice(conflict_order.indexOf(ncg), 1)
     }
 

@@ -817,9 +817,10 @@ abstract class DBstNode<T extends DBstNode<T>> {
       data.value = data.value - this.absolute_value + this.value
     }
     if (this.parent_node) {
-      if (this.value <= 0) {
+      if (this.parent_node.left_node === (this as unknown) as T) {
         this.parent_node.left_node = data
-      } else {
+      }
+      if (this.parent_node.right_node === (this as unknown) as T) {
         this.parent_node.right_node = data
       }
       if (data) {
@@ -871,7 +872,11 @@ abstract class DBstNode<T extends DBstNode<T>> {
     }
     if (value <= 0) {
       tryRmLeft()
-    } else if (value > 0) {
+    }
+    // We also have to traverse the right side if it's equal. The reason is
+    // because changes made to node values may result in nodes with the same
+    // value to the right as well as the left
+    if (value >= 0) {
       tryRmRight()
     }
     if (value === 0 && filter((this as unknown) as T)) {
