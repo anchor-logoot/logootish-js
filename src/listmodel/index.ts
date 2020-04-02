@@ -589,8 +589,7 @@ class ListDocumentModel {
     // Split a conflict group and translate the child nodes
     const splitCg = (
       cg: ConflictGroup,
-      ng: LogootNodeGroup,
-      postprocess: (ncg: ConflictGroup) => void = (): void => undefined
+      ng: LogootNodeGroup
     ): ConflictGroup => {
       if (!cg.groups.includes(ng)) {
         throw new FatalError('Node group not in conflict group.')
@@ -630,7 +629,6 @@ class ListDocumentModel {
       ncg.groups = cg.groups.splice(cg.groups.indexOf(ng) + 1, cg.groups.length)
       ncg.groups.forEach((group) => (group.group = ncg))
 
-      postprocess(ncg)
       this.ldoc_bst.add(ncg)
       conflict_order.splice(conflict_order.indexOf(cg) + 1, 0, ncg)
 
@@ -806,14 +804,7 @@ class ListDocumentModel {
             // node, **so long as the nodes are in the same order.** Since not
             // all node positions have been updated, we cannot add the node with
             // the pre-incremented position
-            const ncg = splitCg(a.group, a, (ncg) => {
-              if (type === NodeType.DATA && post) {
-                ncg.value -= group.length
-              }
-            })
-            if (type === NodeType.DATA && post) {
-              ncg.value += group.length
-            }
+            const ncg = splitCg(a.group, a)
           }
         }
 

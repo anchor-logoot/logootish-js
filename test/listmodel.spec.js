@@ -7,6 +7,7 @@ import {
 } from '../dist/@kb1rd/logootish-js.js'
 
 import practical_t1 from './listmodel_practical/t1'
+import practical_t2 from './listmodel_practical/t2'
 
 chai.expect()
 
@@ -642,6 +643,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
 
     describe('practical tests', () => {
       runPracticalTest(practical_t1)
+      runPracticalTest(practical_t2)
     })
   })
 })

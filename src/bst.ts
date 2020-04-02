@@ -775,7 +775,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
   }
   get smallest_smaller_child(): T {
     if (this.left_node) {
-      return this.left_node.smallest_child || this.left_node
+      return this.left_node.smallest_smaller_child || this.left_node
     }
     return undefined
   }
@@ -789,7 +789,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
   }
   get largest_larger_child(): T {
     if (this.right_node) {
-      return this.right_node.largest_child || this.right_node
+      return this.right_node.largest_larger_child || this.right_node
     }
     return undefined
   }
@@ -799,7 +799,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
       return this.right_node.smallest_smaller_child || this.right_node
     }
     let node = (this as undefined) as T
-    while(node) {
+    while (node) {
       if (
         node.value <= 0 &&
         node.parent_node &&
@@ -823,6 +823,14 @@ abstract class DBstNode<T extends DBstNode<T>> {
         this.parent_node.right_node = data
       }
       if (data) {
+        if (data.parent_node) {
+          if (data.parent_node.left_node === data) {
+            delete data.parent_node.left_node
+          } else if (data.parent_node.right_node === data) {
+            delete data.parent_node.right_node
+          }
+          delete data.parent_node
+        }
         data.parent_node = this.parent_node
       }
     }
@@ -830,10 +838,12 @@ abstract class DBstNode<T extends DBstNode<T>> {
     if (data && this.left_node && this.left_node !== data) {
       data.left_node = this.left_node
       data.left_node.parent_node = data
+      data.left_node.value += this.value - data.value
     }
     if (data && this.right_node && this.right_node !== data) {
       data.right_node = this.right_node
       data.right_node.parent_node = data
+      data.right_node.value += this.value - data.value
     }
 
     delete this.parent_node
@@ -869,7 +879,12 @@ abstract class DBstNode<T extends DBstNode<T>> {
       let cnode: T
       if (this.right_node && this.left_node) {
         cnode = this.inorder_successor
+
+        // Keep the value here while we remove (`removeChild` needs the tree to
+        // be preserved)
+        const absval = cnode.absolute_value
         cnode.parent_node.removeChild(cnode.value, (n) => n === cnode)
+        cnode.value = absval
       } else if (this.right_node) {
         cnode = this.right_node
         cnode.value = cnode.absolute_value
