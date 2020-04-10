@@ -745,9 +745,12 @@ abstract class DBstNode<T extends DBstNode<T>> {
    */
   abstract preferential_cmp(other: DBstSearchable | T): CompareResult
 
-  addChild(node: T): void {
+  addChild(
+    node: T,
+    parentUpdate: (np: T) => void = (): void => undefined
+  ): void {
     node.value -= this.value
-    if (node.value > 0 || this.preferential_cmp(node) < 0) {
+    if (node.value > 0) {
       if (this.right_node) {
         this.right_node.addChild(node)
       } else {
@@ -756,6 +759,31 @@ abstract class DBstNode<T extends DBstNode<T>> {
         ;(node as DBstNode<T>).parent_node = (this as unknown) as T
       }
     } else {
+      if (node.value == 0 && this.preferential_cmp(node) < 0) {
+        if (this.parent_node) {
+          if (this.value <= 0) {
+            this.parent_node.left_node = node
+          } else {
+            this.parent_node.right_node = node
+          }
+        } else if (parentUpdate) {
+          parentUpdate(node)
+        } else {
+          throw new Error('Unexpected undefined parent node in DBST')
+        }
+        node.parent_node = this.parent_node
+        node.left_node = (this as unknown) as T
+        node.right_node = this.right_node
+        node.value = this.value
+        this.value = 0
+
+        if (node.right_node) {
+          node.right_node.parent_node = node
+        }
+        this.parent_node = node
+        this.right_node = undefined
+        return
+      }
       if (this.left_node) {
         this.left_node.addChild(node)
       } else {
@@ -812,15 +840,22 @@ abstract class DBstNode<T extends DBstNode<T>> {
     return undefined
   }
 
-  replaceWith(data: T): T {
+  replaceWith(
+    data: T,
+    parentUpdate: (np: T) => void = (): void => undefined
+  ): T {
+    if (data) {
+      delete data.parent_node
+    }
+
     if (data) {
       data.value = data.value - this.absolute_value + this.value
     }
     if (this.parent_node) {
-      if (this.parent_node.left_node === (this as unknown) as T) {
+      if (this.parent_node.left_node === ((this as unknown) as T)) {
         this.parent_node.left_node = data
       }
-      if (this.parent_node.right_node === (this as unknown) as T) {
+      if (this.parent_node.right_node === ((this as unknown) as T)) {
         this.parent_node.right_node = data
       }
       if (data) {
@@ -832,8 +867,10 @@ abstract class DBstNode<T extends DBstNode<T>> {
           }
           delete data.parent_node
         }
-        data.parent_node = this.parent_node
       }
+    }
+    if (data) {
+      data.parent_node = this.parent_node
     }
 
     if (data && this.left_node && this.left_node !== data) {
@@ -850,6 +887,14 @@ abstract class DBstNode<T extends DBstNode<T>> {
     delete this.parent_node
     delete this.right_node
     delete this.left_node
+
+    if (data && data.right_node && data.right_node.value === 0) {
+      data.right_node.value += data.value
+      delete data.right_node.parent_node
+      const node = data.right_node
+      delete data.right_node
+      data.addChild(node, parentUpdate)
+    }
 
     return (this as unknown) as T
   }
@@ -872,11 +917,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
     }
     if (value <= 0) {
       tryRmLeft()
-    }
-    // We also have to traverse the right side if it's equal. The reason is
-    // because changes made to node values may result in nodes with the same
-    // value to the right as well as the left
-    if (value >= 0) {
+    } else {
       tryRmRight()
     }
     if (value === 0 && filter((this as unknown) as T)) {
@@ -899,18 +940,21 @@ abstract class DBstNode<T extends DBstNode<T>> {
       } else {
         cnode = undefined
       }
-      this.replaceWith(cnode)
       parentUpdate(cnode)
+      this.replaceWith(cnode, parentUpdate)
     }
     return vals
   }
 
-  addSpaceBefore(s: number): void {
+  addSpaceBefore(
+    s: number,
+    parentUpdate: (np: T) => void = (): void => undefined
+  ): void {
     let next = (this as unknown) as T
     let cumulative = 0
     while (next) {
       // Increment `next` value if it's greater than `this`
-      if (cumulative >= 0 && this.preferential_cmp(next) <= 0) {
+      if (cumulative >= 0 /*&& this.preferential_cmp(next) <= 0*/) {
         cumulative -= next.value
         next.value += s
         // Ensure that the left node's position is not changed
@@ -921,6 +965,30 @@ abstract class DBstNode<T extends DBstNode<T>> {
         cumulative -= next.value
       }
       next = next.parent_node
+    }
+
+    next = (this as unknown) as T
+    if (
+      next.value <= 0 &&
+      next.parent_node &&
+      next.parent_node.right_node === next
+    ) {
+      next = next.parent_node
+      // TODO: What about root?
+      this.parent_node = next.parent_node
+      if (next.value > 0) {
+        next.parent_node.right_node = (this as unknown) as T
+      } else {
+        next.parent_node.left_node = (this as unknown) as T
+      }
+      delete next.parent_node
+      delete next.right_node
+
+      this.value += next.value
+      // `this.value` will be subtracted out of `next.value` to yield the
+      // relative position
+      next.value = this.value
+      this.addChild(next)
     }
   }
 
@@ -984,6 +1052,23 @@ abstract class DBstNode<T extends DBstNode<T>> {
       this.right_node.operateOnAll(cb)
     }
   }
+
+  selfTest(parent?: T, is_left?: boolean) {
+    if (this.parent_node !== parent) {
+      throw new Error('Node does not have correct parent')
+    }
+    if (is_left === true && this.value > 0) {
+      throw new Error('Node has wrong possition for location')
+    } else if (is_left === false && this.value <= 0) {
+      throw new Error('Node has wrong possition for location')
+    }
+    if (this.left_node) {
+      this.left_node.selfTest((this as unknown) as T, true)
+    }
+    if (this.right_node) {
+      this.right_node.selfTest((this as unknown) as T, false)
+    }
+  }
 }
 
 class DBst<T extends DBstNode<T>> {
@@ -993,6 +1078,24 @@ class DBst<T extends DBstNode<T>> {
     if (!this.bst_root) {
       this.bst_root = node
     } else {
+      if (
+        node.value === this.bst_root.value &&
+        this.bst_root.preferential_cmp(node) < 0
+      ) {
+        node.left_node = this.bst_root
+        node.left_node.parent_node = node
+        node.left_node.value = 0
+
+        node.right_node = this.bst_root.right_node
+        if (node.right_node) {
+          node.right_node.parent_node = node
+          this.bst_root.right_node = undefined
+        }
+
+        node.parent_node = undefined
+        this.bst_root = node
+        return node
+      }
       this.bst_root.addChild(node)
     }
     return node
@@ -1041,6 +1144,12 @@ class DBst<T extends DBstNode<T>> {
     })
     str += ']'
     return str
+  }
+
+  selfTest() {
+    if (this.bst_root) {
+      this.bst_root.selfTest(undefined)
+    }
   }
 }
 

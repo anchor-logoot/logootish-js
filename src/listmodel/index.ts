@@ -19,6 +19,7 @@ import {
 } from './logoot'
 
 import { debug } from '../debug'
+import { ImmutableInt } from '../ints'
 
 type KnownPositionBst = DBst<ConflictGroup>
 type LogootBst = Bst<LogootNodeGroup, { start: LogootPosition }>
@@ -416,6 +417,8 @@ class ListDocumentModel {
     type: NodeType,
     canJoin: JoinFunction
   ): Operation[] {
+    nstart.immutable = true
+    nrclk = (new ImmutableInt<LogootInt>(nrclk) as unknown) as LogootInt
     if (this.debug_logger) {
       this.debug_logger.log({
         br,
@@ -552,7 +555,7 @@ class ListDocumentModel {
       })
       const successor = cg.inorder_successor
       if (successor) {
-        successor.addSpaceBefore(-length)
+        successor.addSpaceBefore(-length, (np) => (this.ldoc_bst.bst_root = np))
       }
     }
     const insert = (
@@ -572,7 +575,7 @@ class ListDocumentModel {
       })
       const successor = cg.inorder_successor
       if (successor) {
-        successor.addSpaceBefore(length)
+        successor.addSpaceBefore(length, (np) => (this.ldoc_bst.bst_root = np))
       }
     }
     const translate = (source: number, length: number, dest: number): void => {
@@ -682,7 +685,8 @@ class ListDocumentModel {
       let next_group = skip_ranges[i + 1]
 
       const group_level_start = group.start.clamp(nstart, nend, level).l(level)
-      const group_level_end = group.end.clamp(nstart, nend, level).l(level)
+        .i
+      const group_level_end = group.end.clamp(nstart, nend, level).l(level).i
 
       const empty_length = group_level_start.copy().sub(last_start).js_int
       const empty_offset = last_start.copy().sub(nstart.l(level)).js_int
@@ -769,14 +773,21 @@ class ListDocumentModel {
         if (group.start.cmp(nstart) < 0) {
           last_group = group
           group = group.splitAround(
-            nstart.l(level).sub(group.start.l(level)).js_int
+            nstart
+              .l(level)
+              .copy()
+              .sub(group.start.l(level)).js_int
           )
           this.logoot_bst.add(group)
         }
         // Split off the trailing end
         if (group.end.cmp(nend) > 0) {
           const newgroup = group.splitAround(
-            group.length - group.end.l(level).sub(nend.l(level)).js_int
+            group.length -
+              group.end
+                .l(level)
+                .copy()
+                .sub(nend.l(level)).js_int
           )
           this.logoot_bst.add(newgroup)
           next_group = newgroup
@@ -866,6 +877,8 @@ class ListDocumentModel {
    * @throws {FatalError} If any corruption detected
    */
   selfTest(): void {
+    this.ldoc_bst.selfTest()
+
     let last_pos: LogootPosition
     let last_kp = 0
     this.ldoc_bst.operateOnAll((data) => {

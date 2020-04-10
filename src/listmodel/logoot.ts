@@ -37,6 +37,7 @@ import LogootInt = Int32
  */
 class LogootPosition {
   protected array: LogootInt[] = [new LogootInt(0)]
+  immutable = false
 
   /**
    * This constructor constructs a new position that is in the range specified
@@ -153,6 +154,9 @@ class LogootPosition {
    * An array accessor
    */
   level(n: number): LogootInt {
+    if (this.immutable) {
+      return this.array[n] && this.array[n].i
+    }
     return this.array[n]
   }
   /**
