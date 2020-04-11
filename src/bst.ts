@@ -745,10 +745,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
    */
   abstract preferential_cmp(other: DBstSearchable | T): CompareResult
 
-  addChild(
-    node: T,
-    parentUpdate: (np: T) => void = (): void => undefined
-  ): void {
+  addChild(node: T, parentUpdate?: (np: T) => void): void {
     node.value -= this.value
     if (node.value > 0) {
       if (this.right_node) {
@@ -772,16 +769,15 @@ abstract class DBstNode<T extends DBstNode<T>> {
           throw new Error('Unexpected undefined parent node in DBST')
         }
         node.parent_node = this.parent_node
-        node.left_node = (this as unknown) as T
         node.right_node = this.right_node
         node.value = this.value
-        this.value = 0
 
         if (node.right_node) {
           node.right_node.parent_node = node
         }
         this.parent_node = node
         this.right_node = undefined
+        node.addChild((this as unknown) as T)
         return
       }
       if (this.left_node) {
@@ -820,6 +816,13 @@ abstract class DBstNode<T extends DBstNode<T>> {
       return this.right_node.largest_larger_child || this.right_node
     }
     return undefined
+  }
+
+  get equal_parent(): T {
+    if (this.value === 0 && this.parent_node) {
+      return this.parent_node.equal_parent
+    }
+    return (this as unknown) as T
   }
 
   get inorder_successor(): T {
@@ -923,8 +926,22 @@ abstract class DBstNode<T extends DBstNode<T>> {
     if (value === 0 && filter((this as unknown) as T)) {
       vals.push((this as unknown) as T)
       let cnode: T
+      // A node to "return" to the DBST. This is set when the inorder successor
+      // is equal to its parents. In that case, the greatest equal parent is
+      // chosen and and children are placed in `return_node`
+      let return_node: T
       if (this.right_node && this.left_node) {
         cnode = this.inorder_successor
+        while (cnode.value === 0) {
+          cnode = cnode.parent_node
+        }
+        // If there is a right node, it can be spliced back into the DBST by
+        // the `removeChild` function
+        if (cnode.left_node) {
+          return_node = cnode.left_node
+          delete cnode.left_node.parent_node
+          delete cnode.left_node
+        }
 
         // Keep the value here while we remove (`removeChild` needs the tree to
         // be preserved)
@@ -942,14 +959,16 @@ abstract class DBstNode<T extends DBstNode<T>> {
       }
       parentUpdate(cnode)
       this.replaceWith(cnode, parentUpdate)
+
+      if (return_node) {
+        return_node.value += cnode.value
+        cnode.addChild(return_node, parentUpdate)
+      }
     }
     return vals
   }
 
-  addSpaceBefore(
-    s: number,
-    parentUpdate: (np: T) => void = (): void => undefined
-  ): void {
+  addSpaceBefore(s: number, parentUpdate: (np: T) => void): void {
     let next = (this as unknown) as T
     let cumulative = 0
     while (next) {
@@ -967,28 +986,30 @@ abstract class DBstNode<T extends DBstNode<T>> {
       next = next.parent_node
     }
 
-    next = (this as unknown) as T
-    if (
-      next.value <= 0 &&
-      next.parent_node &&
-      next.parent_node.right_node === next
-    ) {
-      next = next.parent_node
-      // TODO: What about root?
-      this.parent_node = next.parent_node
-      if (next.value > 0) {
-        next.parent_node.right_node = (this as unknown) as T
-      } else {
-        next.parent_node.left_node = (this as unknown) as T
-      }
-      delete next.parent_node
-      delete next.right_node
+    const node = this.equal_parent
 
-      this.value += next.value
-      // `this.value` will be subtracted out of `next.value` to yield the
-      // relative position
-      next.value = this.value
-      this.addChild(next)
+    next = node
+    cumulative = 0
+    let high_parent
+    while (next) {
+      cumulative -= next.value
+      if (cumulative === 0) {
+        // TODO: Can this ever be undefined?
+        high_parent = next.parent_node
+      }
+      next = next.parent_node
+    }
+
+    if (high_parent) {
+      if (node.parent_node.left_node === node) {
+        delete node.parent_node.left_node
+      } else if (node.parent_node.right_node === node) {
+        delete node.parent_node.right_node
+      }
+      delete node.parent_node
+      node.value = high_parent.value
+      // TODO: What if root parent swap?
+      high_parent.addChild(node, parentUpdate)
     }
   }
 
@@ -1053,7 +1074,22 @@ abstract class DBstNode<T extends DBstNode<T>> {
     }
   }
 
-  selfTest(parent?: T, is_left?: boolean) {
+  selfTest(
+    parent?: T,
+    is_left?: boolean,
+    mnv?: number,
+    mxv?: number,
+    known: DBstNode<T>[] = []
+  ) {
+    if (known.includes(this)) {
+      throw new Error('Duplicate nodes or node loop')
+    }
+    known.push(this)
+    if (this.value <= mnv) {
+      throw new Error('Node has wrong possition for location')
+    } else if (this.value > mxv) {
+      throw new Error('Node has wrong possition for location')
+    }
     if (this.parent_node !== parent) {
       throw new Error('Node does not have correct parent')
     }
@@ -1063,10 +1099,22 @@ abstract class DBstNode<T extends DBstNode<T>> {
       throw new Error('Node has wrong possition for location')
     }
     if (this.left_node) {
-      this.left_node.selfTest((this as unknown) as T, true)
+      this.left_node.selfTest(
+        (this as unknown) as T,
+        true,
+        mnv - this.value,
+        0,
+        known
+      )
     }
     if (this.right_node) {
-      this.right_node.selfTest((this as unknown) as T, false)
+      this.right_node.selfTest(
+        (this as unknown) as T,
+        false,
+        0,
+        mxv - this.value,
+        known
+      )
     }
   }
 }
