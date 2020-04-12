@@ -824,6 +824,9 @@ abstract class DBstNode<T extends DBstNode<T>> {
     }
     return (this as unknown) as T
   }
+  get root(): T {
+    return this.parent_node ? this.parent_node.root : (this as unknown) as T
+  }
 
   get inorder_successor(): T {
     if (this.right_node) {
@@ -986,30 +989,27 @@ abstract class DBstNode<T extends DBstNode<T>> {
       next = next.parent_node
     }
 
-    const node = this.equal_parent
-
-    next = node
+    next = (this as unknown) as T
+    let last = next
     cumulative = 0
-    let high_parent
     while (next) {
-      cumulative -= next.value
       if (cumulative === 0) {
-        // TODO: Can this ever be undefined?
-        high_parent = next.parent_node
-      }
-      next = next.parent_node
-    }
+        if (last.parent_node && next !== ((this as unknown) as T)) {
+          last.value = next.value
+          if (last.parent_node.left_node === last) {
+            delete last.parent_node.left_node
+          } else if (last.parent_node.right_node === last) {
+            delete last.parent_node.right_node
+          }
+          delete last.parent_node
 
-    if (high_parent) {
-      if (node.parent_node.left_node === node) {
-        delete node.parent_node.left_node
-      } else if (node.parent_node.right_node === node) {
-        delete node.parent_node.right_node
+          next.addChild(last, !next.parent_node ? parentUpdate : undefined)
+          last = next
+        }
       }
-      delete node.parent_node
-      node.value = high_parent.value
-      // TODO: What if root parent swap?
-      high_parent.addChild(node, parentUpdate)
+
+      cumulative -= next.value
+      next = next.parent_node
     }
   }
 

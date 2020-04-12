@@ -135,6 +135,11 @@ class ListDocumentModel {
    * bug identification when applicable.
    */
   debug_logger?: ListDocumentModel.Logger
+  /**
+   * An option that will run tests on the DBST after every operation to it.
+   * **DO NOT** enable in production.
+   */
+  agressively_test_bst = false
 
   canJoin: JoinFunction
 
@@ -556,6 +561,9 @@ class ListDocumentModel {
       const successor = cg.inorder_successor
       if (successor) {
         successor.addSpaceBefore(-length, (np) => (this.ldoc_bst.bst_root = np))
+        if (this.agressively_test_bst) {
+          this.ldoc_bst.selfTest()
+        }
       }
     }
     const insert = (
@@ -576,6 +584,9 @@ class ListDocumentModel {
       const successor = cg.inorder_successor
       if (successor) {
         successor.addSpaceBefore(length, (np) => (this.ldoc_bst.bst_root = np))
+        if (this.agressively_test_bst) {
+          this.ldoc_bst.selfTest()
+        }
       }
     }
     const translate = (source: number, length: number, dest: number): void => {
@@ -639,6 +650,9 @@ class ListDocumentModel {
       ncg.groups.forEach((group) => (group.group = ncg))
 
       this.ldoc_bst.add(ncg)
+      if (this.agressively_test_bst) {
+        this.ldoc_bst.selfTest()
+      }
       conflict_order.splice(conflict_order.indexOf(cg) + 1, 0, ncg)
 
       return ncg
@@ -653,6 +667,9 @@ class ListDocumentModel {
         throw new FatalError(
           'Could not find other node to remove node that has been joined'
         )
+      }
+      if (this.agressively_test_bst) {
+        this.ldoc_bst.selfTest()
       }
 
       ncg.branch_order.forEach((br) => {
@@ -746,12 +763,18 @@ class ListDocumentModel {
           const ipos = newgroup.group.insertSingleBranchGroup(newgroup)
           if (!last_join && !next_join) {
             this.ldoc_bst.add(newgroup.group)
+            if (this.agressively_test_bst) {
+              this.ldoc_bst.selfTest()
+            }
           }
           insert(newgroup.group, ipos, empty_offset, newgroup.length)
         } else {
           newgroup.group.insertSingleBranchGroup(newgroup)
           if (!last_join && !next_join) {
             this.ldoc_bst.add(newgroup.group)
+            if (this.agressively_test_bst) {
+              this.ldoc_bst.selfTest()
+            }
           }
         }
 
