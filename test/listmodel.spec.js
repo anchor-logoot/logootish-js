@@ -9,6 +9,8 @@ import {
 import practical_t1 from './listmodel_practical/t1'
 import practical_t2 from './listmodel_practical/t2'
 
+import lp from './listmodel_practical/local_provider'
+
 chai.expect()
 
 const expect = chai.expect
@@ -87,6 +89,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
   beforeEach('create LDM', () => {
     e = new TestOperationExecuter()
     ldm = new ListDocumentModel(u1)
+    ldm.agressively_test_bst = true
   })
   const selfTest = () => {
     try {
@@ -99,9 +102,17 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
       throw e
     }
   }
-  const mergeNode = (...args) => {
-    const ops = ldm._mergeNode(...args)
+  const mergeNode = (br, st, ln, rclk, type, jf = ldm.canJoin) => {
+    const nomutate_start = st.copy()
+    const nomutate_rclk = rclk.copy()
+    const ops = ldm._mergeNode(br, nomutate_start, ln, nomutate_rclk, type, jf)
     selfTest()
+    if (st.cmp(nomutate_start)) {
+      throw new Error('Algorithm mutated input start position')
+    }
+    if (rclk.cmp(nomutate_rclk)) {
+      throw new Error('Algorithm mutated rclk')
+    }
     return ops
   }
 
@@ -125,6 +136,28 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           })
         })
       })
+      it('local equivalence test', () => {
+        const locals = []
+        const ctx = new lp.DummyContext()
+        t.tests.forEach((test, i) => {
+          locals[i] = new lp.DummyCopy(ctx, new ListDocumentModel(Symbol()))
+          const logger = new ListDocumentModel.JsonableLogger()
+          logger.restoreFromJSON(test)
+          logger.ops.forEach((op) => locals[i].applyOperation(op))
+        })
+        let last
+        const success = locals.every((l) => {
+          let rval = true
+          if (last) {
+            rval = last.doc_eq(l)
+          }
+          last = l
+          return rval
+        })
+        if (!success) {
+          throw new Error('Resulting documents are not equal')
+        }
+      })
     })
   }
 
@@ -137,8 +170,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(0),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'a'
         )
@@ -151,8 +183,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(1,2,3,4),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'a'
         )
@@ -165,8 +196,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(0),
             5,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'abcde'
         )
@@ -179,8 +209,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(0),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'a'
         )
@@ -196,8 +225,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(0),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'a'
         )
@@ -207,8 +235,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(1),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'b'
         )
@@ -221,8 +248,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(1),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'b'
         )
@@ -232,8 +258,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(0),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'a'
         )
@@ -246,8 +271,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(1, 0),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'a'
         )
@@ -257,8 +281,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(1),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'b'
         )
@@ -273,8 +296,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(0),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'a'
         )
@@ -284,8 +306,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(4),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'b'
         )
@@ -295,8 +316,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(2),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'c'
         )
@@ -309,8 +329,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(0),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'a'
         )
@@ -320,8 +339,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(1),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'b'
         )
@@ -331,8 +349,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(1,5),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'c'
         )
@@ -345,8 +362,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(1,4),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'a'
         )
@@ -356,8 +372,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(1),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'b'
         )
@@ -367,8 +382,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(1,5),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'c'
         )
@@ -381,8 +395,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(0),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'a'
         )
@@ -392,8 +405,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(1,6),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'b'
         )
@@ -403,8 +415,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(1,5),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'c'
         )
@@ -417,8 +428,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(10),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'a'
         )
@@ -428,8 +438,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(11),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'b'
         )
@@ -439,8 +448,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(11,0),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'c'
         )
@@ -450,8 +458,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
             LogootPosition.fromInts(12),
             1,
             new LogootInt(0),
-            NodeType.DATA,
-            ldm.canJoin
+            NodeType.DATA
           ),
           'd'
         )
@@ -470,8 +477,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(10),
           1,
           new LogootInt(0),
-          NodeType.REMOVAL,
-          ldm.canJoin
+          NodeType.REMOVAL
         ),
         'a'
       )
@@ -481,8 +487,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(12),
           1,
           new LogootInt(0),
-          NodeType.REMOVAL,
-          ldm.canJoin
+          NodeType.REMOVAL
         ),
         'b'
       )
@@ -492,8 +497,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(9),
           1,
           new LogootInt(0),
-          NodeType.DATA,
-          ldm.canJoin
+          NodeType.DATA
         ),
         'b'
       )
@@ -503,8 +507,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(8),
           1,
           new LogootInt(0),
-          NodeType.DATA,
-          ldm.canJoin
+          NodeType.DATA
         ),
         'a'
       )
@@ -514,8 +517,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(13),
           1,
           new LogootInt(0),
-          NodeType.DATA,
-          ldm.canJoin
+          NodeType.DATA
         ),
         'c'
       )
@@ -528,8 +530,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(1),
           5,
           new LogootInt(0),
-          NodeType.DATA,
-          ldm.canJoin
+          NodeType.DATA
         ),
         'abceg'
       )
@@ -539,8 +540,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(4,0),
           1,
           new LogootInt(0),
-          NodeType.DATA,
-          ldm.canJoin
+          NodeType.DATA
         ),
         'd'
       )
@@ -550,8 +550,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(4),
           1,
           new LogootInt(0),
-          NodeType.DATA,
-          ldm.canJoin
+          NodeType.DATA
         ),
         'f'
       )
@@ -565,8 +564,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(3),
           1,
           new LogootInt(0),
-          NodeType.DATA,
-          ldm.canJoin
+          NodeType.DATA
         ),
         'a'
       )
@@ -576,8 +574,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(4,0),
           1,
           new LogootInt(0),
-          NodeType.DATA,
-          ldm.canJoin
+          NodeType.DATA
         ),
         'b'
       )
@@ -587,8 +584,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(4,0),
           1,
           new LogootInt(0),
-          NodeType.DATA,
-          ldm.canJoin
+          NodeType.DATA
         ),
         'c'
       )
@@ -602,8 +598,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(0),
           3,
           new LogootInt(0),
-          NodeType.REMOVAL,
-          ldm.canJoin
+          NodeType.REMOVAL
         ),
         'a'
       )
@@ -613,8 +608,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(4),
           1,
           new LogootInt(0),
-          NodeType.REMOVAL,
-          ldm.canJoin
+          NodeType.REMOVAL
         ),
         'a'
       )
@@ -624,10 +618,8 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(3),
           1,
           new LogootInt(0),
-          NodeType.REMOVAL,
-          ldm.canJoin
-        ),
-        'a'
+          NodeType.REMOVAL
+        )
       )
       e.runOperations(
         mergeNode(
@@ -635,12 +627,69 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           LogootPosition.fromInts(1),
           1,
           new LogootInt(1),
-          NodeType.DATA,
-          ldm.canJoin
+          NodeType.DATA
         ),
         'a'
       )
       expect(e.string).to.equal('a')
+    })
+    it('conflicting old removals', () => {
+      e.runOperations(mergeNode(
+        u2,
+        LogootPosition.fromInts(1),
+        1,
+        new LogootInt(0),
+        NodeType.REMOVAL
+      ))
+      e.runOperations(
+        mergeNode(
+          u1,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(1),
+          NodeType.DATA
+        ),
+        'a'
+      )
+      e.runOperations(mergeNode(
+        u2,
+        LogootPosition.fromInts(0),
+        1,
+        new LogootInt(0),
+        NodeType.REMOVAL
+      ))
+      e.runOperations(
+        mergeNode(
+          u1,
+          LogootPosition.fromInts(1),
+          1,
+          new LogootInt(1),
+          NodeType.DATA
+        ),
+        'b'
+      )
+      e.runOperations(
+        mergeNode(
+          u1,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(1),
+          NodeType.DATA
+        ),
+        'a'
+      )
+      e.runOperations(
+        mergeNode(
+          u1,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(1),
+          NodeType.DATA
+        ),
+        'a'
+      )
+      expect(e.string).to.equal('ab')
+      expect(e.mark_string).to.equal('cc')
     })
 
     describe('practical tests', () => {
