@@ -819,7 +819,7 @@ class ListDocumentModel {
 
         // Ensure that this group is in the branch order
         if (!group.group.branch_order.includes(br)) {
-          group.group.branch_order.push(br)
+          group.group.branch_order.unshift(br)
         }
 
         // Now, capture this node's target position

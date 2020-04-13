@@ -554,7 +554,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         ),
         'f'
       )
-      expect(e.string).to.equal('abcdefg')
+      expect(e.string).to.match(/^abcd(ef|fe)g$/)
       expect(e.mark_string).to.equal('    cc ')
     })
     it('low level conflict after high level node', () => {
@@ -588,7 +588,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         ),
         'c'
       )
-      expect(e.string).to.equal('abc')
+      expect(e.string).to.match(/^a(bc|cb)$/)
       expect(e.mark_string).to.equal(' cc')
     })
     it('node splits shouldn\'t be added with their real known_position', () => {
