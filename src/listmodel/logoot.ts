@@ -305,15 +305,8 @@ const nt_string = {
  * not displayed in the order specified in `groups`. Rather, all of the nodes on
  * a particular branch are displayed together and in the order defined by
  * `branch_order`.
- * @TODO Move `branch_order` into the ListDocumentModel. No reason not to have
- * a whole-document branch order.
  */
 class ConflictGroup extends DBstNode<ConflictGroup> {
-  /**
-   * The order in which branches are displayed. All of the nodes that make up
-   * a single branch are placed together.
-   */
-  readonly branch_order: BranchKey[] = []
   /**
    * A list of `LogootNodeGroups` that make up the Logoot side of the local
    * document. A group's nodes will be split up and placed into one of the
@@ -322,7 +315,13 @@ class ConflictGroup extends DBstNode<ConflictGroup> {
    */
   groups: LogootNodeGroup[] = []
 
-  constructor(position: number) {
+  /**
+   * @param position - The local position of this CG
+   * @param branch_order - The order in which branches are displayed. All of
+   * the nodes that make up a single branch are placed together. This is now
+   * global on the LDM level, so a reference should be passed in by the LDM.
+   */
+  constructor(position: number, public readonly branch_order: BranchKey[]) {
     super(position)
   }
 
@@ -376,15 +375,30 @@ class ConflictGroup extends DBstNode<ConflictGroup> {
    * Get the first branch in this group.
    */
   get first_branch(): BranchKey {
-    return this.branch_order[0]
+    if (!this.groups.length || !this.branch_order.length) {
+      return
+    }
+    for (let i = 0; i < this.branch_order.length; i++) {
+      if (this.groups[0].br(this.branch_order[i])) {
+        return this.branch_order[i]
+      }
+    }
+    throw new FatalError('Branch order does not contain any branches from LNG')
   }
   /**
    * Get the last branch in this group.
    */
   get last_branch(): BranchKey {
-    return this.branch_order.length
-      ? this.branch_order[this.branch_order.length - 1]
-      : undefined
+    if (!this.groups.length || !this.branch_order.length) {
+      return
+    }
+    const last = this.groups[this.groups.length - 1]
+    for (let i = this.branch_order.length - 1; i >= 0; i--) {
+      if (last.br(this.branch_order[i])) {
+        return this.branch_order[i]
+      }
+    }
+    throw new FatalError('Branch order does not contain any branches from LNG')
   }
 
   /**
@@ -481,9 +495,6 @@ class ConflictGroup extends DBstNode<ConflictGroup> {
     }
 
     const br = group.branches[0]
-    if (!this.branch_order.includes(br)) {
-      this.branch_order.push(br)
-    }
 
     const { right, pos } = this.getNeighbors(group)
 

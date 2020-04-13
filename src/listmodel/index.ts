@@ -129,6 +129,8 @@ class ListDocumentModel {
   clock = new LogootInt()
   branch: BranchKey
 
+  branch_order: BranchKey[] = []
+
   /**
    * An optional instance of the `ListDocumentModel.Logger` class to log all
    * operations that modify the BST (all calls to `_mergeNode`) to help with
@@ -443,6 +445,10 @@ class ListDocumentModel {
       this.clock.assign(nrclk)
     }
 
+    if (!this.branch_order.includes(br)) {
+      this.branch_order.push(br)
+    }
+
     // Search:
     // n < nstart          -> _lesser
     // nstart <= n < nend  -> _skip_ranges
@@ -619,11 +625,11 @@ class ListDocumentModel {
       }
 
       // New Conflict Group -- Ok, my naming is bad here lol
-      const ncg = new ConflictGroup(cg.ldoc_end)
+      const ncg = new ConflictGroup(cg.ldoc_end, this.branch_order)
 
       let known_position = cg.known_position
       const known_end = ncg.known_position
-      cg.branch_order.forEach((br) => {
+      this.branch_order.forEach((br) => {
         // Calculate the area ahead of the known_position that isn't moved
         const excerpt_length = ((): number => {
           let origin = 0
@@ -636,8 +642,6 @@ class ListDocumentModel {
           // This should never happen
           throw new FatalError()
         })()
-
-        ncg.branch_order.push(br)
 
         const moved_length = cg.branchLength([br]) - excerpt_length
 
@@ -672,25 +676,28 @@ class ListDocumentModel {
         this.ldoc_bst.selfTest()
       }
 
-      ncg.branch_order.forEach((br) => {
-        if (!lcg.branch_order.includes(br)) {
-          lcg.branch_order.push(br)
-        }
-      })
-
       ncg.groups.forEach((group) => (group.group = lcg))
       lcg.groups.splice(lcg.groups.length, 0, ...ncg.groups)
 
       let fetch_position = ncg.known_position
       let known_position = lcg.known_position
-      ncg.branch_order.forEach((br) => {
-        known_position += lcg.branchLength([br])
+      this.branch_order.forEach((br) => {
+        // Get the length of the new branch
         const next_length = ncg.branchLength([br])
-        translate(fetch_position, next_length, known_position - next_length)
+        // Move to the end of the existing branch
+        // Note that we have to subtract `next_length` since the LNGs have
+        // already been added to the CG
+        known_position += lcg.branchLength([br]) - next_length
+
+        translate(fetch_position, next_length, known_position)
+        // Add to the fetch position (remember, in translate, position of
+        // successive text is conserved)
         fetch_position += next_length
+        // Now, add the remaining `branchLength` to the `known_position` since
+        // we've now translated there
+        known_position += next_length
       })
 
-      ncg.branch_order.length = 0
       ncg.groups = []
       conflict_order.splice(conflict_order.indexOf(ncg), 1)
     }
@@ -745,9 +752,9 @@ class ListDocumentModel {
         if (!last_join && !next_join) {
           // Ok, so now we need to create a new conflict group
           newgroup.group = new ConflictGroup(
-            last_group ? last_group.group.ldoc_end : 0
+            last_group ? last_group.group.ldoc_end : 0,
+            this.branch_order
           )
-          newgroup.group.branch_order.push(br)
 
           conflict_order.splice(
             last_group ? conflict_order.indexOf(last_group.group) + 1 : 0,
@@ -816,11 +823,6 @@ class ListDocumentModel {
           next_group = newgroup
         }
         debug.info(`Adding to existing group at ${group.start.toString()}`)
-
-        // Ensure that this group is in the branch order
-        if (!group.group.branch_order.includes(br)) {
-          group.group.branch_order.unshift(br)
-        }
 
         // Now, capture this node's target position
         const known_position = group.group.insertPos(br, group)
