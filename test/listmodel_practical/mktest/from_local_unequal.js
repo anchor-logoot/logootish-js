@@ -1,15 +1,15 @@
 /**
- * A small script that generates smaller tests out of practical tests that
- * throw an error or fail a self-test. The result will be logged to console
- * and (just a warning) this can take a while. It is a bit poorly written, but
- * it serves its purpose.
+ * A small script that generates smaller tests out of practical tests that,
+ * when run, do not produce equal documents. The result will be logged to
+ * console and (just a warning) this can take a while. It is a bit poorly
+ * written, but it serves its purpose.
  */
 
-const { ListDocumentModel } = require('../../dist/@kb1rd/logootish-js.js')
+const { ListDocumentModel } = require('../../../dist/@kb1rd/logootish-js.js')
 
-const lp = require('./local_provider')
+const lp = require('../local_provider')
 
-const practical_t1 = require('./t1')
+const practical_t1 = require('../t1')
 
 function createOpsFromJSON(json) {
   return json.tests.map((test) => {
@@ -55,13 +55,18 @@ function _findError(tests) {
     const op_rmd = untested.pop()
 
     const locals = []
+    const br_order = []
     const ctx = new lp.DummyContext()
     let error = false
     tests.forEach((test, i) => {
       if (error) {
         return
       }
-      locals[i] = new lp.DummyCopy(ctx, new ListDocumentModel(Symbol()))
+      locals[i] = new lp.DummyCopy(
+        ctx,
+        new ListDocumentModel(Symbol()),
+        br_order
+      )
       test.forEach((op) => {
         if (error) {
           return

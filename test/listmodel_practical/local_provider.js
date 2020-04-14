@@ -6,40 +6,39 @@
 
 class DummyContext {
   constructor() {
-    this.known_events = []
+    this.lookup = {}
   }
   provideDataFor(op) {
     if (op.type === 0) {
-      const results = this.known_events.filter((e) => {
-        return e.op.start.cmp(op.start) === 0 &&
-          e.op.rclk.cmp(op.rclk) === 0 &&
-          e.op.br === op.br &&
-          e.op.length === op.length
-      })
-      if (results.length > 1) {
-        console.log(results)
-        this.known_events.forEach((e) => {
-          console.log(`${e.op.start} ${op.start}`)
-        })
-        throw new TypeError('Internal `known_events` corruption')
-      } else if (results.length) {
-        return results[0].data
-      } else {
-        const newevent = { op, data: [] }
-        newevent.data = new Array(op.length).fill(0).map((e, i) => Symbol(
-          `From event on ${op.br} at ${op.start} element ${i} @ ${op.rclk}`
-        ))
-        this.known_events.push(newevent)
-        return newevent.data
+      if (!this.lookup[op.br]) {
+        this.lookup[op.br] = {}
       }
+      const brdata = this.lookup[op.br]
+      if (!brdata[op.rclk.toString()]) {
+        brdata[op.rclk.toString()] = {}
+      }
+      const clkdata = brdata[op.rclk.toString()]
+
+      return [...Array(op.length).keys()].map((i) => {
+        const k = op.start.offsetLowest(i).toString()
+        if (!clkdata[k]) {
+          clkdata[k] = Symbol(
+            `From event on ${op.br} at ${op.start} element ${i} @ ${op.rclk}`
+          )
+        }
+        return clkdata[k]
+      })
     }
   }
 }
 
 class DummyCopy {
-  constructor(ctx, ldm) {
+  constructor(ctx, ldm, br_order) {
     this.ctx = ctx
     this.ldm = ldm
+    if (br_order) {
+      this.ldm.branch_order = br_order
+    }
     this.elements = []
   }
   applyOperation(op) {

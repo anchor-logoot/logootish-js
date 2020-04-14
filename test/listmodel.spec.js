@@ -138,9 +138,15 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
       })
       it('local equivalence test', () => {
         const locals = []
+        // A dirty hack to make the branch order constant between LDMs
+        const br_order = []
         const ctx = new lp.DummyContext()
         t.tests.forEach((test, i) => {
-          locals[i] = new lp.DummyCopy(ctx, new ListDocumentModel(Symbol()))
+          locals[i] = new lp.DummyCopy(
+            ctx,
+            new ListDocumentModel(Symbol()),
+            br_order
+          )
           const logger = new ListDocumentModel.JsonableLogger()
           logger.restoreFromJSON(test)
           logger.ops.forEach((op) => locals[i].applyOperation(op))
