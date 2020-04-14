@@ -664,14 +664,6 @@ class ListDocumentModel {
     // Join a conflict group and translate the child nodes
     const joinCg = (lcg: ConflictGroup, ncg: ConflictGroup): void => {
       // Ensure that we remove **only** this node from the BST
-      if (
-        this.ldoc_bst.remove(ncg.known_position, (other) => other === ncg)
-          .length !== 1
-      ) {
-        throw new FatalError(
-          'Could not find other node to remove node that has been joined'
-        )
-      }
       if (this.agressively_test_bst) {
         this.ldoc_bst.selfTest()
       }
@@ -697,6 +689,14 @@ class ListDocumentModel {
         // we've now translated there
         known_position += next_length
       })
+      if (
+        this.ldoc_bst.remove(ncg.known_position, (other) => other === ncg)
+          .length !== 1
+      ) {
+        throw new FatalError(
+          'Could not find other node to remove node that has been joined'
+        )
+      }
 
       ncg.groups = []
       conflict_order.splice(conflict_order.indexOf(ncg), 1)
