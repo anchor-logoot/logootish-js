@@ -70,7 +70,7 @@ type Operation =
  * An error thrown when an insertion is attempted at the boundary between two
  * branches that are not the one in the active document.
  */
-class InsertionConflictError extends Error {}
+const InsertionConflictError = new Error('Insertion conflict')
 
 /**
  * A function that determines if two `LogootNodeGroup`s should be in the same
@@ -151,6 +151,29 @@ class ListDocumentModel {
   }
 
   /**
+   * Contains all branches in order that occur before this LDM's `group`. Will
+   * be the entire `branch_order` if it does not contain the group.
+   */
+  get branches_before_this(): BranchKey[] {
+    if (this.branch_order.includes(this.branch)) {
+      return this.branch_order.slice(0, this.branch_order.indexOf(this.branch))
+    }
+    return this.branch_order
+  }
+  /**
+   * Contains all branches in order that occur after this LDM's `group`. Will
+   * be empty if this `branch_order` does not contain the group.
+   */
+  get branches_after_this(): BranchKey[] {
+    if (this.branch_order.includes(this.branch)) {
+      return this.branch_order.slice(
+        this.branch_order.indexOf(this.branch) + 1,
+        this.branch_order.length
+      )
+    }
+    return []
+  }
+  /**
    * The goal of this method is to find the Logoot position corresponding to a
    * particular local position. Unlike the old version, this does **not**
    * actually record the insertion. The output of this must be passed in to
@@ -203,92 +226,69 @@ class ListDocumentModel {
         .map(([, cg]) => cg)
         .sort((a, b) => b.logoot_start.cmp(a.logoot_start))[0]
     }
+    if (!lesser && start > 0) {
+      throw new TypeError(
+        'Insertion is out of the `lesser` ConflictGroup. This is either due ' +
+          'to local document or BST corruption'
+      )
+    }
 
     let before_position
     let after_position
 
-    const lesser_length = lesser ? lesser.ldoc_length : 0
-    if (lesser && lesser.known_position + lesser_length === start) {
+    if (lesser && lesser.ldoc_end === start) {
       // Between two CGs...
-      if (
-        greater &&
-        lesser.last_branch === greater.first_branch &&
-        lesser.last_branch !== this.branch
-      ) {
-        // If we're between two CGs and they both are on the same branch, it's
-        // impossible to tell on which the insertion should be made
-        throw new InsertionConflictError()
-      }
       before_position = lesser.logoot_end
       after_position = greater ? greater.logoot_start : undefined
     } else if (lesser) {
-      ;((): void => {
-        let remaining_length = start - lesser.known_position
-        if (lesser.branch_order.indexOf(this.branch) < 0) {
-          remaining_length -= lesser.ldoc_length
-        } else {
-          remaining_length -= lesser.branchLength(
-            lesser.branch_order.slice(
-              0,
-              lesser.branch_order.indexOf(this.branch)
-            )
-          )
-        }
-        if (remaining_length < 0) {
-          throw new FatalError('Search returned out of order nodes')
-        }
-        if (remaining_length === 0) {
-          // We're at the left end here, so we have to look up *another* lesser
-          // Search:
-          // n < lesser.known_position   -> _lesser
-          // lesser.known_position <= n  -x
-          // TODO: Don't find `greater`. Maybe make a range that ignores one
-          // bound?
-          // TODO: What about the case where two CGs have the same start
-          // position?
-          const { buckets } = this.ldoc_bst.search(
-            new NumberRange(
-              lesser.known_position,
-              lesser.known_position,
-              RangeBounds.LOGC
-            )
-          )
-
-          let most_lesser
-          if (buckets.lesser && buckets.lesser.length) {
-            most_lesser = buckets.lesser
-              .map(([, cg]) => cg)
-              .sort((a, b) => a.logoot_start.cmp(b.logoot_start))[0]
-          }
-          // Now, go in between the two nodes just as we would've above
-          before_position = most_lesser.logoot_end
-          after_position = lesser.logoot_start
-          return
-        }
-
+      // Calculate length relative to start of `lesser`
+      let remaining_length = start - lesser.known_position
+      // Calculate the offset of all branches before the current one
+      remaining_length -= lesser.branchLength(this.branches_before_this)
+      if (remaining_length < 0) {
+        throw InsertionConflictError
+      } else if (remaining_length === 0) {
+        // We're at the start of this branch's conflict in this CG
+        const most_lesser = lesser.inorder_predecessor
+        // Now, go in between the two nodes just as we would've above
+        before_position = most_lesser ? most_lesser.logoot_end : undefined
+        after_position = lesser.logoot_start
+      } else {
         // So, we're not at the start. Find a good position
         for (let i = 0; i < lesser.groups.length; i++) {
           const { end } = lesser.groups[i]
           remaining_length -= lesser.groups[i].branchLength([this.branch])
 
           if (remaining_length < 0) {
+            // The insertion is in the middle of this LNG
             before_position = after_position = end.inverseOffsetLowest(
               -remaining_length
             )
-            return
+            break
           } else if (remaining_length === 0) {
+            // The insertion is at the end of this LNG
             before_position = end
             after_position = lesser.groups[i + 1]
               ? lesser.groups[i + 1].start
               : greater
               ? greater.logoot_start
               : undefined
-            return
+            break
           }
         }
-        // We must be in between two branches that are not ours
-        throw new InsertionConflictError()
-      })()
+        if (remaining_length > 0) {
+          remaining_length -= lesser.branchLength(this.branches_after_this)
+          if (remaining_length < 0) {
+            // We must be after this branch's region and into other branch
+            // territory
+            throw InsertionConflictError
+          }
+          throw new TypeError(
+            'Insertion is out of the `lesser` ConflictGroup. This is either ' +
+              'due to local document or BST corruption'
+          )
+        }
+      }
     } else if (greater) {
       after_position = greater.logoot_start
     }
@@ -1033,5 +1033,6 @@ export {
   LogootBst,
   Removal,
   ListDocumentModel,
-  NodeType
+  NodeType,
+  InsertionConflictError
 }

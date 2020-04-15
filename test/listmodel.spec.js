@@ -3,7 +3,8 @@ import {
   LogootInt,
   LogootPosition,
   ListDocumentModel,
-  NodeType
+  NodeType,
+  InsertionConflictError
 } from '../dist/@kb1rd/logootish-js.js'
 
 import practical_t1 from './listmodel_practical/t1'
@@ -166,6 +167,219 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
       })
     })
   }
+
+  describe('insertLocal', () => {
+    const basicInsertionTest = (s, l, pos = [0], r = 0) => {
+      const fromInts = LogootPosition.fromInts
+      const { start, length, br, rclk } = ldm.insertLocal(s, l)
+      expect(start.cmp(fromInts(...pos)))
+        .to.be.equal(0, `Start position must be ${pos}`)
+      expect(length).to.be.equal(l, 'Length must be conserved')
+      expect(br).to.be.equal(ldm.branch, 'Must insert on LDM branch')
+      expect(rclk.cmp(new LogootInt(r)))
+        .to.be.equal(0, `Lamport clock must be ${r}`)
+    }
+    describe('single-node operations', () => {
+      it('Return types are correct', () => {
+        const { start, length, br, rclk } = ldm.insertLocal(0, 1)
+        expect(start).to.be.an.instanceof(LogootPosition)
+        expect(length).to.be.a('number').to.be.at.least(0).to.be.finite
+        // TODO: Looks like chai can't test if `br` is one of an array of types
+        expect(rclk).to.be.an.instanceof(LogootInt)
+      })
+      it('Insert @ 0', () => {
+        basicInsertionTest(0, 1)
+      })
+      it('Longer insertion @ 0', () => {
+        basicInsertionTest(0, 5)
+      })
+      it('Incorrect insert @ 1 should fail', () => {
+        expect(() => ldm.insertLocal(1, 1), 'Should throw error')
+          .to.throw(TypeError)
+      })
+    })
+
+    describe('insertion with other node', () => {
+      it('Insert after node', () => {
+        ldm._mergeNode(
+          ldm.branch,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        basicInsertionTest(1, 1, [1])
+      })
+      it('Insert before node', () => {
+        ldm._mergeNode(
+          ldm.branch,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        basicInsertionTest(0, 1, [-1])
+      })
+      it('Insert after node w/ length', () => {
+        ldm._mergeNode(
+          ldm.branch,
+          LogootPosition.fromInts(0),
+          2,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        basicInsertionTest(2, 3, [2])
+      })
+      it('Insert in middle of node', () => {
+        ldm._mergeNode(
+          ldm.branch,
+          LogootPosition.fromInts(0),
+          2,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        basicInsertionTest(1, 2, [1,0])
+      })
+      it('Incorrect insert after node should fail', () => {
+        ldm._mergeNode(
+          ldm.branch,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        expect(() => ldm.insertLocal(2, 1), 'Should throw error')
+          .to.throw(TypeError)
+      })
+      it('Insert in after of other user node', () => {
+        ldm._mergeNode(
+          u2,
+          LogootPosition.fromInts(0),
+          2,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        basicInsertionTest(2, 2, [2])
+      })
+    })
+
+    describe('involving conflicts', () => {
+      it('Insert between non-joined nodes', () => {
+        ldm._mergeNode(
+          u2,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        ldm._mergeNode(
+          u3,
+          LogootPosition.fromInts(1),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        basicInsertionTest(1, 2, [1,0])
+      })
+      it('Insert in middle of other conflict should throw ICE', () => {
+        ldm._mergeNode(
+          u2,
+          LogootPosition.fromInts(0),
+          2,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        expect(() => ldm.insertLocal(1, 3), 'Should throw ICE')
+          .to.throw(InsertionConflictError)
+      })
+      it('Insert after conflict should be ok', () => {
+        ldm._mergeNode(
+          u2,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        ldm._mergeNode(
+          u3,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        basicInsertionTest(2, 2, [1])
+      })
+      it('Insert between different branch conflicts should throw ICE', () => {
+        ldm._mergeNode(
+          u2,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        ldm._mergeNode(
+          u3,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        expect(() => ldm.insertLocal(1, 3), 'Should throw ICE')
+          .to.throw(InsertionConflictError)
+      })
+      it('Insert between conflicting current branch & other', () => {
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        ldm._mergeNode(
+          u2,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        basicInsertionTest(1, 2, [1])
+      })
+      it('Insert between conflicting current with NC current after', () => {
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(0),
+          2,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        ldm._mergeNode(
+          u2,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        basicInsertionTest(1, 2, [1,0])
+      })
+    })
+  })
 
   describe('_mergeNode', () => {
     describe('basic insertions', () => {

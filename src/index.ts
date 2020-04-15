@@ -10,7 +10,8 @@ import {
   ListDocumentModel,
   LogootInt,
   LogootPosition,
-  NodeType
+  NodeType,
+  InsertionConflictError
 } from './listmodel'
 
 enum EventState {
@@ -38,4 +39,11 @@ interface LogootishEvent {
   toJSON(): any
 }
 
-export { EventState, ListDocumentModel, LogootInt, LogootPosition, NodeType }
+export {
+  EventState,
+  ListDocumentModel,
+  LogootInt,
+  LogootPosition,
+  NodeType,
+  InsertionConflictError
+}

@@ -825,7 +825,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
     return (this as unknown) as T
   }
   get root(): T {
-    return this.parent_node ? this.parent_node.root : (this as unknown) as T
+    return this.parent_node ? this.parent_node.root : ((this as unknown) as T)
   }
 
   get inorder_successor(): T {
@@ -838,6 +838,24 @@ abstract class DBstNode<T extends DBstNode<T>> {
         node.value <= 0 &&
         node.parent_node &&
         node.parent_node.left_node === node
+      ) {
+        return node.parent_node
+      }
+      node = node.parent_node
+    }
+    return undefined
+  }
+
+  get inorder_predecessor(): T {
+    if (this.left_node) {
+      return this.left_node.largest_larger_child || this.left_node
+    }
+    let node = (this as undefined) as T
+    while (node) {
+      if (
+        node.value > 0 &&
+        node.parent_node &&
+        node.parent_node.right_node === node
       ) {
         return node.parent_node
       }
@@ -1080,7 +1098,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
     mnv?: number,
     mxv?: number,
     known: DBstNode<T>[] = []
-  ) {
+  ): void {
     if (known.includes(this)) {
       throw new Error('Duplicate nodes or node loop')
     }
@@ -1194,7 +1212,7 @@ class DBst<T extends DBstNode<T>> {
     return str
   }
 
-  selfTest() {
+  selfTest(): void {
     if (this.bst_root) {
       this.bst_root.selfTest(undefined)
     }
