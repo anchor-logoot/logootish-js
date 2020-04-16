@@ -33,13 +33,64 @@ abstract class IntType<FutureType> extends Comparable<FutureType | number> {
    * Assign another integer to this object
    * @param n - The number to assign
    */
-  abstract sub(n: FutureType | number): FutureType
+  abstract assign(n: FutureType | number): FutureType
+
+  /**
+   * Create an identical clone of this int
+   */
+  abstract copy(): FutureType
 
   /**
    * The JavaScript int type for this integer (with an exception thrown if the
    * value cannot be represented in 32 bits)
    */
   abstract js_int: number
+
+  /**
+   * Get an immutable version of this int.
+   */
+  abstract i: FutureType
+}
+
+class ImmutableError extends Error {}
+
+/**
+ * A type that is passed another IntType to reference and will not allow
+ * mutations to it.
+ * @TODO Maybe it would be best to use a proxy? Unsure of how in TS...
+ */
+class ImmutableInt<T extends IntType<T>> extends IntType<T> {
+  constructor(public readonly original: T) {
+    super()
+  }
+  // eslint-disable-next-line
+  toJSON(): any {
+    return this.original.toJSON()
+  }
+  add(): T {
+    throw new ImmutableError('Attempted to add to an immutable int')
+  }
+  sub(): T {
+    throw new ImmutableError('Attempted to subtract from an immutable int')
+  }
+  assign(): T {
+    throw new ImmutableError('Attempted to assign to an immutable int')
+  }
+  copy(): T {
+    return this.original.copy()
+  }
+  toString(): string {
+    return this.original.toString()
+  }
+  cmp(other: T | number): CompareResult {
+    return this.original.cmp(other)
+  }
+  get js_int(): number {
+    return this.original.js_int
+  }
+  get i(): T {
+    return (this as unknown) as T
+  }
 }
 
 /**
@@ -119,6 +170,10 @@ class Int32 extends IntType<Int32> {
     return this.int32[0]
   }
 
+  get i(): Int32 {
+    return (new ImmutableInt<Int32>(this) as unknown) as Int32
+  }
+
   toString(): string {
     return this.int32[0].toString()
   }
@@ -130,4 +185,4 @@ namespace Int32 {
   }
 }
 
-export { IntType, Int32 }
+export { IntType, Int32, ImmutableError, ImmutableInt }

@@ -19,6 +19,7 @@ import {
 } from './logoot'
 
 import { debug } from '../debug'
+import { ImmutableInt } from '../ints'
 
 type KnownPositionBst = DBst<ConflictGroup>
 type LogootBst = Bst<LogootNodeGroup, { start: LogootPosition }>
@@ -69,7 +70,7 @@ type Operation =
  * An error thrown when an insertion is attempted at the boundary between two
  * branches that are not the one in the active document.
  */
-class InsertionConflictError extends Error {}
+const InsertionConflictError = new Error('Insertion conflict')
 
 /**
  * A function that determines if two `LogootNodeGroup`s should be in the same
@@ -128,12 +129,19 @@ class ListDocumentModel {
   clock = new LogootInt()
   branch: BranchKey
 
+  branch_order: BranchKey[] = []
+
   /**
    * An optional instance of the `ListDocumentModel.Logger` class to log all
    * operations that modify the BST (all calls to `_mergeNode`) to help with
    * bug identification when applicable.
    */
   debug_logger?: ListDocumentModel.Logger
+  /**
+   * An option that will run tests on the DBST after every operation to it.
+   * **DO NOT** enable in production.
+   */
+  agressively_test_bst = false
 
   canJoin: JoinFunction
 
@@ -142,6 +150,29 @@ class ListDocumentModel {
     this.canJoin = jf
   }
 
+  /**
+   * Contains all branches in order that occur before this LDM's `group`. Will
+   * be the entire `branch_order` if it does not contain the group.
+   */
+  get branches_before_this(): BranchKey[] {
+    if (this.branch_order.includes(this.branch)) {
+      return this.branch_order.slice(0, this.branch_order.indexOf(this.branch))
+    }
+    return this.branch_order
+  }
+  /**
+   * Contains all branches in order that occur after this LDM's `group`. Will
+   * be empty if this `branch_order` does not contain the group.
+   */
+  get branches_after_this(): BranchKey[] {
+    if (this.branch_order.includes(this.branch)) {
+      return this.branch_order.slice(
+        this.branch_order.indexOf(this.branch) + 1,
+        this.branch_order.length
+      )
+    }
+    return []
+  }
   /**
    * The goal of this method is to find the Logoot position corresponding to a
    * particular local position. Unlike the old version, this does **not**
@@ -173,9 +204,17 @@ class ListDocumentModel {
     br: BranchKey
     rclk: LogootInt
   } {
+    if (start < 0) {
+      throw new TypeError('Passed a start position that is less than zero')
+    }
+    if (length <= 0) {
+      throw new TypeError('Passed a length that is less than or equal to zero')
+    }
     // Search:
     // n < start   -> _lesser
     // start <= n  -> _greater
+    // TODO: More efficient search should only find the smallest `lesser` and
+    // the greatest `greater`
     const { buckets } = this.ldoc_bst.search(
       new NumberRange(start, start, RangeBounds.LOGO)
     )
@@ -195,94 +234,83 @@ class ListDocumentModel {
         .map(([, cg]) => cg)
         .sort((a, b) => b.logoot_start.cmp(a.logoot_start))[0]
     }
+    if (!lesser && start > 0) {
+      throw new TypeError(
+        'Insertion is out of the `lesser` ConflictGroup. This is either due ' +
+          'to local document or BST corruption'
+      )
+    }
 
     let before_position
     let after_position
 
-    const lesser_length = lesser ? lesser.ldoc_length : 0
-    if (lesser && lesser.known_position + lesser_length === start) {
+    if (lesser && lesser.ldoc_end === start) {
       // Between two CGs...
-      if (
-        greater &&
-        lesser.last_branch === greater.first_branch &&
-        lesser.last_branch !== this.branch
-      ) {
-        // If we're between two CGs and they both are on the same branch, it's
-        // impossible to tell on which the insertion should be made
-        throw new InsertionConflictError()
-      }
-      before_position = lesser.logoot_end
-      after_position = greater ? greater.logoot_start : undefined
+      before_position = lesser && lesser.last_data_position
+      after_position = greater && greater.first_data_position
     } else if (lesser) {
-      ;((): void => {
-        let remaining_length = start - lesser.known_position
-        if (lesser.branch_order.indexOf(this.branch) < 0) {
-          remaining_length -= lesser.ldoc_length
-        } else {
-          remaining_length -= lesser.branchLength(
-            lesser.branch_order.slice(
-              0,
-              lesser.branch_order.indexOf(this.branch)
-            )
-          )
-        }
-        if (remaining_length < 0) {
-          throw new FatalError('Search returned out of order nodes')
-        }
-        if (remaining_length === 0) {
-          // We're at the left end here, so we have to look up *another* lesser
-          // Search:
-          // n < lesser.known_position   -> _lesser
-          // lesser.known_position <= n  -x
-          // TODO: Don't find `greater`. Maybe make a range that ignores one
-          // bound?
-          // TODO: What about the case where two CGs have the same start
-          // position?
-          const { buckets } = this.ldoc_bst.search(
-            new NumberRange(
-              lesser.known_position,
-              lesser.known_position,
-              RangeBounds.LOGC
-            )
-          )
-
-          let most_lesser
-          if (buckets.lesser && buckets.lesser.length) {
-            most_lesser = buckets.lesser
-              .map(([, cg]) => cg)
-              .sort((a, b) => a.logoot_start.cmp(b.logoot_start))[0]
-          }
-          // Now, go in between the two nodes just as we would've above
-          before_position = most_lesser.logoot_end
-          after_position = lesser.logoot_start
-          return
-        }
-
+      // Calculate length relative to start of `lesser`
+      let remaining_length = start - lesser.known_position
+      // Calculate the offset of all branches before the current one
+      remaining_length -= lesser.branchLength(this.branches_before_this)
+      if (remaining_length < 0) {
+        throw InsertionConflictError
+      } else if (remaining_length === 0) {
+        // We're at the start of this branch's conflict in this CG
+        // const most_lesser = lesser.inorder_predecessor
+        // Now, go in between the two nodes just as we would've above
+        before_position =
+          lesser.inorder_predecessor &&
+          lesser.inorder_predecessor.last_data_position
+        after_position = lesser.first_data_position
+      } else {
         // So, we're not at the start. Find a good position
         for (let i = 0; i < lesser.groups.length; i++) {
           const { end } = lesser.groups[i]
           remaining_length -= lesser.groups[i].branchLength([this.branch])
 
           if (remaining_length < 0) {
+            // The insertion is in the middle of this LNG
             before_position = after_position = end.inverseOffsetLowest(
               -remaining_length
             )
-            return
+            break
           } else if (remaining_length === 0) {
+            // The insertion is at the end of this LNG
+            // Skip over removals that are between here and the next data node
+            i++
+            while (
+              lesser.groups[i] &&
+              lesser.groups[i].br(this.branch) &&
+              lesser.groups[i].br(this.branch).type == NodeType.REMOVAL
+            ) {
+              i++
+            }
+
             before_position = end
-            after_position = lesser.groups[i + 1]
-              ? lesser.groups[i + 1].start
+            after_position = lesser.groups[i]
+              ? lesser.groups[i].start
               : greater
-              ? greater.logoot_start
+              ? greater.first_data_position
               : undefined
-            return
+            break
           }
         }
-        // We must be in between two branches that are not ours
-        throw new InsertionConflictError()
-      })()
+        if (remaining_length > 0) {
+          remaining_length -= lesser.branchLength(this.branches_after_this)
+          if (remaining_length < 0) {
+            // We must be after this branch's region and into other branch
+            // territory
+            throw InsertionConflictError
+          }
+          throw new TypeError(
+            'Insertion is out of the `lesser` ConflictGroup. This is either ' +
+              'due to local document or BST corruption'
+          )
+        }
+      }
     } else if (greater) {
-      after_position = greater.logoot_start
+      after_position = greater && greater.first_data_position
     }
 
     return {
@@ -304,6 +332,12 @@ class ListDocumentModel {
    * BranchKey), and a `rclk` vector clock value.
    */
   removeLocal(start: number, length: number): { removals: Removal[] } {
+    if (start < 0) {
+      throw new TypeError('Passed a start position that is less than zero')
+    }
+    if (length < 0) {
+      throw new TypeError('Passed a length that is less than zero')
+    }
     // Search:
     // n < start   -> _lesser
     // start <= n  -> _greater
@@ -356,7 +390,8 @@ class ListDocumentModel {
       }
     }
 
-    let remaining_length = start + length - nodes[0].known_position
+    let remaining_length =
+      start + length - ((nodes[0] && nodes[0].known_position) || 0)
     // TODO: This is *really* inefficient for obvious reasons
     catchBreak(() =>
       nodes.forEach((cg) => {
@@ -373,7 +408,12 @@ class ListDocumentModel {
                 start = start.offsetLowest(remaining_length - length)
                 rlen -= remaining_length - length
               }
-              onRemoval(br, start, Math.min(rlen, remaining_length), rclk)
+              onRemoval(
+                br,
+                start,
+                Math.min(rlen, remaining_length),
+                new LogootInt(rclk)
+              )
               remaining_length -= group.length
             }
             if (remaining_length <= 0) {
@@ -383,6 +423,12 @@ class ListDocumentModel {
         })
       })
     )
+    if (remaining_length > 0) {
+      throw new TypeError(
+        'Removal is out of the range returned by the DBST. This is either ' +
+          'due to local document or BST corruption'
+      )
+    }
 
     const removals: Removal[] = []
     allValues(removal_sets).forEach((branch_set) => {
@@ -416,6 +462,8 @@ class ListDocumentModel {
     type: NodeType,
     canJoin: JoinFunction
   ): Operation[] {
+    nstart.immutable = true
+    nrclk = (new ImmutableInt<LogootInt>(nrclk) as unknown) as LogootInt
     if (this.debug_logger) {
       this.debug_logger.log({
         br,
@@ -433,6 +481,10 @@ class ListDocumentModel {
 
     if (this.clock.cmp(nrclk) < 0) {
       this.clock.assign(nrclk)
+    }
+
+    if (!this.branch_order.includes(br)) {
+      this.branch_order.push(br)
     }
 
     // Search:
@@ -552,7 +604,10 @@ class ListDocumentModel {
       })
       const successor = cg.inorder_successor
       if (successor) {
-        successor.addSpaceBefore(-length)
+        successor.addSpaceBefore(-length, (np) => (this.ldoc_bst.bst_root = np))
+        if (this.agressively_test_bst) {
+          this.ldoc_bst.selfTest()
+        }
       }
     }
     const insert = (
@@ -572,7 +627,10 @@ class ListDocumentModel {
       })
       const successor = cg.inorder_successor
       if (successor) {
-        successor.addSpaceBefore(length)
+        successor.addSpaceBefore(length, (np) => (this.ldoc_bst.bst_root = np))
+        if (this.agressively_test_bst) {
+          this.ldoc_bst.selfTest()
+        }
       }
     }
     const translate = (source: number, length: number, dest: number): void => {
@@ -605,11 +663,11 @@ class ListDocumentModel {
       }
 
       // New Conflict Group -- Ok, my naming is bad here lol
-      const ncg = new ConflictGroup(cg.ldoc_end)
+      const ncg = new ConflictGroup(cg.ldoc_end, this.branch_order)
 
       let known_position = cg.known_position
       const known_end = ncg.known_position
-      cg.branch_order.forEach((br) => {
+      this.branch_order.forEach((br) => {
         // Calculate the area ahead of the known_position that isn't moved
         const excerpt_length = ((): number => {
           let origin = 0
@@ -623,8 +681,6 @@ class ListDocumentModel {
           throw new FatalError()
         })()
 
-        ncg.branch_order.push(br)
-
         const moved_length = cg.branchLength([br]) - excerpt_length
 
         ncg.value -= moved_length
@@ -636,34 +692,51 @@ class ListDocumentModel {
       ncg.groups.forEach((group) => (group.group = ncg))
 
       this.ldoc_bst.add(ncg)
+      if (this.agressively_test_bst) {
+        this.ldoc_bst.selfTest()
+      }
       conflict_order.splice(conflict_order.indexOf(cg) + 1, 0, ncg)
 
       return ncg
     }
     // Join a conflict group and translate the child nodes
     const joinCg = (lcg: ConflictGroup, ncg: ConflictGroup): void => {
-      ncg.branch_order.forEach((br) => {
-        if (!lcg.branch_order.includes(br)) {
-          lcg.branch_order.push(br)
-        }
-      })
+      // Ensure that we remove **only** this node from the BST
+      if (this.agressively_test_bst) {
+        this.ldoc_bst.selfTest()
+      }
 
       ncg.groups.forEach((group) => (group.group = lcg))
       lcg.groups.splice(lcg.groups.length, 0, ...ncg.groups)
 
       let fetch_position = ncg.known_position
       let known_position = lcg.known_position
-      ncg.branch_order.forEach((br) => {
-        known_position += lcg.branchLength([br])
+      this.branch_order.forEach((br) => {
+        // Get the length of the new branch
         const next_length = ncg.branchLength([br])
-        translate(fetch_position, next_length, known_position - next_length)
-        fetch_position += next_length
-      })
+        // Move to the end of the existing branch
+        // Note that we have to subtract `next_length` since the LNGs have
+        // already been added to the CG
+        known_position += lcg.branchLength([br]) - next_length
 
-      ncg.branch_order.length = 0
+        translate(fetch_position, next_length, known_position)
+        // Add to the fetch position (remember, in translate, position of
+        // successive text is conserved)
+        fetch_position += next_length
+        // Now, add the remaining `branchLength` to the `known_position` since
+        // we've now translated there
+        known_position += next_length
+      })
+      if (
+        this.ldoc_bst.remove(ncg.known_position, (other) => other === ncg)
+          .length !== 1
+      ) {
+        throw new FatalError(
+          'Could not find other node to remove node that has been joined'
+        )
+      }
+
       ncg.groups = []
-      // Ensure that we remove **only** this node from the BST
-      this.ldoc_bst.remove(ncg.known_position, (other) => other === ncg)
       conflict_order.splice(conflict_order.indexOf(ncg), 1)
     }
 
@@ -674,7 +747,8 @@ class ListDocumentModel {
       let next_group = skip_ranges[i + 1]
 
       const group_level_start = group.start.clamp(nstart, nend, level).l(level)
-      const group_level_end = group.end.clamp(nstart, nend, level).l(level)
+        .i
+      const group_level_end = group.end.clamp(nstart, nend, level).l(level).i
 
       const empty_length = group_level_start.copy().sub(last_start).js_int
       const empty_offset = last_start.copy().sub(nstart.l(level)).js_int
@@ -716,9 +790,9 @@ class ListDocumentModel {
         if (!last_join && !next_join) {
           // Ok, so now we need to create a new conflict group
           newgroup.group = new ConflictGroup(
-            last_group ? last_group.group.ldoc_end : 0
+            last_group ? last_group.group.ldoc_end : 0,
+            this.branch_order
           )
-          newgroup.group.branch_order.push(br)
 
           conflict_order.splice(
             last_group ? conflict_order.indexOf(last_group.group) + 1 : 0,
@@ -734,12 +808,18 @@ class ListDocumentModel {
           const ipos = newgroup.group.insertSingleBranchGroup(newgroup)
           if (!last_join && !next_join) {
             this.ldoc_bst.add(newgroup.group)
+            if (this.agressively_test_bst) {
+              this.ldoc_bst.selfTest()
+            }
           }
           insert(newgroup.group, ipos, empty_offset, newgroup.length)
         } else {
           newgroup.group.insertSingleBranchGroup(newgroup)
           if (!last_join && !next_join) {
             this.ldoc_bst.add(newgroup.group)
+            if (this.agressively_test_bst) {
+              this.ldoc_bst.selfTest()
+            }
           }
         }
 
@@ -761,24 +841,19 @@ class ListDocumentModel {
         if (group.start.cmp(nstart) < 0) {
           last_group = group
           group = group.splitAround(
-            nstart.l(level).sub(group.start.l(level)).js_int
+            nstart.l(level).copy().sub(group.start.l(level)).js_int
           )
           this.logoot_bst.add(group)
         }
         // Split off the trailing end
         if (group.end.cmp(nend) > 0) {
           const newgroup = group.splitAround(
-            group.length - group.end.l(level).sub(nend.l(level)).js_int
+            group.length - group.end.l(level).copy().sub(nend.l(level)).js_int
           )
           this.logoot_bst.add(newgroup)
           next_group = newgroup
         }
         debug.info(`Adding to existing group at ${group.start.toString()}`)
-
-        // Ensure that this group is in the branch order
-        if (!group.group.branch_order.includes(br)) {
-          group.group.branch_order.push(br)
-        }
 
         // Now, capture this node's target position
         const known_position = group.group.insertPos(br, group)
@@ -858,6 +933,8 @@ class ListDocumentModel {
    * @throws {FatalError} If any corruption detected
    */
   selfTest(): void {
+    this.ldoc_bst.selfTest()
+
     let last_pos: LogootPosition
     let last_kp = 0
     this.ldoc_bst.operateOnAll((data) => {
@@ -987,5 +1064,6 @@ export {
   LogootBst,
   Removal,
   ListDocumentModel,
-  NodeType
+  NodeType,
+  InsertionConflictError
 }

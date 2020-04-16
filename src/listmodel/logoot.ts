@@ -37,6 +37,7 @@ import LogootInt = Int32
  */
 class LogootPosition {
   protected array: LogootInt[] = [new LogootInt(0)]
+  immutable = false
 
   /**
    * This constructor constructs a new position that is in the range specified
@@ -153,6 +154,9 @@ class LogootPosition {
    * An array accessor
    */
   level(n: number): LogootInt {
+    if (this.immutable) {
+      return this.array[n] && this.array[n].i
+    }
     return this.array[n]
   }
   /**
@@ -301,15 +305,8 @@ const nt_string = {
  * not displayed in the order specified in `groups`. Rather, all of the nodes on
  * a particular branch are displayed together and in the order defined by
  * `branch_order`.
- * @TODO Move `branch_order` into the ListDocumentModel. No reason not to have
- * a whole-document branch order.
  */
 class ConflictGroup extends DBstNode<ConflictGroup> {
-  /**
-   * The order in which branches are displayed. All of the nodes that make up
-   * a single branch are placed together.
-   */
-  readonly branch_order: BranchKey[] = []
   /**
    * A list of `LogootNodeGroups` that make up the Logoot side of the local
    * document. A group's nodes will be split up and placed into one of the
@@ -318,7 +315,13 @@ class ConflictGroup extends DBstNode<ConflictGroup> {
    */
   groups: LogootNodeGroup[] = []
 
-  constructor(position: number) {
+  /**
+   * @param position - The local position of this CG
+   * @param branch_order - The order in which branches are displayed. All of
+   * the nodes that make up a single branch are placed together. This is now
+   * global on the LDM level, so a reference should be passed in by the LDM.
+   */
+  constructor(position: number, public readonly branch_order: BranchKey[]) {
     super(position)
   }
 
@@ -356,7 +359,48 @@ class ConflictGroup extends DBstNode<ConflictGroup> {
       : undefined
   }
 
+  /**
+   * Search this node (and potentially the BST) for the closest data position
+   * greater than or equal to the start of this CG.
+   * @param br The branch to search
+   * @param search_bst Whether to use the BST to find the inorder successor and
+   * search that if this CG does not contain the node
+   * @returns The position of the first data node in this node or successors.
+   */
+  get first_data_position(): LogootPosition {
+    for (let i = 0; i < this.groups.length; i++) {
+      if (this.groups[i].has_data) {
+        return this.groups[i].start
+      }
+    }
+    const s = this.inorder_successor
+    return s && s.first_data_position
+  }
+
+  /**
+   * Search this node (and potentially the BST) for the closest data position
+   * less than or equal to the end of this CG.
+   * @param br The branch to search
+   * @param search_bst Whether to use the BST to find the inorder successor and
+   * search that if this CG does not contain the node
+   * @returns The position of the last data node in this node or predecessors.
+   */
+  get last_data_position(): LogootPosition {
+    for (let i = this.groups.length - 1; i >= 0; i--) {
+      if (this.groups[i].has_data) {
+        return this.groups[i].end
+      }
+    }
+    const s = this.inorder_predecessor
+    return s && s.last_data_position
+  }
+
   preferential_cmp(other: DBstSearchable | ConflictGroup): CompareResult {
+    if (!this.groups.length) {
+      throw new FatalError(
+        'Tried to call `preferential_cmp` on a CG with no LNGs'
+      )
+    }
     if ((other as { logoot_start: LogootPosition }).logoot_start) {
       return this.logoot_start.cmp((other as ConflictGroup).logoot_start)
     }
@@ -367,15 +411,30 @@ class ConflictGroup extends DBstNode<ConflictGroup> {
    * Get the first branch in this group.
    */
   get first_branch(): BranchKey {
-    return this.branch_order[0]
+    if (!this.groups.length || !this.branch_order.length) {
+      return
+    }
+    for (let i = 0; i < this.branch_order.length; i++) {
+      if (this.groups[0].br(this.branch_order[i])) {
+        return this.branch_order[i]
+      }
+    }
+    throw new FatalError('Branch order does not contain any branches from LNG')
   }
   /**
    * Get the last branch in this group.
    */
   get last_branch(): BranchKey {
-    return this.branch_order.length
-      ? this.branch_order[this.branch_order.length - 1]
-      : undefined
+    if (!this.groups.length || !this.branch_order.length) {
+      return
+    }
+    const last = this.groups[this.groups.length - 1]
+    for (let i = this.branch_order.length - 1; i >= 0; i--) {
+      if (last.br(this.branch_order[i])) {
+        return this.branch_order[i]
+      }
+    }
+    throw new FatalError('Branch order does not contain any branches from LNG')
   }
 
   /**
@@ -472,9 +531,6 @@ class ConflictGroup extends DBstNode<ConflictGroup> {
     }
 
     const br = group.branches[0]
-    if (!this.branch_order.includes(br)) {
-      this.branch_order.push(br)
-    }
 
     const { right, pos } = this.getNeighbors(group)
 
@@ -488,13 +544,7 @@ class ConflictGroup extends DBstNode<ConflictGroup> {
     str += this.branch_order.map((br) => br.toString()).join(' ')
     str += `) {`
     str += this.groups.map((gr) => {
-      return (
-        '\n  ' +
-        gr
-          .toString()
-          .split('\n')
-          .join('\n  ')
-      )
+      return '\n  ' + gr.toString().split('\n').join('\n  ')
     })
     str += '\n}'
     return str
@@ -555,6 +605,13 @@ class LogootNodeGroup {
       .reduce((n: number, br: number) => {
         return this.br(br).type === NodeType.DATA ? n + this.length : n
       }, 0) as unknown) as number
+  }
+
+  /**
+   * Returns true if this LNG has length in the local document.
+   */
+  get has_data(): boolean {
+    return this.branches.some((br) => this.br(br).type === NodeType.DATA)
   }
 
   /**

@@ -5,9 +5,9 @@
  * it serves its purpose.
  */
 
-const { ListDocumentModel } = require('../../dist/@kb1rd/logootish-js.js')
+const { ListDocumentModel } = require('../../../dist/@kb1rd/logootish-js.js')
 
-const practical_t1 = require('./t1')
+const practical_t1 = require('../t1')
 
 function findError(chosen_test) {
   const untested = chosen_test.slice()
