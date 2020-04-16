@@ -207,6 +207,8 @@ class ListDocumentModel {
     // Search:
     // n < start   -> _lesser
     // start <= n  -> _greater
+    // TODO: More efficient search should only find the smallest `lesser` and
+    // the greatest `greater`
     const { buckets } = this.ldoc_bst.search(
       new NumberRange(start, start, RangeBounds.LOGO)
     )
@@ -238,8 +240,8 @@ class ListDocumentModel {
 
     if (lesser && lesser.ldoc_end === start) {
       // Between two CGs...
-      before_position = lesser.logoot_end
-      after_position = greater ? greater.logoot_start : undefined
+      before_position = lesser && lesser.last_data_position
+      after_position = greater && greater.first_data_position
     } else if (lesser) {
       // Calculate length relative to start of `lesser`
       let remaining_length = start - lesser.known_position
@@ -249,10 +251,10 @@ class ListDocumentModel {
         throw InsertionConflictError
       } else if (remaining_length === 0) {
         // We're at the start of this branch's conflict in this CG
-        const most_lesser = lesser.inorder_predecessor
+        // const most_lesser = lesser.inorder_predecessor
         // Now, go in between the two nodes just as we would've above
-        before_position = most_lesser ? most_lesser.logoot_end : undefined
-        after_position = lesser.logoot_start
+        before_position = lesser.inorder_predecessor && lesser.inorder_predecessor.last_data_position
+        after_position = lesser.first_data_position
       } else {
         // So, we're not at the start. Find a good position
         for (let i = 0; i < lesser.groups.length; i++) {
@@ -267,11 +269,21 @@ class ListDocumentModel {
             break
           } else if (remaining_length === 0) {
             // The insertion is at the end of this LNG
+            // Skip over removals that are between here and the next data node
+            i++
+            while (
+              lesser.groups[i] &&
+              lesser.groups[i].br(this.branch) &&
+              lesser.groups[i].br(this.branch).type == NodeType.REMOVAL
+            ) {
+              i++
+            }
+
             before_position = end
-            after_position = lesser.groups[i + 1]
-              ? lesser.groups[i + 1].start
+            after_position = lesser.groups[i]
+              ? lesser.groups[i].start
               : greater
-              ? greater.logoot_start
+              ? greater.first_data_position
               : undefined
             break
           }
@@ -290,7 +302,7 @@ class ListDocumentModel {
         }
       }
     } else if (greater) {
-      after_position = greater.logoot_start
+      after_position = greater && greater.first_data_position
     }
 
     return {

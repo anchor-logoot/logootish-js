@@ -359,6 +359,42 @@ class ConflictGroup extends DBstNode<ConflictGroup> {
       : undefined
   }
 
+  /**
+   * Search this node (and potentially the BST) for the closest data position
+   * greater than or equal to the start of this CG.
+   * @param br The branch to search
+   * @param search_bst Whether to use the BST to find the inorder successor and
+   * search that if this CG does not contain the node
+   * @returns The position of the first data node in this node or successors.
+   */
+  get first_data_position(): LogootPosition {
+    for (let i = 0; i < this.groups.length; i++) {
+      if (this.groups[i].has_data) {
+        return this.groups[i].start
+      }
+    }
+    const s = this.inorder_successor
+    return s && s.first_data_position
+  }
+
+  /**
+   * Search this node (and potentially the BST) for the closest data position
+   * less than or equal to the end of this CG.
+   * @param br The branch to search
+   * @param search_bst Whether to use the BST to find the inorder successor and
+   * search that if this CG does not contain the node
+   * @returns The position of the last data node in this node or predecessors.
+   */
+  get last_data_position(): LogootPosition {
+    for (let i = this.groups.length - 1; i >= 0; i--) {
+      if (this.groups[i].has_data) {
+        return this.groups[i].end
+      }
+    }
+    const s = this.inorder_predecessor
+    return s && s.last_data_position
+  }
+
   preferential_cmp(other: DBstSearchable | ConflictGroup): CompareResult {
     if (!this.groups.length) {
       throw new FatalError(
@@ -575,6 +611,13 @@ class LogootNodeGroup {
       .reduce((n: number, br: number) => {
         return this.br(br).type === NodeType.DATA ? n + this.length : n
       }, 0) as unknown) as number
+  }
+
+  /**
+   * Returns true if this LNG has length in the local document.
+   */
+  get has_data() {
+    return this.branches.some((br) => this.br(br).type === NodeType.DATA)
   }
 
   /**

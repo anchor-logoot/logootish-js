@@ -256,7 +256,7 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         expect(() => ldm.insertLocal(2, 1), 'Should throw error')
           .to.throw(TypeError)
       })
-      it('Insert in after of other user node', () => {
+      it('Insert after other user node', () => {
         ldm._mergeNode(
           u2,
           LogootPosition.fromInts(0),
@@ -377,6 +377,101 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
           ldm.canJoin
         )
         basicInsertionTest(1, 2, [1,0])
+      })
+    })
+
+    describe('with removals', () => {
+      it('removal nodes should be ignored', () => {
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.REMOVAL,
+          ldm.canJoin
+        )
+        basicInsertionTest(0, 1, [0])
+      })
+      it('removals at start of CG should be ignored', () => {
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.REMOVAL,
+          ldm.canJoin
+        )
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(1),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        basicInsertionTest(0, 1, [0])
+      })
+      it('insert on top of removal with neighbors', () => {
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(1),
+          1,
+          new LogootInt(0),
+          NodeType.REMOVAL,
+          ldm.canJoin
+        )
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(2),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        basicInsertionTest(1, 1, [1])
+      })
+      it('insert on top of removal with neighbors in different CGs', () => {
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(0),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        ldm._mergeNode(
+          u1,
+          LogootPosition.fromInts(1),
+          1,
+          new LogootInt(0),
+          NodeType.REMOVAL,
+          ldm.canJoin
+        )
+        ldm._mergeNode(
+          u2,
+          LogootPosition.fromInts(2),
+          1,
+          new LogootInt(0),
+          NodeType.REMOVAL,
+          ldm.canJoin
+        )
+        ldm._mergeNode(
+          u2,
+          LogootPosition.fromInts(3),
+          1,
+          new LogootInt(0),
+          NodeType.DATA,
+          ldm.canJoin
+        )
+        basicInsertionTest(1, 2, [1])
       })
     })
   })
