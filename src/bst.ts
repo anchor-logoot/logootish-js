@@ -714,13 +714,7 @@ class Bst<T extends S, S = T> {
   toString(): string {
     let str = 'BST [\n'
     this.operateOnAll(({ data }) => {
-      str +=
-        '  ' +
-        data
-          .toString()
-          .split('\n')
-          .join('\n  ') +
-        '\n'
+      str += '  ' + data.toString().split('\n').join('\n  ') + '\n'
     })
     str += ']'
     return str
@@ -1200,13 +1194,7 @@ class DBst<T extends DBstNode<T>> {
   toString(): string {
     let str = 'DBST [\n'
     this.operateOnAll((data) => {
-      str +=
-        '  ' +
-        data
-          .toString()
-          .split('\n')
-          .join('\n  ') +
-        '\n'
+      str += '  ' + data.toString().split('\n').join('\n  ') + '\n'
     })
     str += ']'
     return str

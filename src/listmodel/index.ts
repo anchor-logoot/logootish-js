@@ -841,21 +841,14 @@ class ListDocumentModel {
         if (group.start.cmp(nstart) < 0) {
           last_group = group
           group = group.splitAround(
-            nstart
-              .l(level)
-              .copy()
-              .sub(group.start.l(level)).js_int
+            nstart.l(level).copy().sub(group.start.l(level)).js_int
           )
           this.logoot_bst.add(group)
         }
         // Split off the trailing end
         if (group.end.cmp(nend) > 0) {
           const newgroup = group.splitAround(
-            group.length -
-              group.end
-                .l(level)
-                .copy()
-                .sub(nend.l(level)).js_int
+            group.length - group.end.l(level).copy().sub(nend.l(level)).js_int
           )
           this.logoot_bst.add(newgroup)
           next_group = newgroup

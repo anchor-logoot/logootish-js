@@ -544,13 +544,7 @@ class ConflictGroup extends DBstNode<ConflictGroup> {
     str += this.branch_order.map((br) => br.toString()).join(' ')
     str += `) {`
     str += this.groups.map((gr) => {
-      return (
-        '\n  ' +
-        gr
-          .toString()
-          .split('\n')
-          .join('\n  ')
-      )
+      return '\n  ' + gr.toString().split('\n').join('\n  ')
     })
     str += '\n}'
     return str
