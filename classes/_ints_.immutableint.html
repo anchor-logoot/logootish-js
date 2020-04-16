@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>Int32 | @kb1rd/logootish-js</title>
+	<title>ImmutableInt | @kb1rd/logootish-js</title>
 	<meta name="description" content="Documentation for @kb1rd/logootish-js">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -59,10 +59,10 @@
 					<a href="../modules/_ints_.html">&quot;ints&quot;</a>
 				</li>
 				<li>
-					<a href="_ints_.int32.html">Int32</a>
+					<a href="_ints_.immutableint.html">ImmutableInt</a>
 				</li>
 			</ul>
-			<h1>Class Int32</h1>
+			<h1>Class ImmutableInt&lt;T&gt;</h1>
 		</div>
 	</div>
 </header>
@@ -72,30 +72,32 @@
 			<section class="tsd-panel tsd-comment">
 				<div class="tsd-comment tsd-typography">
 					<div class="lead">
-						<p>An <code>IntType</code> that restricts the number to 32 bits by using an <code>Int32Array</code>.</p>
+						<p>A type that is passed another IntType to reference and will not allow
+						mutations to it.</p>
 					</div>
 					<dl class="tsd-comment-tags">
-						<dt>inheritdoc</dt>
-						<dd></dd>
-						<dt>example</dt>
-						<dd><pre><code class="language-typescript"><span class="hljs-keyword">const</span> a = <span class="hljs-keyword">new</span> Int32(<span class="hljs-number">5</span>)
-<span class="hljs-built_in">console</span>.log(a.toString()) <span class="hljs-comment">// 5</span>
-a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span>)
-<span class="hljs-built_in">console</span>.log(a.toString()) <span class="hljs-comment">// 7</span>
-<span class="hljs-keyword">const</span> b = <span class="hljs-keyword">new</span> Int32(<span class="hljs-number">3</span>)
-<span class="hljs-built_in">console</span>.log(a.cmp(b)) <span class="hljs-comment">// 1</span></code></pre>
+						<dt>todo</dt>
+						<dd><p>Maybe it would be best to use a proxy? Unsure of how in TS...</p>
 						</dd>
 					</dl>
 				</div>
+			</section>
+			<section class="tsd-panel tsd-type-parameters">
+				<h3>Type parameters</h3>
+				<ul class="tsd-type-parameters">
+					<li>
+						<h4>T<span class="tsd-signature-symbol">: </span><a href="_ints_.inttype.html" class="tsd-signature-type">IntType</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">&gt;</span></h4>
+					</li>
+				</ul>
 			</section>
 			<section class="tsd-panel tsd-hierarchy">
 				<h3>Hierarchy</h3>
 				<ul class="tsd-hierarchy">
 					<li>
-						<a href="_ints_.inttype.html" class="tsd-signature-type">IntType</a><span class="tsd-signature-symbol">&lt;</span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol">&gt;</span>
+						<a href="_ints_.inttype.html" class="tsd-signature-type">IntType</a><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">&gt;</span>
 						<ul class="tsd-hierarchy">
 							<li>
-								<span class="target">Int32</span>
+								<span class="target">ImmutableInt</span>
 							</li>
 						</ul>
 					</li>
@@ -106,68 +108,42 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 				<section class="tsd-panel tsd-index-panel">
 					<div class="tsd-index-content">
 						<section class="tsd-index-section ">
-							<h3>Namespaces</h3>
-							<ul class="tsd-index-list">
-								<li class="tsd-kind-namespace tsd-parent-kind-class"><a href="../modules/_ints_.int32.json.html" class="tsd-kind-icon">JSON</a></li>
-							</ul>
-						</section>
-						<section class="tsd-index-section ">
-							<h3>Type aliases</h3>
-							<ul class="tsd-index-list">
-								<li class="tsd-kind-type-alias tsd-parent-kind-class tsd-is-static"><a href="_ints_.int32.html#json-1" class="tsd-kind-icon">JSON</a></li>
-							</ul>
-						</section>
-						<section class="tsd-index-section ">
 							<h3>Constructors</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-constructor tsd-parent-kind-class"><a href="_ints_.int32.html#constructor" class="tsd-kind-icon">constructor</a></li>
+								<li class="tsd-kind-constructor tsd-parent-kind-class"><a href="_ints_.immutableint.html#constructor" class="tsd-kind-icon">constructor</a></li>
 							</ul>
 						</section>
-						<section class="tsd-index-section tsd-is-private tsd-is-private-protected">
+						<section class="tsd-index-section ">
 							<h3>Properties</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><a href="_ints_.int32.html#int32" class="tsd-kind-icon">int32</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_ints_.immutableint.html#original" class="tsd-kind-icon">original</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section ">
 							<h3>Accessors</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-get-signature tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.int32.html#i" class="tsd-kind-icon">i</a></li>
-								<li class="tsd-kind-get-signature tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.int32.html#js_int" class="tsd-kind-icon">js_<wbr>int</a></li>
+								<li class="tsd-kind-get-signature tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.immutableint.html#i" class="tsd-kind-icon">i</a></li>
+								<li class="tsd-kind-get-signature tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.immutableint.html#js_int" class="tsd-kind-icon">js_<wbr>int</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section ">
 							<h3>Methods</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.int32.html#add" class="tsd-kind-icon">add</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.int32.html#assign" class="tsd-kind-icon">assign</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.int32.html#cmp" class="tsd-kind-icon">cmp</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.int32.html#copy" class="tsd-kind-icon">copy</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_ints_.int32.html#eq" class="tsd-kind-icon">eq</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_ints_.int32.html#gt" class="tsd-kind-icon">gt</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_ints_.int32.html#gteq" class="tsd-kind-icon">gteq</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_ints_.int32.html#lt" class="tsd-kind-icon">lt</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_ints_.int32.html#lteq" class="tsd-kind-icon">lteq</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.int32.html#sub" class="tsd-kind-icon">sub</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.int32.html#tojson" class="tsd-kind-icon">toJSON</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.int32.html#tostring" class="tsd-kind-icon">to<wbr>String</a></li>
-								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-static"><a href="_ints_.int32.html#fromjson" class="tsd-kind-icon">fromJSON</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.immutableint.html#add" class="tsd-kind-icon">add</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.immutableint.html#assign" class="tsd-kind-icon">assign</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.immutableint.html#cmp" class="tsd-kind-icon">cmp</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.immutableint.html#copy" class="tsd-kind-icon">copy</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_ints_.immutableint.html#eq" class="tsd-kind-icon">eq</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_ints_.immutableint.html#gt" class="tsd-kind-icon">gt</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_ints_.immutableint.html#gteq" class="tsd-kind-icon">gteq</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_ints_.immutableint.html#lt" class="tsd-kind-icon">lt</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_ints_.immutableint.html#lteq" class="tsd-kind-icon">lteq</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.immutableint.html#sub" class="tsd-kind-icon">sub</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.immutableint.html#tojson" class="tsd-kind-icon">toJSON</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_ints_.immutableint.html#tostring" class="tsd-kind-icon">to<wbr>String</a></li>
 							</ul>
 						</section>
 					</div>
-				</section>
-			</section>
-			<section class="tsd-panel-group tsd-member-group ">
-				<h2>Type aliases</h2>
-				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-class tsd-is-static">
-					<a name="json-1" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagStatic">Static</span> JSON</h3>
-					<div class="tsd-signature tsd-kind-icon">JSON<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
-					<aside class="tsd-sources">
-						<ul>
-							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L182">src/ints.ts:182</a></li>
-						</ul>
-					</aside>
 				</section>
 			</section>
 			<section class="tsd-panel-group tsd-member-group ">
@@ -176,35 +152,35 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 					<a name="constructor" class="tsd-anchor"></a>
 					<h3>constructor</h3>
 					<ul class="tsd-signatures tsd-kind-constructor tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">new <wbr>Int32<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">?: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a></li>
+						<li class="tsd-signature tsd-kind-icon">new <wbr>Immutable<wbr>Int<span class="tsd-signature-symbol">(</span>original<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_ints_.immutableint.html" class="tsd-signature-type">ImmutableInt</a></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L110">src/ints.ts:110</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L62">src/ints.ts:62</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5><span class="tsd-flag ts-flagDefault value">Default value</span> n: <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> = 0</span></h5>
+									<h5>original: <span class="tsd-signature-type">T</span></h5>
 								</li>
 							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a></h4>
+							<h4 class="tsd-returns-title">Returns <a href="_ints_.immutableint.html" class="tsd-signature-type">ImmutableInt</a></h4>
 						</li>
 					</ul>
 				</section>
 			</section>
-			<section class="tsd-panel-group tsd-member-group tsd-is-private tsd-is-private-protected">
+			<section class="tsd-panel-group tsd-member-group ">
 				<h2>Properties</h2>
-				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-private">
-					<a name="int32" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagPrivate">Private</span> int32</h3>
-					<div class="tsd-signature tsd-kind-icon">int32<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Int32Array</span><span class="tsd-signature-symbol"> = new Int32Array([0])</span></div>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
+					<a name="original" class="tsd-anchor"></a>
+					<h3>original</h3>
+					<div class="tsd-signature tsd-kind-icon">original<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">T</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L110">src/ints.ts:110</a></li>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L63">src/ints.ts:63</a></li>
 						</ul>
 					</aside>
 				</section>
@@ -215,17 +191,17 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 					<a name="i" class="tsd-anchor"></a>
 					<h3>i</h3>
 					<ul class="tsd-signatures tsd-kind-get-signature tsd-parent-kind-class tsd-is-overwrite">
-						<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">get</span> i<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a></li>
+						<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">get</span> i<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<p>Overrides <a href="_ints_.inttype.html">IntType</a>.<a href="_ints_.inttype.html#i">i</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L173">src/ints.ts:173</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L91">src/ints.ts:91</a></li>
 								</ul>
 							</aside>
-							<h4 class="tsd-returns-title">Returns <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">T</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -240,7 +216,7 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 							<aside class="tsd-sources">
 								<p>Overrides <a href="_ints_.inttype.html">IntType</a>.<a href="_ints_.inttype.html#js_int">js_int</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L169">src/ints.ts:169</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L88">src/ints.ts:88</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">number</span></h4>
@@ -254,23 +230,17 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 					<a name="add" class="tsd-anchor"></a>
 					<h3>add</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
-						<li class="tsd-signature tsd-kind-icon">add<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a></li>
+						<li class="tsd-signature tsd-kind-icon">add<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<p>Overrides <a href="_ints_.inttype.html">IntType</a>.<a href="_ints_.inttype.html#add">add</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L129">src/ints.ts:129</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L70">src/ints.ts:70</a></li>
 								</ul>
 							</aside>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>n: <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">T</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -278,23 +248,17 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 					<a name="assign" class="tsd-anchor"></a>
 					<h3>assign</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
-						<li class="tsd-signature tsd-kind-icon">assign<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a></li>
+						<li class="tsd-signature tsd-kind-icon">assign<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<p>Overrides <a href="_ints_.inttype.html">IntType</a>.<a href="_ints_.inttype.html#assign">assign</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L146">src/ints.ts:146</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L76">src/ints.ts:76</a></li>
 								</ul>
 							</aside>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>n: <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">T</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -302,20 +266,20 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 					<a name="cmp" class="tsd-anchor"></a>
 					<h3>cmp</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
-						<li class="tsd-signature tsd-kind-icon">cmp<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="../modules/_compare_.html#compareresult" class="tsd-signature-type">CompareResult</a></li>
+						<li class="tsd-signature tsd-kind-icon">cmp<span class="tsd-signature-symbol">(</span>other<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="../modules/_compare_.html#compareresult" class="tsd-signature-type">CompareResult</a></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<p>Overrides <a href="_compare_.comparable.html">Comparable</a>.<a href="_compare_.comparable.html#cmp">cmp</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L155">src/ints.ts:155</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L85">src/ints.ts:85</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>n: <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
+									<h5>other: <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <a href="../modules/_compare_.html#compareresult" class="tsd-signature-type">CompareResult</a></h4>
@@ -326,17 +290,17 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 					<a name="copy" class="tsd-anchor"></a>
 					<h3>copy</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
-						<li class="tsd-signature tsd-kind-icon">copy<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a></li>
+						<li class="tsd-signature tsd-kind-icon">copy<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<p>Overrides <a href="_ints_.inttype.html">IntType</a>.<a href="_ints_.inttype.html#copy">copy</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L165">src/ints.ts:165</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L79">src/ints.ts:79</a></li>
 								</ul>
 							</aside>
-							<h4 class="tsd-returns-title">Returns <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">T</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -344,7 +308,7 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 					<a name="eq" class="tsd-anchor"></a>
 					<h3>eq</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-						<li class="tsd-signature tsd-kind-icon">eq<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+						<li class="tsd-signature tsd-kind-icon">eq<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
@@ -359,7 +323,7 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>n: <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
+									<h5>n: <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
@@ -371,7 +335,7 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 					<a name="gt" class="tsd-anchor"></a>
 					<h3>gt</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-						<li class="tsd-signature tsd-kind-icon">gt<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+						<li class="tsd-signature tsd-kind-icon">gt<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
@@ -386,7 +350,7 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>n: <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
+									<h5>n: <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
@@ -398,7 +362,7 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 					<a name="gteq" class="tsd-anchor"></a>
 					<h3>gteq</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-						<li class="tsd-signature tsd-kind-icon">gteq<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+						<li class="tsd-signature tsd-kind-icon">gteq<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
@@ -413,7 +377,7 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>n: <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
+									<h5>n: <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
@@ -425,7 +389,7 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 					<a name="lt" class="tsd-anchor"></a>
 					<h3>lt</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-						<li class="tsd-signature tsd-kind-icon">lt<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+						<li class="tsd-signature tsd-kind-icon">lt<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
@@ -440,7 +404,7 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>n: <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
+									<h5>n: <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
@@ -452,7 +416,7 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 					<a name="lteq" class="tsd-anchor"></a>
 					<h3>lteq</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-						<li class="tsd-signature tsd-kind-icon">lteq<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+						<li class="tsd-signature tsd-kind-icon">lteq<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
@@ -467,7 +431,7 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>n: <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
+									<h5>n: <span class="tsd-signature-type">T</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
@@ -479,23 +443,17 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 					<a name="sub" class="tsd-anchor"></a>
 					<h3>sub</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
-						<li class="tsd-signature tsd-kind-icon">sub<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a></li>
+						<li class="tsd-signature tsd-kind-icon">sub<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<p>Overrides <a href="_ints_.inttype.html">IntType</a>.<a href="_ints_.inttype.html#sub">sub</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L137">src/ints.ts:137</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L73">src/ints.ts:73</a></li>
 								</ul>
 							</aside>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>n: <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">T</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -503,17 +461,17 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 					<a name="tojson" class="tsd-anchor"></a>
 					<h3>toJSON</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
-						<li class="tsd-signature tsd-kind-icon">toJSON<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="../modules/_ints_.int32.json.html" class="tsd-signature-type">JSON</a></li>
+						<li class="tsd-signature tsd-kind-icon">toJSON<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">any</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<p>Overrides <a href="_ints_.inttype.html">IntType</a>.<a href="_ints_.inttype.html#tojson">toJSON</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L125">src/ints.ts:125</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L67">src/ints.ts:67</a></li>
 								</ul>
 							</aside>
-							<h4 class="tsd-returns-title">Returns <a href="../modules/_ints_.int32.json.html" class="tsd-signature-type">JSON</a></h4>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">any</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -528,33 +486,10 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 							<aside class="tsd-sources">
 								<p>Overrides <a href="_ints_.inttype.html">IntType</a>.<a href="_ints_.inttype.html#tostring">toString</a></p>
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L177">src/ints.ts:177</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L82">src/ints.ts:82</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
-						</li>
-					</ul>
-				</section>
-				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-static">
-					<a name="fromjson" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagStatic">Static</span> fromJSON</h3>
-					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-static">
-						<li class="tsd-signature tsd-kind-icon">fromJSON<span class="tsd-signature-symbol">(</span>obj<span class="tsd-signature-symbol">: </span><a href="../modules/_ints_.int32.json.html" class="tsd-signature-type">JSON</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a></li>
-					</ul>
-					<ul class="tsd-descriptions">
-						<li class="tsd-description">
-							<aside class="tsd-sources">
-								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/f1346df/src/ints.ts#L121">src/ints.ts:121</a></li>
-								</ul>
-							</aside>
-							<h4 class="tsd-parameters-title">Parameters</h4>
-							<ul class="tsd-parameters">
-								<li>
-									<h5>obj: <a href="../modules/_ints_.int32.json.html" class="tsd-signature-type">JSON</a></h5>
-								</li>
-							</ul>
-							<h4 class="tsd-returns-title">Returns <a href="_ints_.int32.html" class="tsd-signature-type">Int32</a></h4>
 						</li>
 					</ul>
 				</section>
@@ -597,72 +532,66 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 					<li class=" tsd-kind-class tsd-parent-kind-module">
 						<a href="_ints_.immutableerror.html" class="tsd-kind-icon">Immutable<wbr>Error</a>
 					</li>
-					<li class=" tsd-kind-class tsd-parent-kind-module tsd-has-type-parameter">
-						<a href="_ints_.immutableint.html" class="tsd-kind-icon">Immutable<wbr>Int</a>
-					</li>
 				</ul>
 				<ul class="current">
-					<li class="current tsd-kind-class tsd-parent-kind-module">
-						<a href="_ints_.int32.html" class="tsd-kind-icon">Int32</a>
+					<li class="current tsd-kind-class tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_ints_.immutableint.html" class="tsd-kind-icon">Immutable<wbr>Int</a>
 						<ul>
-							<li class=" tsd-kind-type-alias tsd-parent-kind-class tsd-is-static">
-								<a href="_ints_.int32.html#json-1" class="tsd-kind-icon">JSON</a>
-							</li>
 							<li class=" tsd-kind-constructor tsd-parent-kind-class">
-								<a href="_ints_.int32.html#constructor" class="tsd-kind-icon">constructor</a>
+								<a href="_ints_.immutableint.html#constructor" class="tsd-kind-icon">constructor</a>
 							</li>
-							<li class=" tsd-kind-property tsd-parent-kind-class tsd-is-private">
-								<a href="_ints_.int32.html#int32" class="tsd-kind-icon">int32</a>
-							</li>
-							<li class=" tsd-kind-get-signature tsd-parent-kind-class tsd-is-overwrite">
-								<a href="_ints_.int32.html#i" class="tsd-kind-icon">i</a>
+							<li class=" tsd-kind-property tsd-parent-kind-class">
+								<a href="_ints_.immutableint.html#original" class="tsd-kind-icon">original</a>
 							</li>
 							<li class=" tsd-kind-get-signature tsd-parent-kind-class tsd-is-overwrite">
-								<a href="_ints_.int32.html#js_int" class="tsd-kind-icon">js_<wbr>int</a>
+								<a href="_ints_.immutableint.html#i" class="tsd-kind-icon">i</a>
+							</li>
+							<li class=" tsd-kind-get-signature tsd-parent-kind-class tsd-is-overwrite">
+								<a href="_ints_.immutableint.html#js_int" class="tsd-kind-icon">js_<wbr>int</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
-								<a href="_ints_.int32.html#add" class="tsd-kind-icon">add</a>
+								<a href="_ints_.immutableint.html#add" class="tsd-kind-icon">add</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
-								<a href="_ints_.int32.html#assign" class="tsd-kind-icon">assign</a>
+								<a href="_ints_.immutableint.html#assign" class="tsd-kind-icon">assign</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
-								<a href="_ints_.int32.html#cmp" class="tsd-kind-icon">cmp</a>
+								<a href="_ints_.immutableint.html#cmp" class="tsd-kind-icon">cmp</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
-								<a href="_ints_.int32.html#copy" class="tsd-kind-icon">copy</a>
+								<a href="_ints_.immutableint.html#copy" class="tsd-kind-icon">copy</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-								<a href="_ints_.int32.html#eq" class="tsd-kind-icon">eq</a>
+								<a href="_ints_.immutableint.html#eq" class="tsd-kind-icon">eq</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-								<a href="_ints_.int32.html#gt" class="tsd-kind-icon">gt</a>
+								<a href="_ints_.immutableint.html#gt" class="tsd-kind-icon">gt</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-								<a href="_ints_.int32.html#gteq" class="tsd-kind-icon">gteq</a>
+								<a href="_ints_.immutableint.html#gteq" class="tsd-kind-icon">gteq</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-								<a href="_ints_.int32.html#lt" class="tsd-kind-icon">lt</a>
+								<a href="_ints_.immutableint.html#lt" class="tsd-kind-icon">lt</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
-								<a href="_ints_.int32.html#lteq" class="tsd-kind-icon">lteq</a>
+								<a href="_ints_.immutableint.html#lteq" class="tsd-kind-icon">lteq</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
-								<a href="_ints_.int32.html#sub" class="tsd-kind-icon">sub</a>
+								<a href="_ints_.immutableint.html#sub" class="tsd-kind-icon">sub</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
-								<a href="_ints_.int32.html#tojson" class="tsd-kind-icon">toJSON</a>
+								<a href="_ints_.immutableint.html#tojson" class="tsd-kind-icon">toJSON</a>
 							</li>
 							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
-								<a href="_ints_.int32.html#tostring" class="tsd-kind-icon">to<wbr>String</a>
-							</li>
-							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-static">
-								<a href="_ints_.int32.html#fromjson" class="tsd-kind-icon">fromJSON</a>
+								<a href="_ints_.immutableint.html#tostring" class="tsd-kind-icon">to<wbr>String</a>
 							</li>
 						</ul>
 					</li>
 				</ul>
 				<ul class="after-current">
+					<li class=" tsd-kind-class tsd-parent-kind-module">
+						<a href="_ints_.int32.html" class="tsd-kind-icon">Int32</a>
+					</li>
 					<li class=" tsd-kind-class tsd-parent-kind-module tsd-has-type-parameter">
 						<a href="_ints_.inttype.html" class="tsd-kind-icon">Int<wbr>Type</a>
 					</li>
@@ -687,6 +616,7 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
 				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
 				<li class="tsd-kind-constructor tsd-parent-kind-class"><span class="tsd-kind-icon">Constructor</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-class"><span class="tsd-kind-icon">Property</span></li>
 				<li class="tsd-kind-method tsd-parent-kind-class"><span class="tsd-kind-icon">Method</span></li>
 			</ul>
 			<ul class="tsd-legend">
@@ -698,12 +628,6 @@ a.add(<span class="hljs-number">10</span>).sub(<span class="hljs-number">8</span
 			</ul>
 			<ul class="tsd-legend">
 				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited method</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private property</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-static"><span class="tsd-kind-icon">Static method</span></li>
 			</ul>
 		</div>
 	</div>
