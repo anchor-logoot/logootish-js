@@ -204,6 +204,12 @@ class ListDocumentModel {
     br: BranchKey
     rclk: LogootInt
   } {
+    if (start < 0) {
+      throw new TypeError('Passed a start position that is less than zero')
+    }
+    if (length <= 0) {
+      throw new TypeError('Passed a length that is less than or equal to zero')
+    }
     // Search:
     // n < start   -> _lesser
     // start <= n  -> _greater
@@ -253,7 +259,9 @@ class ListDocumentModel {
         // We're at the start of this branch's conflict in this CG
         // const most_lesser = lesser.inorder_predecessor
         // Now, go in between the two nodes just as we would've above
-        before_position = lesser.inorder_predecessor && lesser.inorder_predecessor.last_data_position
+        before_position =
+          lesser.inorder_predecessor &&
+          lesser.inorder_predecessor.last_data_position
         after_position = lesser.first_data_position
       } else {
         // So, we're not at the start. Find a good position
@@ -324,6 +332,12 @@ class ListDocumentModel {
    * BranchKey), and a `rclk` vector clock value.
    */
   removeLocal(start: number, length: number): { removals: Removal[] } {
+    if (start < 0) {
+      throw new TypeError('Passed a start position that is less than zero')
+    }
+    if (length < 0) {
+      throw new TypeError('Passed a length that is less than zero')
+    }
     // Search:
     // n < start   -> _lesser
     // start <= n  -> _greater
@@ -376,7 +390,8 @@ class ListDocumentModel {
       }
     }
 
-    let remaining_length = start + length - nodes[0].known_position
+    let remaining_length =
+      start + length - ((nodes[0] && nodes[0].known_position) || 0)
     // TODO: This is *really* inefficient for obvious reasons
     catchBreak(() =>
       nodes.forEach((cg) => {
@@ -393,7 +408,12 @@ class ListDocumentModel {
                 start = start.offsetLowest(remaining_length - length)
                 rlen -= remaining_length - length
               }
-              onRemoval(br, start, Math.min(rlen, remaining_length), rclk)
+              onRemoval(
+                br,
+                start,
+                Math.min(rlen, remaining_length),
+                new LogootInt(rclk)
+              )
               remaining_length -= group.length
             }
             if (remaining_length <= 0) {
@@ -403,6 +423,12 @@ class ListDocumentModel {
         })
       })
     )
+    if (remaining_length > 0) {
+      throw new TypeError(
+        'Removal is out of the range returned by the DBST. This is either ' +
+          'due to local document or BST corruption'
+      )
+    }
 
     const removals: Removal[] = []
     allValues(removal_sets).forEach((branch_set) => {

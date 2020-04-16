@@ -197,6 +197,14 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         expect(() => ldm.insertLocal(1, 1), 'Should throw error')
           .to.throw(TypeError)
       })
+      it('insert @ -1 should fail', () => {
+        expect(() => ldm.insertLocal(-1, 1), 'Should throw error')
+          .to.throw(TypeError)
+      })
+      it('insert with length 0 should fail', () => {
+        expect(() => ldm.insertLocal(0, 0), 'Should throw error')
+          .to.throw(TypeError)
+      })
     })
 
     describe('insertion with other node', () => {
@@ -473,6 +481,115 @@ describe('ListDocumentModel with MinimalJoinFunction', () => {
         )
         basicInsertionTest(1, 2, [1])
       })
+    })
+  })
+
+  describe('removeLocal', () => {
+    const basicRemovalTest = (s, l, correct_removals) => {
+      const { removals } = ldm.removeLocal(s, l)
+      expect(removals.length)
+        .to.be.equal(correct_removals.length, 'Incorrect number of removals')
+      const fromInts = LogootPosition.fromInts
+      removals.forEach((r, i) => {
+        const c = correct_removals[i]
+        expect(r.start.cmp(fromInts(...c.s)))
+          .to.be.equal(0, `Start position for removal ${i} must be ${c.s}`)
+        expect(r.length)
+          .to.be.equal(c.l, `Length for removal ${i} must be ${c.l}`)
+        expect(r.branch)
+          .to.be.equal(c.b, `Branch for removal ${i} must be ${c.b.toString()}`)
+        expect(r.rclk.cmp(new LogootInt(c.r)))
+          .to.be.equal(0, `Lamport clock for removal ${i} must be ${c.r}`)
+        
+      })
+    }
+    it('Return types are correct', () => {
+      ldm._mergeNode(
+        ldm.branch,
+        LogootPosition.fromInts(0),
+        1,
+        new LogootInt(0),
+        NodeType.DATA,
+        ldm.canJoin
+      )
+      const { removals } = ldm.removeLocal(0, 1)
+      expect(removals).to.be.an('array')
+      expect(removals.length).to.be.equal(1)
+
+      const { branch, start, length, rclk } = removals[0]
+      // Unable to test; AFAIK, Chai doesn't support testing to see if a type
+      // is one of any
+      // expect(branch)
+      expect(start).to.be.an.instanceof(LogootPosition)
+      expect(length).to.be.a('number').to.be.at.least(0).to.be.finite
+      expect(rclk).to.be.an.instanceof(LogootInt)
+    })
+    it('remove single node', () => {
+      ldm._mergeNode(
+        u2,
+        LogootPosition.fromInts(1,2,3),
+        3,
+        new LogootInt(5),
+        NodeType.DATA,
+        ldm.canJoin
+      )
+      basicRemovalTest(0, 2, [{s: [1,2,3], l: 2, b: u2, r: 5}])
+    })
+    it('invalid removal after end', () => {
+      ldm._mergeNode(
+        u2,
+        LogootPosition.fromInts(0),
+        1,
+        new LogootInt(0),
+        NodeType.DATA,
+        ldm.canJoin
+      )
+      expect(() => ldm.removeLocal(1, 1), 'Should throw error')
+        .to.throw(TypeError)
+    })
+    it('remove multiple nodes', () => {
+      ldm._mergeNode(
+        u2,
+        LogootPosition.fromInts(0),
+        2,
+        new LogootInt(0),
+        NodeType.DATA,
+        ldm.canJoin
+      )
+      ldm._mergeNode(
+        u3,
+        LogootPosition.fromInts(2),
+        3,
+        new LogootInt(1),
+        NodeType.DATA,
+        ldm.canJoin
+      )
+      basicRemovalTest(0, 4, [
+        {s: [0], l: 2, b: u2, r: 0},
+        {s: [2], l: 2, b: u3, r: 1}
+      ])
+    })
+    it('remove multiple nodes with start offset', () => {
+      ldm._mergeNode(
+        u2,
+        LogootPosition.fromInts(0),
+        2,
+        new LogootInt(0),
+        NodeType.DATA,
+        ldm.canJoin
+      )
+      ldm._mergeNode(
+        u3,
+        LogootPosition.fromInts(2),
+        3,
+        new LogootInt(1),
+        NodeType.DATA,
+        ldm.canJoin
+      )
+      basicRemovalTest(1, 4, [
+        {s: [1], l: 1, b: u2, r: 0},
+        {s: [2], l: 3, b: u3, r: 1}
+      ])
     })
   })
 

@@ -616,7 +616,7 @@ class LogootNodeGroup {
   /**
    * Returns true if this LNG has length in the local document.
    */
-  get has_data() {
+  get has_data(): boolean {
     return this.branches.some((br) => this.br(br).type === NodeType.DATA)
   }
 
