@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "noImplicitAny": true,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "noEmit": true,
+    "strict": false,
+    "target": "esnext",
+    "moduleResolution": "node",
+    "esModuleInterop": true
+  },
+  "files": [
+    "src/index.ts"
+  ],
+  "lib": [
+    "dom",
+    "es7"
+  ]
+}

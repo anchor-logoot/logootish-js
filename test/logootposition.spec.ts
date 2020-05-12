@@ -1,9 +1,5 @@
-import chai from 'chai'
-import { LogootPosition } from '../dist/@kb1rd/logootish-js.js'
-
-chai.expect()
-
-const expect = chai.expect
+import { expect } from 'chai'
+import { LogootPosition } from '../src/listmodel/logoot'
 
 describe('LogootPosition', () => {
   it('should default to [0]', () => {
@@ -75,7 +71,8 @@ describe('LogootPosition', () => {
 
   describe('creation', () => {
     it('should allocate after position correctly', () => {
-      const pos = new LogootPosition(1, new LogootPosition(), new LogootPosition())
+      const pos =
+        new LogootPosition(1, new LogootPosition(), new LogootPosition())
       const pos2 = new LogootPosition(1, pos)
       expect(pos2.levels).to.be.equal(1)
       expect(pos2.level(0).js_int).to.be.equal(0)
