@@ -1,5 +1,5 @@
 import chai from 'chai'
-import { LogootPosition, Document } from '../dist/@kb1rd/logootish-js.js'
+import { LogootPosition } from '../dist/@kb1rd/logootish-js.js'
 
 chai.expect()
 

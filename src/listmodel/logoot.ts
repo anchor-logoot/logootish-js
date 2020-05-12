@@ -8,13 +8,8 @@
 /** */
 
 import { DBstNode, DBstSearchable } from '../bst'
-import { Int32 } from '../ints'
+import { Int32 as LogootInt } from '../ints'
 import { CompareResult, FatalError, allKeys } from '../utils'
-
-// What a C++ typedef would do
-// This makes it possible to completely swap out the type of the int used in the
-// algorithm w/o actually replacing each instance (which would be a real pain)
-import LogootInt = Int32
 
 /**
  * A position in Logoot. This is just an array of numbers with some utility
