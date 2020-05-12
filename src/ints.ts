@@ -52,7 +52,12 @@ abstract class IntType<FutureType> extends Comparable<FutureType | number> {
   abstract i: FutureType
 }
 
-class ImmutableError extends Error {}
+class ImmutableError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ImmutableError'
+  }
+}
 
 /**
  * A type that is passed another IntType to reference and will not allow
@@ -60,7 +65,7 @@ class ImmutableError extends Error {}
  * @TODO Maybe it would be best to use a proxy? Unsure of how in TS...
  */
 class ImmutableInt<T extends IntType<T>> extends IntType<T> {
-  constructor(public readonly original: T) {
+  constructor(protected readonly original: T) {
     super()
   }
   // eslint-disable-next-line
