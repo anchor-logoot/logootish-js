@@ -1,7 +1,6 @@
 {
   "presets": ["@babel/env", "@babel/typescript"],
   "plugins": [
-    "babel-plugin-add-module-exports",
     "@babel/plugin-proposal-class-properties",
     ["@babel/plugin-transform-typescript", { "allowNamespaces": true }]
   ],
