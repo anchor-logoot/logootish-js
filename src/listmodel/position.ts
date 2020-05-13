@@ -1,3 +1,5 @@
+import 'regenerator-runtime/runtime'
+
 import { LogootInt } from './int'
 import { CompareResult, FatalError } from '../utils'
 import { BranchKey, BranchOrder } from './branch'
@@ -21,7 +23,7 @@ import { Comparable, cmpResult } from '../compare'
  * ```
  */
 class LogootishPosition extends Comparable<LogootishPosition> {
-  protected array: LogootInt[] = [new LogootInt(0)]
+  array: LogootInt[] = [new LogootInt(0)]
   immutable = false
 
   /**
@@ -139,6 +141,9 @@ class LogootishPosition extends Comparable<LogootishPosition> {
     // Through some sneakiness, you COULD directly assign the array to make it
     // have a length of zero. Don't do it.
     return this.length - 1
+  }
+  iterator(): IterableIterator<LogootInt> {
+    return this.array.values()
   }
   /**
    * An array accessor
@@ -301,7 +306,11 @@ class LogootPosition extends Comparable<LogootPosition> {
     const existing_branch_order = start?.branch_order || end?.branch_order
     if (!branch_order && (start || end)) {
       branch_order = start?.branch_order || end?.branch_order
-    } else if (branch_order && branch_order === existing_branch_order) {
+    } else if (
+      branch_order &&
+      existing_branch_order &&
+      branch_order !== existing_branch_order
+    ) {
       throw new BranchOrderInconsistencyError(
         'The provided branch order is not the same as the position branch order'
       )
@@ -310,19 +319,102 @@ class LogootPosition extends Comparable<LogootPosition> {
       branch_order = new BranchOrder()
     }
     this.branch_order = branch_order
+
+    const tgt_i = branch_order.i(br)
+    let done = false
+    const itstart = start
+      ? start.iterator()
+      : (function*(): IterableIterator<[LogootInt, BranchKey]> {
+        return
+      }())
+    const itend = end
+      ? end.iterator()
+      : (function*(): IterableIterator<[LogootInt, BranchKey]> {
+        return
+      }())
+    let nstart, nend
+    let nstart_cb_if_next
+
+    this.branch_array.length = 0
+    this.lp.array.length = 0
+
+    while (!done) {
+      if (!nstart || !nstart.done) {
+        nstart = itstart.next()
+        if (!nstart.done && nstart_cb_if_next) {
+          nstart_cb_if_next()
+          nstart_cb_if_next = undefined
+        }
+      }
+      if (!nend || !nend.done) {
+        nend = itend.next()
+      }
+
+      const bs = nstart.value ? branch_order.i(nstart.value[1]) : -Infinity
+      const be = nend.value ? branch_order.i(nend.value[1]) : Infinity
+      if (bs > tgt_i || be < tgt_i) {
+        // The target branch is not in the available range; Move on
+        if (!nstart.value) {
+          this.branch_array.push(nend.value[1])
+          this.lp.array.push(nend.value[0].copy())
+        } else {
+          this.branch_array.push(nstart.value[1])
+          const int = nstart.value[0].copy().add(1)
+          // If start has another level, we should subtract out our addition
+          // since the start will be before this position anyway
+          nstart_cb_if_next = () => {
+            int.sub(1)
+          }
+          this.lp.array.push(int)
+        }
+      } else {
+        if (bs === be) {
+          // So now we have to allocate between linear numbers just like a
+          // classic `LogootishPositon`
+          this.branch_array.push(nstart.value[1])
+          this.lp.array.push(nstart.value[0].copy().add(1))
+          if (nstart.value[0].copy().add(len).lteq(nend.value[0])) {
+            // There's enough space to cram the target data in here; We're done
+            done = true
+          }
+        } else {
+          // Since we can allocate on our own branch, there's technically
+          // infinite space.
+          if (bs === tgt_i) {
+            this.branch_array.push(br)
+            this.lp.array.push(nstart.value[0].copy())
+          } else if (be === tgt_i) {
+            this.branch_array.push(br)
+            this.lp.array.push(nend.value[0].copy().sub(len))
+          } else {
+            this.branch_array.push(br)
+            this.lp.array.push(new LogootInt(0))
+          }
+          // ...and we're done here
+          done = true
+        }
+      }
+    }
   }
 
   static fromIntsBranches(
     order: BranchOrder,
     ...els: [number | LogootInt, BranchKey][]
-  ) {
+  ): LogootPosition {
     const lp = new LogootPosition(els[0][1], 0, undefined, undefined, order)
     lp.lp = LogootishPosition.fromInts(...els.map(([n]) => n))
     lp.branch_array = els.map(([, b]) => b)
     return lp
   }
 
-  selfTest() {
+  copy(): LogootPosition {
+    const lp = new LogootPosition(0)
+    lp.branch_array = this.branch_array.map((k) => k)
+    lp.lp = this.lp.copy()
+    return lp
+  }
+
+  selfTest(): void {
     if (this.branch_array.length !== this.lp.length) {
       throw new FatalError(
         'LogootPosition array was corrupted. This should never happen.'
@@ -330,8 +422,27 @@ class LogootPosition extends Comparable<LogootPosition> {
     }
   }
 
-  get length() {
+  get length(): number {
     return this.lp.length
+  }
+
+  *iterator(): IterableIterator<[LogootInt, BranchKey]> {
+    const n_iter = this.lp.iterator()
+    const b_iter = this.branch_array.values()
+    let n
+    let b
+    while (true) {
+      n = n_iter.next()
+      b = b_iter.next()
+      if (n.done && b.done) {
+        return
+      } else if (n.done !== b.done) {
+        throw new FatalError(
+          'LogootPosition array was corrupted. This should never happen.'
+        )
+      }
+      yield [n.value, b.value]
+    }
   }
 
   private cmp_level(pos: LogootPosition, level: number): CompareResult {
@@ -373,7 +484,7 @@ class LogootPosition extends Comparable<LogootPosition> {
     return this.cmp_level(pos, 0)
   }
 
-  toString() {
+  toString(): string {
     // Corruption can cause some seriously weird errors here. If the user is
     // `console.log`ging stuff, then it's probably fine to do a quick self test
     this.selfTest()

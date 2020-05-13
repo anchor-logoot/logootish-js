@@ -231,4 +231,154 @@ describe('LogootPosition', () => {
       expect(pos.cmp(pos2)).to.be.equal(1)
     })
   })
+
+  it('iterator should work', () => {
+    const it = LogootPosition.fromIntsBranches(o, [1, u1], [2, u2], [3, u3]).iterator()
+    let value, done
+
+    ;({value, done} = it.next())
+    expect(done).to.be.equal(false)
+    expect(value[0].js_int).to.be.equal(1)
+    expect(value[1]).to.be.equal(u1)
+
+    ;({value, done} = it.next())
+    expect(done).to.be.equal(false)
+    expect(value[0].js_int).to.be.equal(2)
+    expect(value[1]).to.be.equal(u2)
+
+    ;({value, done} = it.next())
+    expect(done).to.be.equal(false)
+    expect(value[0].js_int).to.be.equal(3)
+    expect(value[1]).to.be.equal(u3)
+
+    ;({value, done} = it.next())
+    expect(done).to.be.equal(true)
+  })
+
+  describe('creation', () => {
+    it('should default to 0 on provided branch', () => {
+      const pos = new LogootPosition(u2, 1, undefined, undefined, o)
+      const expected = LogootPosition.fromIntsBranches(o, [0, u2])
+      expect(pos.cmp(expected)).to.be.equal(0)
+    })
+    describe('linear sequence', () => {
+      it('should correctly allocate after (numeric)', () => {
+        const pos = LogootPosition.fromIntsBranches(o, [1, u2])
+        const pos2 = new LogootPosition(u2, 1, pos, undefined, o)
+        const expected = LogootPosition.fromIntsBranches(o, [1, u2])
+        expect(pos2.cmp(expected)).to.be.equal(0)
+      })
+      it('should correctly allocate before (numeric)', () => {
+        const pos = LogootPosition.fromIntsBranches(o, [5, u2])
+        const pos2 = new LogootPosition(u2, 1, undefined, pos, o)
+        const expected = LogootPosition.fromIntsBranches(o, [4, u2])
+        expect(pos2.cmp(expected)).to.be.equal(0)
+      })
+      it('should correctly allocate after (branch)', () => {
+        const pos = LogootPosition.fromIntsBranches(o, [9000, u1])
+        const pos2 = new LogootPosition(u2, 1, pos, undefined, o)
+        const expected = LogootPosition.fromIntsBranches(o, [0, u2])
+        expect(pos2.cmp(expected)).to.be.equal(0)
+      })
+      it('should correctly allocate before (branch)', () => {
+        const pos = LogootPosition.fromIntsBranches(o, [-9000, u3])
+        const pos2 = new LogootPosition(u2, 1, undefined, pos, o)
+        const expected = LogootPosition.fromIntsBranches(o, [0, u2])
+        expect(pos2.cmp(expected)).to.be.equal(0)
+      })
+    })
+    describe('should hop down if position cannot be allocated', () => {
+      it('should correctly allocate after (branch)', () => {
+        const pos = LogootPosition.fromIntsBranches(o, [5, u3])
+        const pos2 = new LogootPosition(u2, 1, pos, undefined, o)
+        const expected = LogootPosition.fromIntsBranches(o, [6, u3], [0, u2])
+        expect(pos2.cmp(expected)).to.be.equal(0)
+      })
+      it('should correctly allocate before (branch)', () => {
+        const pos = LogootPosition.fromIntsBranches(o, [-5, u1])
+        const pos2 = new LogootPosition(u2, 1, undefined, pos, o)
+        const expected = LogootPosition.fromIntsBranches(o, [-5, u1], [0, u2])
+        expect(pos2.cmp(expected)).to.be.equal(0)
+      })
+      it('should correctly allocate between (branch)', () => {
+        const pos = LogootPosition.fromIntsBranches(o, [4, u2])
+        const pos2 = LogootPosition.fromIntsBranches(o, [5, u2])
+        const pos3 = new LogootPosition(u2, 2, pos, pos2, o)
+        const expected = LogootPosition.fromIntsBranches(o, [5, u2], [0, u2])
+        expect(pos3.cmp(expected)).to.be.equal(0)
+      })
+    })
+    describe('nested unrestricted ends', () => {
+      it('should correctly allocate after (numeric)', () => {
+        const pos = LogootPosition.fromIntsBranches(
+          o,
+          [0, u1],
+          [20, u3],
+          [1, u2]
+        )
+        const pos2 = LogootPosition.fromIntsBranches(o, [0, u1], [20, u3])
+        const pos3 = new LogootPosition(u2, 1, pos, pos2, o)
+        const expected = LogootPosition.fromIntsBranches(
+          o,
+          [0, u1],
+          [20, u3],
+          [1, u2]
+        )
+        expect(pos3.cmp(expected)).to.be.equal(0)
+      })
+      it('should correctly allocate before (numeric)', () => {
+        const pos = LogootPosition.fromIntsBranches(o, [0, u1], [20, u3])
+        const pos2 = LogootPosition.fromIntsBranches(
+          o,
+          [1, u1],
+          [20, u3],
+          [5, u2]
+        )
+        const pos3 = new LogootPosition(u2, 1, pos, pos2, o)
+        const expected = LogootPosition.fromIntsBranches(
+          o,
+          [0, u1],
+          [21, u3],
+          [4, u2]
+        )
+        expect(pos3.cmp(expected)).to.be.equal(0)
+      })
+      it('should correctly allocate after (branch)', () => {
+        const pos = LogootPosition.fromIntsBranches(
+          o,
+          [0, u1],
+          [20, u3],
+          [1, u3]
+        )
+        const pos2 = LogootPosition.fromIntsBranches(o, [0, u1], [20, u3])
+        const pos3 = new LogootPosition(u2, 1, pos, pos2, o)
+        const expected = LogootPosition.fromIntsBranches(
+          o,
+          [0, u1],
+          [20, u3],
+          [2, u3],
+          [0, u2]
+        )
+        expect(pos3.cmp(expected)).to.be.equal(0)
+      })
+      it('should correctly allocate before (branch)', () => {
+        const pos = LogootPosition.fromIntsBranches(o, [0, u1], [20, u3])
+        const pos2 = LogootPosition.fromIntsBranches(
+          o,
+          [1, u1],
+          [20, u3],
+          [5, u1]
+        )
+        const pos3 = new LogootPosition(u2, 1, pos, pos2, o)
+        const expected = LogootPosition.fromIntsBranches(
+          o,
+          [0, u1],
+          [21, u3],
+          [5, u1],
+          [0, u2]
+        )
+        expect(pos3.cmp(expected)).to.be.equal(0)
+      })
+    })
+  })
 })

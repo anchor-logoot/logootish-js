@@ -7,7 +7,7 @@
 type BranchKey = symbol | string | number
 
 class BranchOrder {
-  public readonly order: BranchKey[] = []
+  constructor(public readonly order: BranchKey[] = []) {}
 
   /**
    * Finds the index of `br` and adds it to the order if necessary.
@@ -21,8 +21,19 @@ class BranchOrder {
     }
     return this.order.indexOf(br)
   }
-  u(index: number): BranchKey {
+  b(index: number): BranchKey {
     return this.order[index]
+  }
+
+  static fromJSON(
+    json: any[],
+    mapper: (k: any) => BranchKey = (k) => k
+  ): BranchOrder {
+    return new BranchOrder(json.map(mapper))
+  }
+
+  toJSON(mapper: (k: BranchKey) => any = (k) => k): any[] {
+    return this.order.map(mapper)
   }
 }
 
