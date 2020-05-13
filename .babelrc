@@ -1,8 +1,11 @@
 {
-  "presets": ["@babel/env", "@babel/typescript"],
+  "presets": ["@babel/preset-typescript", "@babel/env"],
   "plugins": [
-    "@babel/plugin-proposal-class-properties",
-    ["@babel/plugin-transform-typescript", { "allowNamespaces": true }]
+    [
+      "@babel/plugin-transform-typescript",
+      { "allowNamespaces": true, "allowDeclareFields": true }
+    ],
+    "@babel/plugin-proposal-class-properties"
   ],
   "env": {
     "test": {

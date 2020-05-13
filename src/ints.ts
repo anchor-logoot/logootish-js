@@ -44,12 +44,12 @@ abstract class IntType<FutureType> extends Comparable<FutureType | number> {
    * The JavaScript int type for this integer (with an exception thrown if the
    * value cannot be represented in 32 bits)
    */
-  abstract js_int: number
+  declare abstract js_int: number
 
   /**
    * Get an immutable version of this int.
    */
-  abstract i: FutureType
+  declare abstract i: FutureType
 }
 
 class ImmutableError extends Error {

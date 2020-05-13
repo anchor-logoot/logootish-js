@@ -1,5 +1,7 @@
 import { LogootInt } from './int'
-import { CompareResult } from '../utils'
+import { CompareResult, FatalError } from '../utils'
+import { BranchKey, BranchOrder } from './branch'
+import { Comparable, cmpResult } from '../compare'
 
 /**
  * A comparable position from the original Logootish algorithm, This is just an
@@ -18,7 +20,7 @@ import { CompareResult } from '../utils'
  * console.log(new LogootishPosition(2, a, b).toString()) // [0,0]
  * ```
  */
-class LogootishPosition {
+class LogootishPosition extends Comparable<LogootishPosition> {
   protected array: LogootInt[] = [new LogootInt(0)]
   immutable = false
 
@@ -38,12 +40,17 @@ class LogootishPosition {
    * `[2]` would need to be passed to `start`.
    * @param end - This will cause the new position to have a value less than or
    * equal to this, subject to the value of `len`.
+   * @throws {TypeError} Will throw if `start` is greater than `end`.
    */
   constructor(
     len = 0,
     readonly start?: LogootishPosition,
     readonly end?: LogootishPosition
   ) {
+    super()
+    if (start && end && start.gt(end)) {
+      throw new TypeError('Start is greater than end')
+    }
     if (!start && end) {
       this.array = end.inverseOffsetLowest(len).array
     } else if (!end && start) {
@@ -198,7 +205,7 @@ class LogootishPosition {
     })
   }
 
-  cmp(pos: LogootishPosition, level = 0): CompareResult {
+  private cmp_level(pos: LogootishPosition, level: number): CompareResult {
     if (level >= this.length) {
       if (this.length === pos.length) {
         return 0
@@ -214,10 +221,13 @@ class LogootishPosition {
       case -1:
         return -1
       case 0:
-        return this.cmp(pos, level + 1)
+        return this.cmp_level(pos, level + 1)
       default:
         return 0
     }
+  }
+  cmp(pos: LogootishPosition): CompareResult {
+    return this.cmp_level(pos, 0)
   }
 
   /**
@@ -258,4 +268,118 @@ namespace LogootishPosition {
     export const Schema = { type: 'array', items: LogootInt.JSON.Schema }
   }
 }
-export { LogootishPosition }
+
+class BranchOrderInconsistencyError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'BranchOrderInconsistencyError'
+  }
+}
+
+class LogootPosition extends Comparable<LogootPosition> {
+  protected lp: LogootishPosition = new LogootishPosition()
+  protected branch_array: BranchKey[] = []
+  readonly branch_order: BranchOrder
+
+  constructor(
+    br: BranchKey,
+    len = 0,
+    readonly start?: LogootPosition,
+    readonly end?: LogootPosition,
+    branch_order?: BranchOrder
+  ) {
+    super()
+    if (start && end && start.gt(end)) {
+      throw new TypeError('Start is greater than end')
+    }
+    // First, set up the branch order
+    if (start && end && start.branch_order !== end.branch_order) {
+      throw new BranchOrderInconsistencyError(
+        'Start and end do not have the same branch order'
+      )
+    }
+    const existing_branch_order = start?.branch_order || end?.branch_order
+    if (!branch_order && (start || end)) {
+      branch_order = start?.branch_order || end?.branch_order
+    } else if (branch_order && branch_order === existing_branch_order) {
+      throw new BranchOrderInconsistencyError(
+        'The provided branch order is not the same as the position branch order'
+      )
+    }
+    if (!branch_order) {
+      branch_order = new BranchOrder()
+    }
+    this.branch_order = branch_order
+  }
+
+  static fromIntsBranches(
+    order: BranchOrder,
+    ...els: [number | LogootInt, BranchKey][]
+  ) {
+    const lp = new LogootPosition(els[0][1], 0, undefined, undefined, order)
+    lp.lp = LogootishPosition.fromInts(...els.map(([n]) => n))
+    lp.branch_array = els.map(([, b]) => b)
+    return lp
+  }
+
+  selfTest() {
+    if (this.branch_array.length !== this.lp.length) {
+      throw new FatalError(
+        'LogootPosition array was corrupted. This should never happen.'
+      )
+    }
+  }
+
+  get length() {
+    return this.lp.length
+  }
+
+  private cmp_level(pos: LogootPosition, level: number): CompareResult {
+    if (level >= this.length) {
+      if (this.length === pos.length) {
+        return 0
+      }
+      return 1
+    }
+    if (level >= pos.length) {
+      return -1
+    }
+    const ti = this.branch_order.i(this.branch_array[level])
+    const oi = this.branch_order.i(pos.branch_array[level])
+    switch (cmpResult(ti - oi)) {
+      case 1:
+        return 1
+      case -1:
+        return -1
+      case 0:
+        switch (this.lp.l(level).cmp(pos.lp.l(level))) {
+          case 1:
+            return 1
+          case -1:
+            return -1
+          case 0:
+            return this.cmp_level(pos, level + 1)
+          default:
+            break
+        }
+      default:
+        break
+    }
+    // TODO: Throw some kind of error
+    return 0
+  }
+
+  cmp(pos: LogootPosition): CompareResult {
+    return this.cmp_level(pos, 0)
+  }
+
+  toString() {
+    // Corruption can cause some seriously weird errors here. If the user is
+    // `console.log`ging stuff, then it's probably fine to do a quick self test
+    this.selfTest()
+    const bstr = this.branch_array.map((br) => br.toString())
+    return `[${bstr.map((br, i) => `(${this.lp.level(i)},${br})`)}]`
+  }
+}
+
+export { LogootPosition, LogootishPosition }

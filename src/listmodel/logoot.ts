@@ -11,14 +11,7 @@ import { DBstNode, DBstSearchable } from '../bst'
 import { LogootInt } from './int'
 import { CompareResult, FatalError, allKeys } from '../utils'
 import { LogootishPosition as LogootPosition } from './position'
-
-/**
- * A type used to identify a branch. This value should be used to look up a
- * user-presentable name in another map stored outside of `logootish-js`. This
- * is implementation-defined and allows for the broadest possible definition of
- * a branch.
- */
-type BranchKey = symbol | string | number
+import { BranchKey } from './branch'
 
 /**
  * The type of node stored in a `LogootNodeGroup`.
