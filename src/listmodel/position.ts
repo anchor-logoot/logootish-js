@@ -227,8 +227,6 @@ class LogootishPosition extends Comparable<LogootishPosition> {
         return -1
       case 0:
         return this.cmp_level(pos, level + 1)
-      default:
-        return 0
     }
   }
   cmp(pos: LogootishPosition): CompareResult {
@@ -324,14 +322,14 @@ class LogootPosition extends Comparable<LogootPosition> {
     let done = false
     const itstart = start
       ? start.iterator()
-      : (function*(): IterableIterator<[LogootInt, BranchKey]> {
-        return
-      }())
+      : (function* (): IterableIterator<[LogootInt, BranchKey]> {
+          return
+        })()
     const itend = end
       ? end.iterator()
-      : (function*(): IterableIterator<[LogootInt, BranchKey]> {
-        return
-      }())
+      : (function* (): IterableIterator<[LogootInt, BranchKey]> {
+          return
+        })()
     let nstart, nend
     let nstart_cb_if_next
 
@@ -362,7 +360,7 @@ class LogootPosition extends Comparable<LogootPosition> {
           const int = nstart.value[0].copy().add(1)
           // If start has another level, we should subtract out our addition
           // since the start will be before this position anyway
-          nstart_cb_if_next = () => {
+          nstart_cb_if_next = (): void => {
             int.sub(1)
           }
           this.lp.array.push(int)
@@ -372,10 +370,12 @@ class LogootPosition extends Comparable<LogootPosition> {
           // So now we have to allocate between linear numbers just like a
           // classic `LogootishPositon`
           this.branch_array.push(nstart.value[1])
-          this.lp.array.push(nstart.value[0].copy().add(1))
           if (nstart.value[0].copy().add(len).lteq(nend.value[0])) {
             // There's enough space to cram the target data in here; We're done
             done = true
+            this.lp.array.push(nstart.value[0].copy())
+          } else {
+            this.lp.array.push(nstart.value[0].copy().add(1))
           }
         } else {
           // Since we can allocate on our own branch, there's technically
@@ -470,18 +470,39 @@ class LogootPosition extends Comparable<LogootPosition> {
             return -1
           case 0:
             return this.cmp_level(pos, level + 1)
-          default:
-            break
         }
-      default:
-        break
     }
     // TODO: Throw some kind of error
-    return 0
   }
 
   cmp(pos: LogootPosition): CompareResult {
     return this.cmp_level(pos, 0)
+  }
+
+  l(l: number): [LogootInt, BranchKey] {
+    return [this.lp.l(l), this.branch_array[l]]
+  }
+  offsetLowest(n: number): LogootPosition {
+    const lp = this.copy()
+    lp.lp = lp.lp.offsetLowest(n)
+    return lp
+  }
+  inverseOffsetLowest(n: number): LogootPosition {
+    const lp = this.copy()
+    lp.lp = lp.lp.inverseOffsetLowest(n)
+    return lp
+  }
+
+  truncateTo(level: number): LogootPosition {
+    if (this.branch_array.length < level) {
+      throw new TypeError('Truncate cannot add levels')
+    }
+    if (level < 1) {
+      throw new TypeError('Cannot truncate to a level less than 1')
+    }
+    this.branch_array.length = level
+    this.lp.array.length = level
+    return this
   }
 
   toString(): string {
@@ -493,4 +514,4 @@ class LogootPosition extends Comparable<LogootPosition> {
   }
 }
 
-export { LogootPosition, LogootishPosition }
+export { LogootPosition, BranchOrderInconsistencyError, LogootishPosition }

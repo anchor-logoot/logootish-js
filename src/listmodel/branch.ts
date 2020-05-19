@@ -14,7 +14,7 @@ class BranchOrder {
    * @param br The branch to find the index of
    * @return The index of `br`
    */
-  i(br: BranchKey) {
+  i(br: BranchKey): number {
     if (!this.order.includes(br)) {
       this.order.push(br)
       return this.order.length - 1
@@ -26,13 +26,16 @@ class BranchOrder {
   }
 
   static fromJSON(
+    // eslint-disable-next-line
     json: any[],
-    mapper: (k: any) => BranchKey = (k) => k
+    // eslint-disable-next-line
+    mapper: (k: any) => BranchKey = (k: any): BranchKey => k
   ): BranchOrder {
     return new BranchOrder(json.map(mapper))
   }
 
-  toJSON(mapper: (k: BranchKey) => any = (k) => k): any[] {
+  // eslint-disable-next-line
+  toJSON(mapper: (k: BranchKey) => any = (k: BranchKey): any => k): any[] {
     return this.order.map(mapper)
   }
 }

@@ -918,7 +918,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
   /**
    * **THIS IS NOT INTENDED FOR OUTSIDE USE!** It is not protected for the unit
    * tests that rely on it.
-   * 
+   *
    * Replaces this node with another node. This is used internally by the
    * `remove` function. If the node provided has a parent, it will be removed
    * from the parent. **WARNING:** If the provided node's current children
@@ -1174,6 +1174,51 @@ abstract class DBstNode<T extends DBstNode<T>> {
     ;(s.range as NumberRange).pop_offset(-this.value)
   }
 
+  prefSearch(s: TypeRangeSearch<T, T>): void {
+    const traverse_left = (): void => {
+      this.left_node.prefSearch(s)
+    }
+    const traverse_right = (): void => {
+      this.right_node.prefSearch(s)
+    }
+    const sec = s.range.getRangeSection((this as unknown) as T)
+    if (sec < 0) {
+      // We're under the target range...
+
+      // Try assigning this to a bucket (if the current value is greater, this)
+      // will be ignored.
+      s.setBucket('lesser', (this as unknown) as T, (this as unknown) as T)
+      // Always traverse right since it could be greater
+      if (this.right_node) {
+        traverse_right()
+      }
+      // Traverse left if the left node is equal (zero offset)
+      if (this.left_node && this.left_node.value === 0) {
+        traverse_left()
+      }
+    } else if (sec > 0) {
+      // We're above the target range...
+
+      // The same as above, but with the `greater` bucket
+      s.setBucket('greater', (this as unknown) as T, (this as unknown) as T)
+      // Always try to find a smaller node
+      if (this.left_node) {
+        traverse_left()
+      }
+    } else {
+      // We're in the target range...
+
+      s.addToBucket('range', (this as unknown) as T, (this as unknown) as T)
+      // Now, we have to traverse left **and** right
+      if (this.left_node) {
+        traverse_left()
+      }
+      if (this.right_node) {
+        traverse_right()
+      }
+    }
+  }
+
   operateOnAll(cb: (data: T) => void): void {
     if (this.left_node) {
       this.left_node.operateOnAll(cb)
@@ -1187,10 +1232,10 @@ abstract class DBstNode<T extends DBstNode<T>> {
   selfTest(
     parent?: T,
     is_left?: boolean,
-    mnv: number = 0,
-    mxv: number = 0,
+    mnv = 0,
+    mxv = 0,
     known: DBstNode<T>[] = [],
-    can_have_equal: boolean = false
+    can_have_equal = false
   ): void {
     if (known.includes(this)) {
       throw new Error('Duplicate nodes or node loop')
@@ -1280,10 +1325,18 @@ class DBst<T extends DBstNode<T>> {
     }
     return vals
   }
+
   search(range: NumberRange): TypeRangeSearch<number, T> {
     const search = new TypeRangeSearch<number, T>(range)
     if (this.bst_root) {
       this.bst_root.search(search, 0)
+    }
+    return search
+  }
+  prefSearch(range: TypeRange<T>): TypeRangeSearch<T, T> {
+    const search = new TypeRangeSearch<T, T>(range)
+    if (this.bst_root) {
+      this.bst_root.prefSearch(search)
     }
     return search
   }

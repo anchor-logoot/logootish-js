@@ -1,7 +1,12 @@
 import { expect } from 'chai'
 import { BranchOrder } from '../src/listmodel/branch'
-import { LogootishPosition, LogootPosition } from '../src/listmodel/position'
+import {
+  LogootishPosition,
+  BranchOrderInconsistencyError,
+  LogootPosition
+} from '../src/listmodel/position'
 import { ImmutableInt } from '../src/ints'
+import { LogootInt } from '../src/listmodel'
 
 describe('LogootishPosition', () => {
   it('should default to [0]', () => {
@@ -208,6 +213,54 @@ describe('LogootPosition', () => {
     o.i(u3)
   })
 
+  it('iterator should work', () => {
+    const it = LogootPosition.fromIntsBranches(o, [1, u1], [2, u2], [3, u3]).iterator()
+    let value, done
+
+    ;({value, done} = it.next())
+    expect(done).to.be.equal(false)
+    expect(value[0].js_int).to.be.equal(1)
+    expect(value[1]).to.be.equal(u1)
+
+    ;({value, done} = it.next())
+    expect(done).to.be.equal(false)
+    expect(value[0].js_int).to.be.equal(2)
+    expect(value[1]).to.be.equal(u2)
+
+    ;({value, done} = it.next())
+    expect(done).to.be.equal(false)
+    expect(value[0].js_int).to.be.equal(3)
+    expect(value[1]).to.be.equal(u3)
+
+    ;({value, done} = it.next())
+    expect(done).to.be.equal(true)
+  })
+
+  it('self test should work', () => {
+    class CorruptLP extends LogootPosition {
+      constructor() {
+        super(u1, 1)
+        this.branch_array.push(u2)
+      }
+    }
+    expect(() => new CorruptLP().selfTest(), 'Main self-test failed')
+      .to.throw()
+    expect(() => {
+      const it = new CorruptLP().iterator()
+      it.next()
+      it.next()
+    }, 'Iterator self-test failed').to.throw()
+  })
+  it('toString should work', () => {
+    const str = LogootPosition.fromIntsBranches(
+      o,
+      [1, u1],
+      [2, u2],
+      [3, u3]
+    ).toString()
+    expect(str).to.be.equal('[(1,U1),(2,U2),(3,U3)]')
+  })
+
   describe('compare', () => {
     it('simple numeric linear', () => {
       const pos = LogootPosition.fromIntsBranches(o, [-6, u1])
@@ -230,29 +283,6 @@ describe('LogootPosition', () => {
       const pos2 = LogootPosition.fromIntsBranches(o, [-9000, u1], [9000, u2])
       expect(pos.cmp(pos2)).to.be.equal(1)
     })
-  })
-
-  it('iterator should work', () => {
-    const it = LogootPosition.fromIntsBranches(o, [1, u1], [2, u2], [3, u3]).iterator()
-    let value, done
-
-    ;({value, done} = it.next())
-    expect(done).to.be.equal(false)
-    expect(value[0].js_int).to.be.equal(1)
-    expect(value[1]).to.be.equal(u1)
-
-    ;({value, done} = it.next())
-    expect(done).to.be.equal(false)
-    expect(value[0].js_int).to.be.equal(2)
-    expect(value[1]).to.be.equal(u2)
-
-    ;({value, done} = it.next())
-    expect(done).to.be.equal(false)
-    expect(value[0].js_int).to.be.equal(3)
-    expect(value[1]).to.be.equal(u3)
-
-    ;({value, done} = it.next())
-    expect(done).to.be.equal(true)
   })
 
   describe('creation', () => {
@@ -300,11 +330,18 @@ describe('LogootPosition', () => {
         const expected = LogootPosition.fromIntsBranches(o, [-5, u1], [0, u2])
         expect(pos2.cmp(expected)).to.be.equal(0)
       })
-      it('should correctly allocate between (branch)', () => {
+      it('should correctly allocate between (numeric)', () => {
         const pos = LogootPosition.fromIntsBranches(o, [4, u2])
         const pos2 = LogootPosition.fromIntsBranches(o, [5, u2])
         const pos3 = new LogootPosition(u2, 2, pos, pos2, o)
         const expected = LogootPosition.fromIntsBranches(o, [5, u2], [0, u2])
+        expect(pos3.cmp(expected)).to.be.equal(0)
+      })
+      it('should not hop down if not necessary', () => {
+        const pos = LogootPosition.fromIntsBranches(o, [4, u2])
+        const pos2 = LogootPosition.fromIntsBranches(o, [5, u2])
+        const pos3 = new LogootPosition(u2, 1, pos, pos2, o)
+        const expected = LogootPosition.fromIntsBranches(o, [4, u2])
         expect(pos3.cmp(expected)).to.be.equal(0)
       })
     })
@@ -379,6 +416,104 @@ describe('LogootPosition', () => {
         )
         expect(pos3.cmp(expected)).to.be.equal(0)
       })
+    })
+    describe('constructor branch order inference', () => {
+      it('should throw error if start is greater than end', () => {
+        expect(() => {
+          new LogootPosition(
+            u2,
+            1,
+            LogootPosition.fromIntsBranches(o, [0, u3]),
+            LogootPosition.fromIntsBranches(o, [0, u2]),
+            o
+          )
+        }).to.throw(TypeError)
+      })
+      it('should throw error if start and end do not have same order', () => {
+        expect(() => {
+          new LogootPosition(
+            u2,
+            1,
+            LogootPosition.fromIntsBranches(o, [0, u2]),
+            LogootPosition.fromIntsBranches(new BranchOrder(), [0, u3]),
+            o
+          )
+        }).to.throw(BranchOrderInconsistencyError)
+      })
+      it('should throw error if start and end do not have same order', () => {
+        expect(() => {
+          new LogootPosition(
+            u2,
+            1,
+            LogootPosition.fromIntsBranches(o, [0, u2]),
+            LogootPosition.fromIntsBranches(new BranchOrder(), [0, u3]),
+            o
+          )
+        }).to.throw(BranchOrderInconsistencyError)
+      })
+      it('should throw error if order is not the same as that of pos', () => {
+        expect(() => {
+          new LogootPosition(
+            u2,
+            1,
+            LogootPosition.fromIntsBranches(o, [0, u2]),
+            LogootPosition.fromIntsBranches(o, [0, u3]),
+            new BranchOrder()
+          )
+        }).to.throw(BranchOrderInconsistencyError)
+      })
+      it('should infer order from positions if none provided', () => {
+        const new_order = new LogootPosition(
+          u2,
+          1,
+          LogootPosition.fromIntsBranches(o, [0, u2]),
+          LogootPosition.fromIntsBranches(o, [0, u3])
+        ).branch_order
+        expect(new_order).to.be.equal(o)
+      })
+      it('should create new order if none provided', () => {
+        const new_order = new LogootPosition(
+          u2,
+          1,
+          undefined,
+          undefined
+        ).branch_order
+        expect(new_order).to.be.an.instanceOf(BranchOrder)
+      })
+    })
+  })
+
+  describe('modifiers', () => {
+    it('offsetLowest', () => {
+      const lp = LogootPosition.fromIntsBranches(o, [1, u1], [2, u2], [3, u3])
+      const copy = lp.copy()
+      const ex = LogootPosition.fromIntsBranches(o, [1, u1], [2, u2], [4, u3])
+      const offset = lp.offsetLowest(1)
+      expect(offset.cmp(ex), 'Offset is not correct').to.be.equal(0)
+      expect(lp.cmp(copy), 'Original was mutated').to.be.equal(0)
+    })
+    it('inverseOffsetLowest', () => {
+      const lp = LogootPosition.fromIntsBranches(o, [1, u1], [2, u2], [3, u3])
+      const copy = lp.copy()
+      const ex = LogootPosition.fromIntsBranches(o, [1, u1], [2, u2], [2, u3])
+      const offset = lp.inverseOffsetLowest(1)
+      expect(offset.cmp(ex), 'Offset is not correct').to.be.equal(0)
+      expect(lp.cmp(copy), 'Original was mutated').to.be.equal(0)
+    })
+    it('truncateTo fails on attempt to add levels', () => {
+      const lp = LogootPosition.fromIntsBranches(o, [1, u1], [2, u2], [3, u3])
+      expect(() => lp.truncateTo(20)).to.throw(TypeError)
+    })
+    it('truncateTo fails on attempt to set levels less than 1', () => {
+      const lp = LogootPosition.fromIntsBranches(o, [1, u1], [2, u2], [3, u3])
+      expect(() => lp.truncateTo(0)).to.throw(TypeError)
+      expect(() => lp.truncateTo(-100)).to.throw(TypeError)
+    })
+    it('truncateTo', () => {
+      const lp = LogootPosition.fromIntsBranches(o, [1, u1], [2, u2], [3, u3])
+      const ex = LogootPosition.fromIntsBranches(o, [1, u1], [2, u2])
+      lp.truncateTo(2)
+      expect(lp.cmp(ex)).to.be.equal(0)
     })
   })
 })
