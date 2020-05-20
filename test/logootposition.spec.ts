@@ -6,7 +6,6 @@ import {
   LogootPosition
 } from '../src/listmodel/position'
 import { ImmutableInt } from '../src/ints'
-import { LogootInt } from '../src/listmodel'
 
 describe('LogootishPosition', () => {
   it('should default to [0]', () => {
@@ -321,7 +320,7 @@ describe('LogootPosition', () => {
       it('should correctly allocate after (branch)', () => {
         const pos = LogootPosition.fromIntsBranches(o, [5, u3])
         const pos2 = new LogootPosition(u2, 1, pos, undefined, o)
-        const expected = LogootPosition.fromIntsBranches(o, [6, u3], [0, u2])
+        const expected = LogootPosition.fromIntsBranches(o, [5, u3], [0, u2])
         expect(pos2.cmp(expected)).to.be.equal(0)
       })
       it('should correctly allocate before (branch)', () => {
@@ -334,7 +333,14 @@ describe('LogootPosition', () => {
         const pos = LogootPosition.fromIntsBranches(o, [4, u2])
         const pos2 = LogootPosition.fromIntsBranches(o, [5, u2])
         const pos3 = new LogootPosition(u2, 2, pos, pos2, o)
-        const expected = LogootPosition.fromIntsBranches(o, [5, u2], [0, u2])
+        const expected = LogootPosition.fromIntsBranches(o, [4, u2], [0, u2])
+        expect(pos3.cmp(expected)).to.be.equal(0)
+      })
+      it('should correctly allocate between on different branch', () => {
+        const pos = LogootPosition.fromIntsBranches(o, [1, u2])
+        const pos2 = LogootPosition.fromIntsBranches(o, [1, u2])
+        const pos3 = new LogootPosition(u1, 2, pos, pos2, o)
+        const expected = LogootPosition.fromIntsBranches(o, [1, u2], [0, u1])
         expect(pos3.cmp(expected)).to.be.equal(0)
       })
       it('should not hop down if not necessary', () => {
@@ -375,7 +381,7 @@ describe('LogootPosition', () => {
         const expected = LogootPosition.fromIntsBranches(
           o,
           [0, u1],
-          [21, u3],
+          [20, u3],
           [4, u2]
         )
         expect(pos3.cmp(expected)).to.be.equal(0)
@@ -393,7 +399,7 @@ describe('LogootPosition', () => {
           o,
           [0, u1],
           [20, u3],
-          [2, u3],
+          [1, u3],
           [0, u2]
         )
         expect(pos3.cmp(expected)).to.be.equal(0)
@@ -410,7 +416,7 @@ describe('LogootPosition', () => {
         const expected = LogootPosition.fromIntsBranches(
           o,
           [0, u1],
-          [21, u3],
+          [20, u3],
           [5, u1],
           [0, u2]
         )

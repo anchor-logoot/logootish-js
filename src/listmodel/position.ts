@@ -331,7 +331,6 @@ class LogootPosition extends Comparable<LogootPosition> {
           return
         })()
     let nstart, nend
-    let nstart_cb_if_next
 
     this.branch_array.length = 0
     this.lp.array.length = 0
@@ -339,10 +338,6 @@ class LogootPosition extends Comparable<LogootPosition> {
     while (!done) {
       if (!nstart || !nstart.done) {
         nstart = itstart.next()
-        if (!nstart.done && nstart_cb_if_next) {
-          nstart_cb_if_next()
-          nstart_cb_if_next = undefined
-        }
       }
       if (!nend || !nend.done) {
         nend = itend.next()
@@ -357,12 +352,7 @@ class LogootPosition extends Comparable<LogootPosition> {
           this.lp.array.push(nend.value[0].copy())
         } else {
           this.branch_array.push(nstart.value[1])
-          const int = nstart.value[0].copy().add(1)
-          // If start has another level, we should subtract out our addition
-          // since the start will be before this position anyway
-          nstart_cb_if_next = (): void => {
-            int.sub(1)
-          }
+          const int = nstart.value[0].copy()
           this.lp.array.push(int)
         }
       } else {
@@ -373,10 +363,8 @@ class LogootPosition extends Comparable<LogootPosition> {
           if (nstart.value[0].copy().add(len).lteq(nend.value[0])) {
             // There's enough space to cram the target data in here; We're done
             done = true
-            this.lp.array.push(nstart.value[0].copy())
-          } else {
-            this.lp.array.push(nstart.value[0].copy().add(1))
           }
+          this.lp.array.push(nstart.value[0].copy())
         } else {
           // Since we can allocate on our own branch, there's technically
           // infinite space.
@@ -424,6 +412,17 @@ class LogootPosition extends Comparable<LogootPosition> {
 
   get length(): number {
     return this.lp.length
+  }
+  /**
+   * Returns the last index of the array. This is useful because before this,
+   * the algorithm code often contained many occurences of `length - 1`. This
+   * is used to cut down redundancy.
+   */
+  get levels(): number {
+    // A zero-length position is NOT valid
+    // Through some sneakiness, you COULD directly assign the array to make it
+    // have a length of zero. Don't do it.
+    return this.length - 1
   }
 
   *iterator(): IterableIterator<[LogootInt, BranchKey]> {
