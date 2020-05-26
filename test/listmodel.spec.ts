@@ -871,12 +871,16 @@ describe('LDM support functions', () => {
 })
 
 describe('ListDocumentModel', () => {
-  return
   let o: BranchOrder
   let ldm: ListDocumentModel
   const u1 = 'U1'
   const u2 = 'U2'
   const u3 = 'U3'
+  const p = (...ns: number[]): LogootPosition =>
+    LogootPosition.fromIntsBranches(
+      o,
+      ...ns.map((n) => [n, u1]) as [number, string][]
+    )
   beforeEach(() => {
     o = new BranchOrder()
     ldm = new ListDocumentModel(o)
@@ -885,10 +889,40 @@ describe('ListDocumentModel', () => {
     o.i(u2)
     o.i(u3)
   })
-  afterEach('self-test', () => {
-    ldm.selfTest()
+  describe('insertLocal', () => {
+    it('should default to an `undefined` anchor', () => {
+      const { left, right, clk, length } = ldm.insertLocal(0, 5)
+      expect(left).to.be.undefined
+      expect(right).to.be.undefined
+      expect(clk.eq(0)).to.be.true
+      expect(length).to.be.equal(5)
+    })
+    it('should make neighbors anchor nodes', () => {
+      ldm.bst.add(new AnchorLogootNode(p(0), 2))
+      ldm.bst.add(((): AnchorLogootNode => {
+        const node = new AnchorLogootNode(p(20), 2)
+        node.value = 2
+        return node
+      })())
+      const { left, right, clk, length } = ldm.insertLocal(2, 5)
+      expect(left.eq(p(2))).to.be.true
+      expect(right.eq(p(20))).to.be.true
+      expect(clk.eq(0)).to.be.true
+      expect(length).to.be.equal(5)
+    })
+    it('should return correct position in middle of node', () => {
+      ldm.bst.add(new AnchorLogootNode(p(0), 2))
+      const { left, right, clk, length } = ldm.insertLocal(1, 5)
+      expect(left.eq(p(1))).to.be.true
+      expect(right.eq(p(1))).to.be.true
+      expect(clk.eq(0)).to.be.true
+      expect(length).to.be.equal(5)
+    })
   })
   describe('insertLogoot', () => {
+    afterEach('self-test', () => {
+      ldm.selfTest()
+    })
     describe('additions', () => {
       it('insertion to blank BST', () => {
         const ops = ldm.insertLogoot(

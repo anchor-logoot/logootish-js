@@ -4,6 +4,7 @@
  * @author Nathan Pennie <kb1rd@kb1rd.net>
  */
 /** */
+import 'regenerator-runtime/runtime'
 
 import { DBst } from '../bst'
 import { LogootInt } from './int'
@@ -12,14 +13,12 @@ import {
   AnchorLogootNode,
   sliceNodesIntoRanges,
   NodeType,
-  LeftAnchor,
-  RightAnchor,
   DocStart,
   DocEnd
 } from './logoot'
 import { BranchKey, BranchOrder } from './branch'
 import { TypeRange, CompareResult, RangeBounds, NumberRange } from '../compare'
-import { FatalError, catchBreak, BreakException } from '../utils'
+import { InternalError, FatalError, catchBreak, BreakException } from '../utils'
 
 type LdmOptions = {
   /**
@@ -356,16 +355,7 @@ function fillRangeConflicts(
   catchBreak(() => range.reverse().forEach(cfupdate))
 }
 
-/**
- * A node that an operation declares knowledge of. Used to distinguish between
- * removals and lack of knowledge.
- */
-type KnownNode = {
-  type: NodeType,
-  start: LogootPosition,
-  length: number,
-  clk: LogootInt
-}
+
 
 /**
  * A representation of the Logootish Document Model for mapping "real,"
@@ -395,6 +385,72 @@ class ListDocumentModel {
   }
 
   constructor(public readonly branch_order: BranchOrder = new BranchOrder()) {}
+
+  insertLocal(start: number, length: number): {
+    left?: LogootPosition
+    right?: LogootPosition
+    clk: LogootInt
+    length: number
+  } {
+    if (start < 0) {
+      throw new TypeError('Passed a start position that is less than zero')
+    }
+    if (length <= 0) {
+      throw new TypeError('Passed a length that is less than or equal to zero')
+    }
+    // Search:
+    // n < start   -> _lesser
+    // start <= n  -> _greater
+    const { buckets } = this.bst.search(
+      new NumberRange(start, start, RangeBounds.LOGO)
+    )
+    const max_clock = new LogootInt(0)
+    buckets.lesser.concat(buckets.greater).forEach(([, node]) => {
+      if (node.type === NodeType.DATA) {
+        return
+      }
+      if (node.clk.gteq(max_clock)) {
+        max_clock.assign(node.clk).add(1)
+      }
+    })
+
+    const search = (array: [number, AnchorLogootNode][]): AnchorLogootNode => {
+      let data_node: AnchorLogootNode
+      array.forEach(([, node]) => {
+        if (node.type === NodeType.DATA) {
+          if (data_node) {
+            // If this is thrown, this means one of two things:
+            // 1. There's a BST error that manifests itself as a bad search
+            // 2. A DATA node has an `ldoc_length` of zero or less, which should
+            // be impossible
+            throw new InternalError(
+              'Multiple data nodes returned in position search'
+            )
+          }
+          data_node = node
+        }
+      })
+      return data_node
+    }
+    const lesser_node = search(buckets.lesser)
+    if (lesser_node && lesser_node.ldoc_end > start) {
+      const pos = lesser_node.logoot_start.offsetLowest(
+        start - lesser_node.ldoc_start
+      )
+      return {
+        left: pos,
+        right: pos,
+        clk: max_clock,
+        length
+      }
+    }
+    return {
+      left: lesser_node?.logoot_end,
+      right: search(buckets.greater)?.logoot_start,
+      clk: max_clock,
+      length
+    }
+  }
 
   insertLogoot(
     br: BranchKey,
