@@ -29,8 +29,9 @@ enum NodeType {
 }
 
 class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
-  left?: LeftAnchor
-  right?: RightAnchor
+  left_anchor?: LeftAnchor
+  right_anchor?: RightAnchor
+  conflict_with: Set<AnchorLogootNode> = new Set<AnchorLogootNode>()
   constructor(
     public logoot_start: LogootPosition,
     public length: number,
@@ -55,10 +56,117 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
   }
 
   get true_left(): LeftAnchor {
-    return this.left || this.logoot_start
+    return this.left_anchor || this.logoot_start
   }
   get true_right(): RightAnchor {
-    return this.right || this.logoot_end
+    return this.right_anchor || this.logoot_end
+  }
+
+  reduceLeft(anchor: LeftAnchor): void {
+    // If the anchor is the start, our anchor cannot be reduced
+    if (anchor && anchor !== DocStart) {
+      if (anchor.gt(this.logoot_start)) {
+        return
+      }
+      if (this.true_left === DocStart || anchor.gteq(this.true_left)) {
+        if (anchor.eq(this.logoot_start)) {
+          delete this.left_anchor
+          return
+        }
+        this.left_anchor = anchor.copy()
+      }
+    }
+  }
+  reduceRight(anchor: RightAnchor): void {
+    if (anchor && anchor !== DocEnd) {
+      if (anchor.lt(this.logoot_end)) {
+        return
+      }
+      if (this.true_right === DocEnd || anchor.lteq(this.true_right)) {
+        if (anchor.eq(this.logoot_end)) {
+          delete this.right_anchor
+          return
+        }
+        this.right_anchor = anchor.copy()
+      }
+    }
+  }
+
+  addConflictsFromNode(node: AnchorLogootNode): {
+    node?: AnchorLogootNode
+    added: boolean
+  } {
+    let nnode: AnchorLogootNode
+    let did_add = false
+
+    const tryAdd = (n: AnchorLogootNode, to: AnchorLogootNode = this): void => {
+      if (!to.conflict_with.has(n)) {
+        did_add = true
+        to.conflict_with.add(n)
+      }
+    }
+    if (node.logoot_start.lt(this.logoot_start)) {
+      // Left
+      if (node.true_right === 'E') {
+        tryAdd(node)
+      } else if (node.true_right.gt(this.logoot_start)) {
+        if (node.true_right.lt(this.logoot_end)) {
+          const pos = this.positionOf(node.true_right)
+          if (pos > 0 && pos < this.length) {
+            nnode = this.splitAround(pos)
+          }
+        }
+        tryAdd(node)
+      }
+    } else {
+      // Right
+      if (node.true_left === 'S') {
+        tryAdd(node)
+      } else if (node.true_left.lt(this.logoot_end)) {
+        let cf_node: AnchorLogootNode = this
+        if (node.true_left.gt(this.logoot_start)) {
+          const pos = this.positionOf(node.true_left)
+          if (pos > 0 && pos < this.length) {
+            nnode = this.splitAround(pos)
+            cf_node = nnode
+          }
+        }
+        tryAdd(node, cf_node)
+      }
+    }
+    return { node: nnode, added: did_add }
+  }
+
+  /**
+   * Infers a node's conflicts from its neighbors. This assumes that the
+   * neighbors have the correct `conflict_with`. This will only add conflicts
+   * that the neighbors are in or create.
+   * @param neighbor The neighbor to infer conflicts from
+   * @param newNode Will be called when a node is split
+   */
+  updateNeighborConflicts(
+    neighbor: AnchorLogootNode,
+    newNode: (n: AnchorLogootNode) => void
+  ): boolean {
+    let did_add = false
+    const nodes: AnchorLogootNode[] = [this]
+
+    const all_scan = new Set<AnchorLogootNode>(neighbor.conflict_with)
+    all_scan.add(neighbor)
+
+    all_scan.forEach((snode) => {
+      const new_nodes: AnchorLogootNode[] = []
+      nodes.forEach((dnode) => {
+        const { node, added } = dnode.addConflictsFromNode(snode)
+        did_add = did_add || added
+        if (node) {
+          newNode(node)
+          new_nodes.push(node)
+        }
+      })
+      nodes.push(...new_nodes)
+    })
+    return did_add
   }
 
   preferential_cmp(other: AnchorLogootNode): CompareResult {
@@ -100,6 +208,48 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
     this.length = pos
     return node
   }
+
+  toString(): string {
+    return `${this.logoot_start} + ${this.length} @ ${this.clk}`
+  }
 }
 
-export { AnchorLogootNode, NodeType }
+function sliceNodesIntoRanges(
+  boundaries: LogootPosition[],
+  nodes: AnchorLogootNode[],
+  onNewNode: (node: AnchorLogootNode) => void
+): AnchorLogootNode[][] {
+  if (boundaries.some((b) => !b)) {
+    throw new TypeError('Boundaries must be defined')
+  }
+  const buckets = Array
+    .apply(null, Array(boundaries.length + 1))
+    .map((): AnchorLogootNode[] => [])
+  nodes = nodes.sort((a, b) => a.preferential_cmp(b))
+
+  nodes.forEach((node) => {
+    buckets.forEach((bucket: AnchorLogootNode[], i: number) => {
+      if (node && (!boundaries[i] || node.logoot_start.lt(boundaries[i]))) {
+        bucket.push(node)
+        if (boundaries[i] && node.logoot_end.gt(boundaries[i])) {
+          node = node.splitAround(node.positionOf(boundaries[i]))
+          onNewNode(node)
+        } else {
+          node = undefined
+        }
+      }
+    })
+  })
+
+  return buckets
+}
+
+export {
+  AnchorLogootNode,
+  sliceNodesIntoRanges,
+  NodeType,
+  DocStart,
+  DocEnd,
+  LeftAnchor,
+  RightAnchor
+}

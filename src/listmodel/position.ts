@@ -396,7 +396,13 @@ class LogootPosition extends Comparable<LogootPosition> {
   }
 
   copy(): LogootPosition {
-    const lp = new LogootPosition(0)
+    const lp = new LogootPosition(
+      this.branch_order.b(0),
+      0,
+      undefined,
+      undefined,
+      this.branch_order
+    )
     lp.branch_array = this.branch_array.map((k) => k)
     lp.lp = this.lp.copy()
     return lp

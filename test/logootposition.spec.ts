@@ -497,6 +497,8 @@ describe('LogootPosition', () => {
       const offset = lp.offsetLowest(1)
       expect(offset.cmp(ex), 'Offset is not correct').to.be.equal(0)
       expect(lp.cmp(copy), 'Original was mutated').to.be.equal(0)
+      expect(offset.branch_order, 'New branch order created')
+        .to.be.equal(lp.branch_order)
     })
     it('inverseOffsetLowest', () => {
       const lp = LogootPosition.fromIntsBranches(o, [1, u1], [2, u2], [3, u3])
@@ -505,6 +507,8 @@ describe('LogootPosition', () => {
       const offset = lp.inverseOffsetLowest(1)
       expect(offset.cmp(ex), 'Offset is not correct').to.be.equal(0)
       expect(lp.cmp(copy), 'Original was mutated').to.be.equal(0)
+      expect(offset.branch_order, 'New branch order created')
+        .to.be.equal(lp.branch_order)
     })
     it('truncateTo fails on attempt to add levels', () => {
       const lp = LogootPosition.fromIntsBranches(o, [1, u1], [2, u2], [3, u3])
