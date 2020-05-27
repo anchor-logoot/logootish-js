@@ -1254,6 +1254,34 @@ describe('ListDocumentModel', () => {
         expect(nodes[1].conflict_with).to.include(nodes[0])
         expect(nodes[0].conflict_with).to.include(nodes[1])
       })
+      it('retroactive reductions', () => {
+        const pos = LogootPosition.fromIntsBranches(o, [2, u1])
+        let ops = ldm.insertLogoot(
+          u1,
+          pos,
+          undefined,
+          2,
+          new LogootInt(2)
+        )
+        let nodes = ldm.all_nodes
+        expect(nodes[0].true_left).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[0].true_left as LogootPosition).eq(pos)).to.be.true
+        expect(nodes[0].true_right).to.be.equal(DocEnd)
+        ops = ldm.insertLogoot(
+          u1,
+          undefined,
+          undefined,
+          2,
+          new LogootInt(2)
+        )
+        nodes = ldm.all_nodes
+        expect(nodes[0].true_left).to.be.equal(DocStart)
+        expect(nodes[0].true_right).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[0].true_right as LogootPosition).eq(pos)).to.be.true
+        expect(nodes[1].true_left).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[1].true_left as LogootPosition).eq(pos)).to.be.true
+        expect(nodes[1].true_right).to.be.equal(DocEnd)
+      })
     })
   })
 })

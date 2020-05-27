@@ -495,23 +495,66 @@ class ListDocumentModel {
 
     const nl_lesser = nc_left[nc_left.length - 1] || anchor_left
     const nl_greater = nc_right[0] || anchor_right
+
+    const createScanset = (node: AnchorLogootNode): Set<AnchorLogootNode> => {
+      const all_scan = new Set<AnchorLogootNode>(node.conflict_with)
+      all_scan.add(node)
+      return all_scan
+    }
+    const first_node = filled_skip_ranges[0]
+    if (nl_lesser && first_node) {
+      const set = createScanset(nl_lesser)
+      set.forEach((node) => {
+        const l = node.true_left
+        if (l !== DocStart && l.eq(first_node.logoot_end)) {
+          first_node.reduceRight(node.logoot_start)
+        }
+      })
+    }
+    const last_node = filled_skip_ranges[filled_skip_ranges.length - 1]
+    if (nl_greater && last_node) {
+      const set = createScanset(nl_greater)
+      set.forEach((node) => {
+        const l = node.true_left
+        if (l !== DocStart && l.eq(last_node.logoot_end)) {
+          last_node.reduceRight(node.logoot_start)
+        }
+      })
+    }
+
     fillRangeConflicts(nl_lesser, nl_greater, filled_skip_ranges, bstadd)
 
     if (filled_skip_ranges[0]) {
-      nc_left.forEach((node) => {
+      let stoppos: LogootPosition
+      if (first_node.true_left !== DocStart) {
+        stoppos = first_node.true_left
+      }
+      nc_left.reverse().every((node) => {
         node.conflict_with.add(filled_skip_ranges[0])
+        if (stoppos && node.logoot_end.lteq(stoppos)) {
+          return false
+        }
+        return true
       })
     }
     if (filled_skip_ranges[filled_skip_ranges.length - 1]) {
-      nc_right.forEach((node) => {
+      let stoppos: LogootPosition
+      if (last_node.true_right !== DocEnd) {
+        stoppos = last_node.true_right
+      }
+      nc_right.every((node) => {
+        if (stoppos && node.logoot_start.gteq(stoppos)) {
+          return false
+        }
         node.conflict_with.add(
           filled_skip_ranges[filled_skip_ranges.length - 1]
         )
+        return true
       })
     }
 
     // Update the destination anchors. Here, we should reduce the other node's
-    // anchor. Remember that 
+    // anchor.
     if (anchor_left) {
       // Before:
       // | AL |------| OUR NODES |------>
