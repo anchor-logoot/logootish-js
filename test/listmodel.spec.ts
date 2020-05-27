@@ -430,6 +430,11 @@ describe('LDM support functions', () => {
     o.i(u2)
     o.i(u3)
   })
+  const p = (...ns: number[]): LogootPosition =>
+    LogootPosition.fromIntsBranches(
+      o,
+      ...ns.map((n) => [n, u1]) as [number, string][]
+    )
   describe('constructSkipRanges', () => {
     let bst: DBst<AnchorLogootNode>
     beforeEach(() => {
@@ -461,10 +466,7 @@ describe('LDM support functions', () => {
       const right = LogootPosition.fromIntsBranches(o, [6, u1])
 
       const nodes = ([0,1,2,3,4,5,6,7,8]).map((i) => {
-        const n = new AnchorLogootNode(
-          LogootPosition.fromIntsBranches(o, [i, u1]),
-          1
-        )
+        const n = new AnchorLogootNode(p(i), 1)
         n.value = i
         return n
       })
@@ -476,6 +478,35 @@ describe('LDM support functions', () => {
       expect(d.nc_right).to.have.same.members(nodes.slice(4, 6))
       expect(d.anchor_left).to.be.equal(nodes[0])
       expect(d.anchor_right).to.be.equal(nodes[6])
+    })
+    it('should discover nodes on lower levels', () => {
+      const left = LogootPosition.fromIntsBranches(o, [1, u2])
+      const right = LogootPosition.fromIntsBranches(o, [2, u2])
+      const start = LogootPosition.fromIntsBranches(o, [1, u2], [0, u2])
+      const end = LogootPosition.fromIntsBranches(o, [1, u2], [2, u2])
+
+      const nodes = []
+      let position = 0
+      const addnode = (pos: LogootPosition, length: number): void => {
+        const n = new AnchorLogootNode(pos, length)
+        n.value = position
+        position += length
+        bst.add(n)
+        nodes.push(n)
+      }
+      addnode(LogootPosition.fromIntsBranches(o, [0, u2]), 1)
+      addnode(LogootPosition.fromIntsBranches(o, [1, u2], [0, u1]), 1)
+      addnode(LogootPosition.fromIntsBranches(o, [1, u2], [0, u2]), 1)
+      addnode(LogootPosition.fromIntsBranches(o, [1, u2], [0, u3]), 1)
+      addnode(LogootPosition.fromIntsBranches(o, [2, u2]), 1)
+
+      const d = constructSkipRanges(bst, { left, start, end, right })
+      expect(d.anchor_left).to.be.equal(nodes[0])
+      expect(d.anchor_right).to.be.equal(nodes[4])
+      expect(d.nc_left, '`nc_left` wrong').to.same.members([nodes[1]])
+      expect(d.skip_ranges.length, '`skip_ranges` wrong').to.be.equal(2)
+      expect(d.skip_ranges[0], '`skip_ranges` wrong').to.be.equal(nodes[2])
+      expect(d.nc_right, '`nc_right` wrong').to.same.members([nodes[3]])
     })
     describe('splitting', () => {
       it('should split into skip_ranges', () => {

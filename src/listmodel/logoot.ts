@@ -229,7 +229,17 @@ function sliceNodesIntoRanges(
 
   nodes.forEach((node) => {
     buckets.forEach((bucket: AnchorLogootNode[], i: number) => {
-      if (node && (!boundaries[i] || node.logoot_start.lt(boundaries[i]))) {
+      const cb = boundaries[i]
+      if (node && (!cb || node.logoot_start.lt(cb))) {
+        // Since the boundary is considered the right end of a node, the next
+        // bucket will include any nodes with a position on a lower level:
+        //                   [1]
+        // | buckets[i] |-----------| buckets[i+1] |
+        //              [1,0]   [1,1]
+        //               ---|node|---
+        if (cb && node.logoot_start.copy().truncateTo(cb.length).eq(cb)) {
+          return
+        }
         bucket.push(node)
         if (boundaries[i] && node.logoot_end.gt(boundaries[i])) {
           node = node.splitAround(node.positionOf(boundaries[i]))

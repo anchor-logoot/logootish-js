@@ -163,9 +163,9 @@ function constructSkipRanges(
     a.preferential_cmp(b)
   range = new TypeRange(
     cf,
-    left ? new AnchorLogootNode(left, 0) : undefined,
+    left ? new AnchorLogootNode(left.inverseOffsetLowest(1), 0) : undefined,
     right ? new AnchorLogootNode(right, 0) : undefined,
-    RangeBounds.LCGO
+    RangeBounds.LOGO
   )
   const { buckets } = bst.prefSearch(range)
 
@@ -176,7 +176,7 @@ function constructSkipRanges(
     .concat(buckets.greater.map(([node]) => node))
     .sort((a, b) => a.preferential_cmp(b))
 
-  const [aleft, nc_left, skip_ranges, nc_right, aright] = sliceNodesIntoRanges(
+  let [aleft, nc_left, skip_ranges, nc_right, aright] = sliceNodesIntoRanges(
     [left || start, start, end, right || end],
     blob,
     (node: AnchorLogootNode) => bst.add(node)
@@ -437,12 +437,7 @@ class ListDocumentModel {
       const pos = lesser_node.logoot_start.offsetLowest(
         start - lesser_node.ldoc_start
       )
-      return {
-        left: pos,
-        right: pos,
-        clk: max_clock,
-        length
-      }
+      return { left: pos, right: pos, clk: max_clock, length }
     }
     return {
       left: lesser_node?.logoot_end,
