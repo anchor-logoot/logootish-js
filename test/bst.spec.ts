@@ -376,6 +376,73 @@ describe('DBst (Differential Binary Search Tree)', () => {
     })
   })
 
+  describe('addSpaceBefore', () => {
+    it('should properly rearrange', () => {
+      const n1 = new DummyNode(1)
+      const n2 = new DummyNode(2)
+      const n3 = new DummyNode(3)
+      const n4 = new DummyNode(4)
+      b.add(n1)
+      b.add(n2)
+      b.add(n3)
+      b.add(n4)
+      n2.addSpaceBefore(-1, (np: DummyNode) => (b.bst_root = np))
+
+      expect(b.bst_root).to.be.equal(n2)
+      expect(n2.left_node).to.be.equal(n1)
+      expect(n2.right_node).to.be.equal(n3)
+      expect(n3.right_node).to.be.equal(n4)
+    })
+    describe('positive offset test', () => {
+      const pt = (i: number) => {
+        const { n2, n3, n4, n5, n6, n7, n8 } = constructFullTree()
+        const array = [n2, n3, n4, n5, n6, n7, n8]
+        array[i].addSpaceBefore(1, (np: DummyNode) => (b.bst_root = np))
+        array.forEach((node, n) => {
+          let pos = n + 2
+          if (n >= i) {
+            pos++
+          }
+          expect(node.absolute_value).to.be.equal(pos)
+        })
+        let count = 0
+        b.operateOnAll(() => (count++))
+        expect(count).to.be.equal(array.length)
+      }
+      it('n2', () => pt(0))
+      it('n3', () => pt(1))
+      it('n4', () => pt(2))
+      it('n5', () => pt(3))
+      it('n6', () => pt(4))
+      it('n7', () => pt(5))
+      it('n8', () => pt(6))
+    })
+    describe('negative offset test', () => {
+      const pt = (i: number) => {
+        const { n2, n3, n4, n5, n6, n7, n8 } = constructFullTree()
+        const array = [n2, n3, n4, n5, n6, n7, n8]
+        array[i].addSpaceBefore(-1, (np: DummyNode) => (b.bst_root = np))
+        array.forEach((node, n) => {
+          let pos = n + 2
+          if (n >= i) {
+            pos--
+          }
+          expect(node.absolute_value).to.be.equal(pos)
+        })
+        let count = 0
+        b.operateOnAll(() => (count++))
+        expect(count).to.be.equal(array.length)
+      }
+      it('n2', () => pt(0))
+      it('n3', () => pt(1))
+      it('n4', () => pt(2))
+      it('n5', () => pt(3))
+      it('n6', () => pt(4))
+      it('n7', () => pt(5))
+      it('n8', () => pt(6))
+    })
+  })
+
   describe('removals', () => {
     it('basic removal', () => {
       const { n2, n3, n4, n5, n6, n7, n8 } = constructFullTree()

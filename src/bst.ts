@@ -788,7 +788,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
             throw new Error('Unexpected undefined parent node in DBST')
           }
           node.parent_node = this.parent_node
-          node.right_node = this.right_node
+          const old_right = this.right_node
           node.value = this.value
 
           if (node.right_node) {
@@ -796,6 +796,10 @@ abstract class DBstNode<T extends DBstNode<T>> {
           }
           delete this.right_node
           node.addChild((this as unknown) as T)
+          if (old_right) {
+            old_right.value += node.value
+            node.addChild(old_right)
+          }
           return
         } else if (this.left_node && this.left_node.value !== 0) {
           node.parent_node = (this as unknown) as T
@@ -1229,6 +1233,23 @@ abstract class DBstNode<T extends DBstNode<T>> {
     }
   }
 
+  toDeepString(): string {
+    let str = `${this}\n`
+    const dstr = (node: T): string =>
+      node.toDeepString().split('\n').join('\n  ')
+    if (this.left_node) {
+      str += `    L: ${dstr(this.left_node)}\n`
+    } else {
+      str += '    L: undefined\n'
+    }
+    if (this.right_node) {
+      str += `    R: ${dstr(this.right_node)}`
+    } else {
+      str += '    R: undefined'
+    }
+    return str
+  }
+
   selfTest(
     parent?: T,
     is_left?: boolean,
@@ -1252,9 +1273,9 @@ abstract class DBstNode<T extends DBstNode<T>> {
       throw new Error('Node does not have correct parent')
     }
     if (is_left === true && this.value > 0) {
-      throw new Error('Node has wrong position for location')
+      throw new Error('Node has wrong value for location')
     } else if (is_left === false && this.value <= 0) {
-      throw new Error('Node has wrong position for location')
+      throw new Error('Node has wrong value for location')
     }
     if (this.left_node) {
       this.left_node.selfTest(
@@ -1273,7 +1294,8 @@ abstract class DBstNode<T extends DBstNode<T>> {
         false,
         0,
         mxv - this.value,
-        known
+        known,
+        can_have_equal
       )
     }
   }
@@ -1325,6 +1347,9 @@ class DBst<T extends DBstNode<T>> {
     }
     return vals
   }
+  removeNode(node: T) {
+    node.remove((np: T) => (this.bst_root = np))
+  }
 
   search(range: NumberRange): TypeRangeSearch<number, T> {
     const search = new TypeRangeSearch<number, T>(range)
@@ -1353,6 +1378,15 @@ class DBst<T extends DBstNode<T>> {
       str += '  ' + data.toString().split('\n').join('\n  ') + '\n'
     })
     str += ']'
+    return str
+  }
+
+  toDeepString(): string {
+    let str = `DBST [\n`
+    if (this.bst_root) {
+      str += '  ' + this.bst_root.toDeepString()
+    }
+    str += '\n]'
     return str
   }
 
