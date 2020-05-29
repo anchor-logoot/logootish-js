@@ -150,7 +150,8 @@ type SkipRangeSearch = {
 }
 function constructSkipRanges(
   bst: DBst<AnchorLogootNode>,
-  { left, start, end, right }: SkipRangeSearch
+  { left, start, end, right }: SkipRangeSearch,
+  bstadd: (n: AnchorLogootNode) => void
 ): {
   anchor_left: AnchorLogootNode
   nc_left: AnchorLogootNode[]
@@ -178,7 +179,7 @@ function constructSkipRanges(
   let [aleft, nc_left, skip_ranges, nc_right, aright] = sliceNodesIntoRanges(
     [left || start, start, end, right || end],
     blob,
-    (node: AnchorLogootNode) => bst.add(node)
+    (node: AnchorLogootNode) => bstadd(node)
   )
   // If there's no left/right anchor, the ends of the sliced ranges are the
   // nodes that are not contained in the provided ranges. Normally, this would
@@ -515,12 +516,16 @@ class ListDocumentModel {
       nc_right,
       skip_ranges,
       anchor_right
-    } = constructSkipRanges(this.bst, {
-      left: left,
-      start,
-      end,
-      right: right
-    })
+    } = constructSkipRanges(
+      this.bst,
+      {
+        left: left,
+        start,
+        end,
+        right: right
+      },
+      bstadd
+    )
 
     const opbuf = new OperationBuffer(this.bst, this.opts, length)
     if (skip_ranges[skip_ranges.length - 1].type === NodeType.DUMMY) {
