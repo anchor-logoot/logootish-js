@@ -158,10 +158,9 @@ function constructSkipRanges(
   nc_right: AnchorLogootNode[]
   anchor_right: AnchorLogootNode
 } {
-  let range
   const cf = (a: AnchorLogootNode, b: AnchorLogootNode): CompareResult =>
     a.preferential_cmp(b)
-  range = new TypeRange(
+  const range = new TypeRange(
     cf,
     left ? new AnchorLogootNode(left.inverseOffsetLowest(1), 0) : undefined,
     right ? new AnchorLogootNode(right, 0) : undefined,
@@ -355,7 +354,50 @@ function fillRangeConflicts(
   catchBreak(() => range.reverse().forEach(cfupdate))
 }
 
-
+function patchRemovalAnchors(
+  range: AnchorLogootNode[],
+  backwards: boolean
+): void {
+  let scan_nodes = new Set<AnchorLogootNode>()
+  if (backwards) {
+    range.reverse()
+  }
+  range.forEach((node) => {
+    if (node.type === NodeType.DATA) {
+      scan_nodes = new Set<AnchorLogootNode>(node.conflict_with)
+      scan_nodes.add(node)
+      scan_nodes.forEach((snode) => {
+        if (
+          (!backwards && snode.true_right === DocEnd) ||
+          (backwards && snode.true_left === DocStart)
+        ) {
+          scan_nodes.delete(snode)
+        }
+      })
+    } else {
+      scan_nodes.forEach((snode) => {
+        const apos = (backwards ? snode.true_left : snode.true_right) as LogootPosition
+        if (
+          (!backwards && apos.lt(node.logoot_start)) ||
+          (backwards && apos.gt(node.logoot_end))
+        ) {
+          scan_nodes.delete(snode)
+          return
+        }
+        if (!backwards && apos.lt(node.logoot_end)) {
+          snode.right_anchor = node.logoot_end
+        }
+        if (backwards && apos.gt(node.logoot_start)) {
+          snode.left_anchor = node.logoot_start
+        }
+        node.conflict_with.add(snode)
+      })
+    }
+  })
+  if (backwards) {
+    range.reverse()
+  }
+}
 
 /**
  * A representation of the Logootish Document Model for mapping "real,"
@@ -587,6 +629,158 @@ class ListDocumentModel {
         node = node.inorder_predecessor
       }
     }
+
+    patchRemovalAnchors([
+      ...nl_lesser ? [nl_lesser] : [],
+      ...filled_skip_ranges,
+      ...nl_greater ? [nl_greater] : [],
+    ], false)
+    patchRemovalAnchors([
+      ...nl_lesser ? [nl_lesser] : [],
+      ...filled_skip_ranges,
+      ...nl_greater ? [nl_greater] : [],
+    ], true)
+
+    return opbuf.operations
+  }
+
+  removeLogoot(
+    start: LogootPosition,
+    length: number,
+    clk: LogootInt
+  ): Operation[] {
+    const bstadd = this.opts.agressively_test_bst
+      ? (n: AnchorLogootNode) => {
+        this.bst.add(n)
+        this.bst.selfTest()
+      }
+      : (n: AnchorLogootNode) => this.bst.add(n)
+
+    const cf = (a: AnchorLogootNode, b: AnchorLogootNode): CompareResult =>
+      a.preferential_cmp(b)
+    const range = new TypeRange(
+      cf,
+      new AnchorLogootNode(start, 0),
+      new AnchorLogootNode(start.offsetLowest(length), 0),
+      RangeBounds.LCGO
+    )
+    const { buckets } = this.bst.prefSearch(range)
+
+    const opbuf = new OperationBuffer(this.bst, this.opts, 0)
+
+    const blob = buckets.lesser
+      .map(([, node]) => node)
+      .concat(buckets.range.map(([, node]) => node))
+      .concat(buckets.greater.map(([, node]) => node))
+    let [lesser, rm_range, greater] = sliceNodesIntoRanges(
+      [start, start.offsetLowest(length)],
+      blob,
+      bstadd
+    )
+
+    rm_range.forEach((node, i) => {
+      if (node.clk.lteq(clk) && node.logoot_start.length === start.length) {
+        opbuf.remove(node, node.ldoc_start, node.ldoc_length)
+        node.type = NodeType.REMOVAL
+        node.clk.assign(clk)
+      }
+    })
+
+    let node = lesser[0]
+    while (
+      lesser[0]?.type === NodeType.REMOVAL &&
+      node &&
+      (node = node.inorder_predecessor)
+    ) {
+      lesser.unshift(node)
+    }
+    node = greater[greater.length - 1]
+    while (
+      greater[greater.length - 1]?.type === NodeType.REMOVAL &&
+      node &&
+      (node = node.inorder_successor)
+    ) {
+      greater.push(node)
+    }
+
+    const full_range = lesser.concat(rm_range).concat(greater)
+
+    /**
+     * When a data node that is converted to a removal is surrounded by
+     * removals, its anchors will point to the surrounding data nodes and will
+     * skip over the removal nodes since data nodes can't "see" removal nodes.
+     * This fixes that.
+     * @todo Implement some kind of node priority system for a generalized
+     * method for this sort of thing.
+     * @param range The range to correct anchors in
+     * @param backwards Forwards or backwards. For a complete patch, both
+     * forwards and backwards must be run
+     */
+    const patchNewRemovalAnchors = (range: AnchorLogootNode[], backwards: boolean): void => {
+      let scan_nodes = new Set<AnchorLogootNode>()
+      // A backwards list of removal nodes before this one used for updating
+      // the node's `conflict_with`
+      let rm_nodes: AnchorLogootNode[] = []
+      if (backwards) {
+        range.reverse()
+      }
+      range.forEach((node) => {
+        if (node.type === NodeType.DATA) {
+          rm_nodes.length = 0
+        } else {
+          scan_nodes.forEach((snode) => {
+            const fixConflicts = () => {
+              rm_nodes.every((cnode) => {
+                if (!cnode.conflict_with.has(node)) {
+                  return false
+                }
+                if (
+                  !backwards &&
+                  cnode.logoot_end.lteq(node.true_left as LogootPosition)
+                ) {
+                  cnode.conflict_with.delete(node)
+                } else if (
+                  backwards &&
+                  cnode.logoot_start.gteq(node.true_right as LogootPosition)
+                ) {
+                  cnode.conflict_with.delete(node)
+                }
+                return true
+              })
+            }
+            if (
+              !backwards &&
+              snode.true_right !== DocEnd &&
+              snode.true_right.eq(node.logoot_start)
+            ) {
+              node.reduceLeft(snode.logoot_end)
+              fixConflicts()
+            } else if (
+              backwards &&
+              snode.true_left !== DocStart &&
+              snode.true_left.eq(node.logoot_end)
+            ) {
+              node.reduceRight(snode.logoot_start)
+              fixConflicts()
+            }
+          })
+          if (backwards) {
+            rm_nodes.push(node)
+          } else {
+            rm_nodes.unshift(node)
+          }
+        }
+        scan_nodes = new Set<AnchorLogootNode>(node.conflict_with)
+        scan_nodes.add(node)
+      })
+      if (backwards) {
+        range.reverse()
+      }
+    }
+    patchNewRemovalAnchors(full_range, false)
+    patchNewRemovalAnchors(full_range, true)
+    patchRemovalAnchors(full_range, false)
+    patchRemovalAnchors(full_range, true)
 
     return opbuf.operations
   }

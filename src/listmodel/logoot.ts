@@ -206,11 +206,16 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
     )
     node.value = this.ldoc_start + pos
     this.length = pos
+    node.conflict_with = new Set<AnchorLogootNode>(this.conflict_with)
+    node.right_anchor = this.right_anchor
+    delete this.right_anchor
+    delete node.left_anchor
     return node
   }
 
   toString(): string {
-    return `${this.logoot_start} + ${this.length} @ ${this.clk}`
+    return `${this.type} ${this.logoot_start},${this.ldoc_start} + ` +
+    `${this.length} @ ${this.clk} (${this.true_left}<---->${this.true_right})`
   }
 }
 

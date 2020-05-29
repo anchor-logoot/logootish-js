@@ -485,7 +485,7 @@ describe('LDM support functions', () => {
       const start = LogootPosition.fromIntsBranches(o, [1, u2], [0, u2])
       const end = LogootPosition.fromIntsBranches(o, [1, u2], [2, u2])
 
-      const nodes = []
+      const nodes: AnchorLogootNode[] = []
       let position = 0
       const addnode = (pos: LogootPosition, length: number): void => {
         const n = new AnchorLogootNode(pos, length)
@@ -1281,6 +1281,100 @@ describe('ListDocumentModel', () => {
         expect(nodes[1].true_left).to.be.an.instanceOf(LogootPosition)
         expect((nodes[1].true_left as LogootPosition).eq(pos)).to.be.true
         expect(nodes[1].true_right).to.be.equal(DocEnd)
+      })
+    })
+  })
+  describe('removeLogoot', () => {
+    afterEach('self-test', () => {
+      ldm.selfTest()
+    })
+    describe('removals', () => {
+      it('basic removal', () => {
+        const n = new AnchorLogootNode(p(0), 1)
+        n.left_anchor = DocStart
+        n.right_anchor = DocEnd
+        ldm.bst.add(n)
+
+        ldm.removeLogoot(p(0), 1, new LogootInt(0))
+
+        const nodes = ldm.all_nodes
+        expect(nodes.length).to.be.equal(1)
+        expect(nodes[0].type).to.be.equal(NodeType.REMOVAL)
+        expect(nodes[0].logoot_start.eq(p(0))).to.be.true
+        expect(nodes[0].length).to.be.equal(1)
+        expect(nodes[0].true_left).to.be.equal(DocStart)
+        expect(nodes[0].true_right).to.be.equal(DocEnd)
+      })
+      it('removal from sequence', () => {
+        const nodes = ([0,1,2]).map((i) => {
+          const n = new AnchorLogootNode(p(i), 1)
+          n.value = i
+          return n
+        })
+        nodes[0].left_anchor = DocStart
+        nodes[2].right_anchor = DocEnd
+        nodes.forEach((n) => ldm.bst.add(n))
+
+        ldm.removeLogoot(p(1), 1, new LogootInt(0))
+
+        expect(nodes[0].type).to.be.equal(NodeType.DATA)
+        expect(nodes[0].logoot_start.eq(p(0))).to.be.true
+        expect(nodes[0].length).to.be.equal(1)
+        expect(nodes[0].true_left).to.be.equal(DocStart)
+        expect(nodes[0].true_right).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[0].true_right as LogootPosition).eq(p(2))).to.be.true
+
+        expect(nodes[1].type).to.be.equal(NodeType.REMOVAL)
+        expect(nodes[1].logoot_start.eq(p(1))).to.be.true
+        expect(nodes[1].length).to.be.equal(1)
+        expect(nodes[1].true_left).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[1].true_left as LogootPosition).eq(p(1))).to.be.true
+        expect(nodes[1].true_right).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[1].true_right as LogootPosition).eq(p(2))).to.be.true
+
+        expect(nodes[2].type).to.be.equal(NodeType.DATA)
+        expect(nodes[2].logoot_start.eq(p(2))).to.be.true
+        expect(nodes[2].length).to.be.equal(1)
+        expect(nodes[2].true_left).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[2].true_left as LogootPosition).eq(p(1))).to.be.true
+        expect(nodes[2].true_right).to.be.equal(DocEnd)
+      })
+      it('removal from sequence with surrounding removals', () => {
+        const nodes = ([0,1,2,3,4]).map((i) => {
+          const n = new AnchorLogootNode(p(i), 1)
+          n.value = i
+          return n
+        })
+        nodes[0].left_anchor = DocStart
+        nodes[4].right_anchor = DocEnd
+        nodes.forEach((n) => ldm.bst.add(n))
+
+        ldm.removeLogoot(p(1), 1, new LogootInt(0))
+        ldm.removeLogoot(p(3), 1, new LogootInt(0))
+        ldm.removeLogoot(p(2), 1, new LogootInt(0))
+
+        expect(nodes[0].true_left).to.be.equal(DocStart)
+        expect(nodes[0].true_right).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[0].true_right as LogootPosition).eq(p(4))).to.be.true
+
+        expect(nodes[1].true_left).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[1].true_left as LogootPosition).eq(p(1))).to.be.true
+        expect(nodes[1].true_right).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[1].true_right as LogootPosition).eq(p(2))).to.be.true
+
+        expect(nodes[2].true_left).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[2].true_left as LogootPosition).eq(p(2))).to.be.true
+        expect(nodes[2].true_right).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[2].true_right as LogootPosition).eq(p(3))).to.be.true
+
+        expect(nodes[3].true_left).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[3].true_left as LogootPosition).eq(p(3))).to.be.true
+        expect(nodes[3].true_right).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[3].true_right as LogootPosition).eq(p(4))).to.be.true
+
+        expect(nodes[4].true_left).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[4].true_left as LogootPosition).eq(p(1))).to.be.true
+        expect(nodes[4].true_right).to.be.equal(DocEnd)
       })
     })
   })
