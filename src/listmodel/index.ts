@@ -18,7 +18,7 @@ import {
 } from './logoot'
 import { BranchKey, BranchOrder } from './branch'
 import { TypeRange, CompareResult, RangeBounds, NumberRange } from '../compare'
-import { InternalError, FatalError, catchBreak, BreakException } from '../utils'
+import { InternalError, FatalError } from '../utils'
 
 type LdmOptions = {
   /**
@@ -342,16 +342,19 @@ function fillRangeConflicts(
   bstadd: (n: AnchorLogootNode) => void
 ): void {
   let last: AnchorLogootNode
-  const cfupdate = (node: AnchorLogootNode) => {
+  const cfupdate = (node: AnchorLogootNode): boolean => {
     if (last && !node.updateNeighborConflicts(last, bstadd)) {
-      throw BreakException
+      return false
     }
     last = node
+    return true
   }
   last = nl_lesser
-  catchBreak(() => range.forEach(cfupdate))
+  range.every(cfupdate)
   last = nl_greater
-  catchBreak(() => range.reverse().forEach(cfupdate))
+  range.reverse()
+  range.every(cfupdate)
+  range.reverse()
 }
 
 function patchRemovalAnchors(
