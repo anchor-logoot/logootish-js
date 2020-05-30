@@ -63,7 +63,7 @@ type Operation = RemovalOperation | InsertionOperation | MarkOperation
 class OperationBuffer {
   operations: Operation[] = []
   dummy_node?: AnchorLogootNode
-  
+
   constructor(
     protected readonly bst?: DBst<AnchorLogootNode>,
     protected readonly opts: LdmOptions = {},
@@ -151,7 +151,9 @@ type SkipRangeSearch = {
 function constructSkipRanges(
   bst: DBst<AnchorLogootNode>,
   { left, start, end, right }: SkipRangeSearch,
-  bstadd: (n: AnchorLogootNode) => void
+  bstadd: (n: AnchorLogootNode) => void = (
+    n: AnchorLogootNode
+  ): AnchorLogootNode => bst.add(n)
 ): {
   anchor_left: AnchorLogootNode
   nc_left: AnchorLogootNode[]
@@ -176,7 +178,7 @@ function constructSkipRanges(
     .concat(buckets.greater.map(([node]) => node))
     .sort((a, b) => a.preferential_cmp(b))
 
-  let [aleft, nc_left, skip_ranges, nc_right, aright] = sliceNodesIntoRanges(
+  const [aleft, nc_left, skip_ranges, nc_right, aright] = sliceNodesIntoRanges(
     [left || start, start, end, right || end],
     blob,
     (node: AnchorLogootNode) => bstadd(node)
@@ -215,7 +217,7 @@ function constructSkipRanges(
 
   const lowestData = (in_array: AnchorLogootNode[]): AnchorLogootNode => {
     const it = in_array.values()
-    while(true) {
+    while (true) {
       const node = it.next().value
       if (!node || node.type === NodeType.DATA) {
         return node
@@ -246,20 +248,16 @@ function fillSkipRanges(
   skip_ranges: AnchorLogootNode[],
   opbuf: OperationBuffer,
   bstadd: (n: AnchorLogootNode) => void
-) {
+): AnchorLogootNode[] {
   const level = start.levels
   const start_int = start.l(level)[0].i
   // Everything in `skip_ranges` must be on the same branch at `level`
   // since the space between `start` and `end` is numerically offset
   let last_level_pos = start.l(level)[0].i
 
-  return skip_ranges.flatMap((node, i) => {
+  return skip_ranges.flatMap((node) => {
     // Insert into empty space
-    const space_avail = node
-      .logoot_start
-      .l(level)[0]
-      .copy()
-      .sub(last_level_pos)
+    const space_avail = node.logoot_start.l(level)[0].copy().sub(last_level_pos)
       .js_int
     let nnode: AnchorLogootNode
     if (space_avail > 0) {
@@ -267,12 +265,7 @@ function fillSkipRanges(
       nstart.l(level)[0].assign(last_level_pos)
 
       const offset = last_level_pos.copy().sub(start_int)
-      nnode = new AnchorLogootNode(
-        nstart,
-        space_avail,
-        type,
-        clk.copy()
-      )
+      nnode = new AnchorLogootNode(nstart, space_avail, type, clk.copy())
       nnode.value = node.ldoc_start
       nnode.left_anchor = DocStart
       nnode.right_anchor = DocEnd
@@ -302,8 +295,8 @@ function fillSkipRanges(
 
     last_level_pos = node.logoot_end.l(level)[0].i
     return [
-      ...nnode ? [nnode] : [],
-      ...node.type !== NodeType.DUMMY ? [node] : []
+      ...(nnode ? [nnode] : []),
+      ...(node.type !== NodeType.DUMMY ? [node] : [])
     ]
   })
 }
@@ -315,10 +308,9 @@ function linkFilledSkipRanges(
 ): void {
   let last_level_anchor = left
   let last_node_to_anchor: AnchorLogootNode
-  const alvl = ((n) => n === Infinity ? 0 : n)(Math.min(
-    ...left ? [left.levels] : [],
-    ...right ? [right.levels] : []
-  ))
+  const alvl = ((n): number => (n === Infinity ? 0 : n))(
+    Math.min(...(left ? [left.levels] : []), ...(right ? [right.levels] : []))
+  )
   filled_skip_ranges
     .filter((n) => n.logoot_start.levels === alvl && n.type === NodeType.DATA)
     .forEach((node) => {
@@ -380,7 +372,9 @@ function patchRemovalAnchors(
       })
     } else {
       scan_nodes.forEach((snode) => {
-        const apos = (backwards ? snode.true_left : snode.true_right) as LogootPosition
+        const apos = (backwards
+          ? snode.true_left
+          : snode.true_right) as LogootPosition
         if (
           (!backwards && apos.lt(node.logoot_start)) ||
           (backwards && apos.gt(node.logoot_end))
@@ -425,14 +419,17 @@ class ListDocumentModel {
    * bug identification when applicable.
    */
   // debug_logger?: ListDocumentModel.Logger
-  
+
   opts: LdmOptions = {
     agressively_test_bst: false
   }
 
   constructor(public readonly branch_order: BranchOrder = new BranchOrder()) {}
 
-  insertLocal(start: number, length: number): {
+  insertLocal(
+    start: number,
+    length: number
+  ): {
     left?: LogootPosition
     right?: LogootPosition
     clk: LogootInt
@@ -501,11 +498,11 @@ class ListDocumentModel {
     clk: LogootInt
   ): Operation[] {
     const bstadd = this.opts.agressively_test_bst
-      ? (n: AnchorLogootNode) => {
-        this.bst.add(n)
-        this.bst.selfTest()
-      }
-      : (n: AnchorLogootNode) => this.bst.add(n)
+      ? (n: AnchorLogootNode): void => {
+          this.bst.add(n)
+          this.bst.selfTest()
+        }
+      : (n: AnchorLogootNode): AnchorLogootNode => this.bst.add(n)
 
     const start = new LogootPosition(br, length, left, right, this.branch_order)
     const end = start.offsetLowest(length)
@@ -638,16 +635,22 @@ class ListDocumentModel {
       }
     }
 
-    patchRemovalAnchors([
-      ...nl_lesser ? [nl_lesser] : [],
-      ...filled_skip_ranges,
-      ...nl_greater ? [nl_greater] : [],
-    ], false)
-    patchRemovalAnchors([
-      ...nl_lesser ? [nl_lesser] : [],
-      ...filled_skip_ranges,
-      ...nl_greater ? [nl_greater] : [],
-    ], true)
+    patchRemovalAnchors(
+      [
+        ...(nl_lesser ? [nl_lesser] : []),
+        ...filled_skip_ranges,
+        ...(nl_greater ? [nl_greater] : [])
+      ],
+      false
+    )
+    patchRemovalAnchors(
+      [
+        ...(nl_lesser ? [nl_lesser] : []),
+        ...filled_skip_ranges,
+        ...(nl_greater ? [nl_greater] : [])
+      ],
+      true
+    )
 
     return opbuf.operations
   }
@@ -658,11 +661,11 @@ class ListDocumentModel {
     clk: LogootInt
   ): Operation[] {
     const bstadd = this.opts.agressively_test_bst
-      ? (n: AnchorLogootNode) => {
-        this.bst.add(n)
-        this.bst.selfTest()
-      }
-      : (n: AnchorLogootNode) => this.bst.add(n)
+      ? (n: AnchorLogootNode): void => {
+          this.bst.add(n)
+          this.bst.selfTest()
+        }
+      : (n: AnchorLogootNode): AnchorLogootNode => this.bst.add(n)
 
     const cf = (a: AnchorLogootNode, b: AnchorLogootNode): CompareResult =>
       a.preferential_cmp(b)
@@ -680,13 +683,13 @@ class ListDocumentModel {
       .map(([, node]) => node)
       .concat(buckets.range.map(([, node]) => node))
       .concat(buckets.greater.map(([, node]) => node))
-    let [lesser, rm_range, greater] = sliceNodesIntoRanges(
+    const [lesser, rm_range, greater] = sliceNodesIntoRanges(
       [start, start.offsetLowest(length)],
       blob,
       bstadd
     )
 
-    rm_range.forEach((node, i) => {
+    rm_range.forEach((node) => {
       if (node.clk.lteq(clk) && node.logoot_start.length === start.length) {
         opbuf.remove(node, node.ldoc_start, node.ldoc_length)
         node.type = NodeType.REMOVAL
@@ -724,11 +727,14 @@ class ListDocumentModel {
      * @param backwards Forwards or backwards. For a complete patch, both
      * forwards and backwards must be run
      */
-    const patchNewRemovalAnchors = (range: AnchorLogootNode[], backwards: boolean): void => {
+    const patchNewRemovalAnchors = (
+      range: AnchorLogootNode[],
+      backwards: boolean
+    ): void => {
       let scan_nodes = new Set<AnchorLogootNode>()
       // A backwards list of removal nodes before this one used for updating
       // the node's `conflict_with`
-      let rm_nodes: AnchorLogootNode[] = []
+      const rm_nodes: AnchorLogootNode[] = []
       if (backwards) {
         range.reverse()
       }
@@ -737,7 +743,7 @@ class ListDocumentModel {
           rm_nodes.length = 0
         } else {
           scan_nodes.forEach((snode) => {
-            const fixConflicts = () => {
+            const fixConflicts = (): void => {
               rm_nodes.every((cnode) => {
                 if (!cnode.conflict_with.has(node)) {
                   return false
@@ -822,9 +828,7 @@ class ListDocumentModel {
         )
       }
       if (node.length < 1) {
-        throw new FatalError(
-          `Node has true length of ${node.length}`
-        )
+        throw new FatalError(`Node has true length of ${node.length}`)
       }
 
       all_nodes.forEach((cfl) => {

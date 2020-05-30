@@ -11,7 +11,6 @@ import { DBstNode } from '../bst'
 import { LogootInt } from './int'
 import { CompareResult } from '../utils'
 import { LogootPosition } from './position'
-import { BranchKey } from './branch'
 
 const DocStart = 'S'
 type DocStart = 'S'
@@ -92,7 +91,9 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
     }
   }
 
-  addConflictsFromNode(node: AnchorLogootNode): {
+  addConflictsFromNode(
+    node: AnchorLogootNode
+  ): {
     node?: AnchorLogootNode
     added: boolean
   } {
@@ -123,6 +124,7 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
       if (node.true_left === 'S') {
         tryAdd(node)
       } else if (node.true_left.lt(this.logoot_end)) {
+        // eslint-disable-next-line
         let cf_node: AnchorLogootNode = this
         if (node.true_left.gt(this.logoot_start)) {
           const pos = this.positionOf(node.true_left)
@@ -214,8 +216,10 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
   }
 
   toString(): string {
-    return `${this.type} ${this.logoot_start},${this.ldoc_start} + ` +
-    `${this.length} @ ${this.clk} (${this.true_left}<---->${this.true_right})`
+    return (
+      `${this.type} ${this.logoot_start},${this.ldoc_start} + ${this.length} ` +
+      `@ ${this.clk} (${this.true_left}<---->${this.true_right})`
+    )
   }
 }
 
@@ -227,9 +231,9 @@ function sliceNodesIntoRanges(
   if (boundaries.some((b) => !b)) {
     throw new TypeError('Boundaries must be defined')
   }
-  const buckets = Array
-    .apply(null, Array(boundaries.length + 1))
-    .map((): AnchorLogootNode[] => [])
+  const buckets = [
+    ...Array(boundaries.length + 1)
+  ].map((): AnchorLogootNode[] => [])
   nodes = nodes.sort((a, b) => a.preferential_cmp(b))
 
   nodes.forEach((node) => {

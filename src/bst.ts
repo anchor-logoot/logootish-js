@@ -663,7 +663,7 @@ class DBst<T extends DBstNode<T>> {
     }
     return vals
   }
-  removeNode(node: T) {
+  removeNode(node: T): void {
     node.remove((np: T) => (this.bst_root = np))
   }
 
