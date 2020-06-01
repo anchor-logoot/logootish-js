@@ -1327,7 +1327,6 @@ describe('ListDocumentModel', () => {
           { type: 'i', start: 1, offset: 0, length: 2 }
         ])
         const nodes = ldm.all_nodes
-        console.log(ldm.bst.toString())
         expect(nodes.length).to.be.equal(3)
       })
     })

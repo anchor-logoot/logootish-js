@@ -841,7 +841,7 @@ class ListDocumentModel {
             expected = true
           } else {
             if (right.length > node.logoot_end.length) {
-              right = right.truncateTo(node.logoot_start.length)
+              right = right.copy().truncateTo(node.logoot_start.length)
             }
             expected = right.gt(node.logoot_start)
           }
@@ -858,7 +858,7 @@ class ListDocumentModel {
             expected = true
           } else {
             if (left.length > node.logoot_end.length) {
-              left = left.truncateTo(node.logoot_end.length)
+              left = left.copy().truncateTo(node.logoot_end.length)
             }
             expected = left.lt(node.logoot_end)
           }

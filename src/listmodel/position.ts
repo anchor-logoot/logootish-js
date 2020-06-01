@@ -279,6 +279,15 @@ class BranchOrderInconsistencyError extends Error {
   }
 }
 
+function positionsCompatible(s: LogootPosition, e: LogootPosition): boolean {
+  if (s.length > e.length) {
+    s = s.copy().truncateTo(e.length)
+  } else if (e.length > s.length) {
+    e = e.copy().truncateTo(s.length)
+  }
+  return s.lteq(e)
+}
+
 class LogootPosition extends Comparable<LogootPosition> {
   protected lp: LogootishPosition = new LogootishPosition()
   protected branch_array: BranchKey[] = []
@@ -292,7 +301,7 @@ class LogootPosition extends Comparable<LogootPosition> {
     branch_order?: BranchOrder
   ) {
     super()
-    if (start && end && start.gt(end)) {
+    if (start && end && !positionsCompatible(start, end)) {
       throw new TypeError('Start is greater than end')
     }
     // First, set up the branch order
