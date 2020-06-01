@@ -510,12 +510,42 @@ class LogootPosition extends Comparable<LogootPosition> {
     return this
   }
 
+  equalsHigherLevel(to: LogootPosition) {
+    return to.length < this.length && this.copy().truncateTo(to.length).eq(to)
+  }
+
+  toJSON(): LogootPosition.JSON {
+    const jb = (b: BranchKey): string | number => {
+      if (typeof b === 'symbol') {
+        throw new TypeError('Cannot convert Symbol to JSON')
+      } else {
+        return b
+      }
+    }
+    return this.branch_array.map((br, i) => ([this.lp.l(i).toJSON(), jb(br)]))
+  }
+
   toString(): string {
     // Corruption can cause some seriously weird errors here. If the user is
     // `console.log`ging stuff, then it's probably fine to do a quick self test
     this.selfTest()
     const bstr = this.branch_array.map((br) => br.toString())
     return `[${bstr.map((br, i) => `(${this.lp.level(i)},${br})`)}]`
+  }
+}
+namespace LogootPosition {
+  export type JSON = [LogootInt.JSON, number | string][]
+  export namespace JSON {
+    export const Schema = {
+      type: 'array',
+      items: {
+        type: 'array',
+        items: [
+          LogootInt.JSON.Schema,
+          { type: ['number', 'string'] }
+        ]
+      }
+    }
   }
 }
 

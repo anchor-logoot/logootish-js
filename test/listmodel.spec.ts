@@ -1012,7 +1012,7 @@ describe('LDM support functions', () => {
       const p = (n: number): LogootPosition =>
         LogootPosition.fromIntsBranches(o, [n, u1])
 
-      linkFilledSkipRanges(p(0), p(6), nodes)
+      linkFilledSkipRanges(p(0), p(6), nodes, 1)
       
       const expectAnchorEqual = (
         pos: LeftAnchor | RightAnchor,
@@ -1042,7 +1042,7 @@ describe('LDM support functions', () => {
       lower_node.right_anchor = DocEnd
       nodes.splice(1, 0, lower_node)
 
-      linkFilledSkipRanges(p(0), p(6), nodes)
+      linkFilledSkipRanges(p(0), p(6), nodes, 1)
       
       const expectAnchorEqual = (
         pos: LeftAnchor | RightAnchor,
@@ -1113,6 +1113,19 @@ describe('ListDocumentModel', () => {
       expect(left.eq(p(1))).to.be.true
       expect(right.eq(p(1))).to.be.true
       expect(clk.eq(0)).to.be.true
+      expect(length).to.be.equal(5)
+    })
+    it('should write over old removals', () => {
+      ldm.bst.add(new AnchorLogootNode(
+        p(0), 2, NodeType.REMOVAL, new LogootInt(4)
+      ))
+      ldm.bst.add(new AnchorLogootNode(
+        p(5), 2, NodeType.REMOVAL, new LogootInt(3)
+      ))
+      const { left, right, clk, length } = ldm.insertLocal(1, 5)
+      expect(left).to.be.undefined
+      expect(right).to.be.undefined
+      expect(clk.eq(5)).to.be.true
       expect(length).to.be.equal(5)
     })
   })
@@ -1270,17 +1283,16 @@ describe('ListDocumentModel', () => {
         ])
       })
       it('nested insertion skipping', () => {
-        let ops = ldm.insertLogoot(
-          u1,
-          LogootPosition.fromIntsBranches(o, [1, u1]),
-          LogootPosition.fromIntsBranches(o, [1, u1]),
-          1,
-          new LogootInt(5)
-        )
+        const pos = LogootPosition.fromIntsBranches(o, [1, u1])
+        let ops = ldm.insertLogoot(u1, pos, pos, 1, new LogootInt(5))
         let nodes = ldm.all_nodes
         expect(nodes[0].logoot_start.eq(
           LogootPosition.fromIntsBranches(o, [1, u1], [0, u1])
         )).to.be.true
+        expect(nodes[0].true_left).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[0].true_left as LogootPosition).eq(pos)).to.true
+        expect(nodes[0].true_right).to.be.an.instanceOf(LogootPosition)
+        expect((nodes[0].true_right as LogootPosition).eq(pos)).to.true
         expect(ops).to.be.deep.equal([
           { type: 'i', start: 0, offset: 0, length: 1 }
         ])
@@ -1295,6 +1307,28 @@ describe('ListDocumentModel', () => {
           { type: 'i', start: 0, offset: 0, length: 1 },
           { type: 'i', start: 2, offset: 1, length: 1 }
         ])
+      })
+      it('insertion in middle', () => {
+        ldm.insertLogoot(
+          u1,
+          undefined,
+          undefined,
+          2,
+          new LogootInt(0)
+        )
+        let ops = ldm.insertLogoot(
+          u1,
+          p(1),
+          p(1),
+          2,
+          new LogootInt(2)
+        )
+        expect(ops).to.be.deep.equal([
+          { type: 'i', start: 1, offset: 0, length: 2 }
+        ])
+        const nodes = ldm.all_nodes
+        console.log(ldm.bst.toString())
+        expect(nodes.length).to.be.equal(3)
       })
     })
     describe('conflicts', () => {

@@ -64,10 +64,17 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
   reduceLeft(anchor: LeftAnchor): void {
     // If the anchor is the start, our anchor cannot be reduced
     if (anchor && anchor !== DocStart) {
-      if (anchor.gt(this.logoot_start)) {
+      if (
+        anchor.gt(this.logoot_start) &&
+        !this.logoot_start.equalsHigherLevel(anchor)
+      ) {
         return
       }
-      if (this.true_left === DocStart || anchor.gteq(this.true_left)) {
+      if (
+        this.true_left === DocStart ||
+        anchor.gteq(this.true_left) ||
+        anchor.equalsHigherLevel(this.true_left)
+      ) {
         if (anchor.eq(this.logoot_start)) {
           delete this.left_anchor
           return
@@ -78,7 +85,10 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
   }
   reduceRight(anchor: RightAnchor): void {
     if (anchor && anchor !== DocEnd) {
-      if (anchor.lt(this.logoot_end)) {
+      if (
+        anchor.lt(this.logoot_end) &&
+        !anchor.equalsHigherLevel(this.logoot_end)
+      ) {
         return
       }
       if (this.true_right === DocEnd || anchor.lteq(this.true_right)) {

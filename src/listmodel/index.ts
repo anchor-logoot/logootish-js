@@ -304,20 +304,18 @@ function fillSkipRanges(
 function linkFilledSkipRanges(
   left: LogootPosition,
   right: LogootPosition,
-  filled_skip_ranges: AnchorLogootNode[]
+  filled_skip_ranges: AnchorLogootNode[],
+  level: number
 ): void {
   let last_level_anchor = left
   let last_node_to_anchor: AnchorLogootNode
-  const alvl = ((n): number => (n === Infinity ? 0 : n))(
-    Math.min(...(left ? [left.levels] : []), ...(right ? [right.levels] : []))
-  )
   filled_skip_ranges
-    .filter((n) => n.logoot_start.levels === alvl && n.type === NodeType.DATA)
+    .filter((n) => n.logoot_start.length === level && n.type === NodeType.DATA)
     .forEach((node) => {
-      if (last_level_anchor && last_level_anchor.levels === alvl) {
+      if (last_level_anchor) {
         node.reduceLeft(last_level_anchor)
       }
-      if (last_node_to_anchor && node.logoot_start.levels === alvl) {
+      if (last_node_to_anchor) {
         last_node_to_anchor.reduceRight(node.logoot_start)
       }
       last_level_anchor = node.logoot_end
@@ -538,7 +536,7 @@ class ListDocumentModel {
       bstadd
     )
 
-    linkFilledSkipRanges(left, right, filled_skip_ranges)
+    linkFilledSkipRanges(left, right, filled_skip_ranges, start.length)
 
     const nl_lesser = nc_left[nc_left.length - 1] || anchor_left
     const nl_greater = nc_right[0] || anchor_right
@@ -838,10 +836,14 @@ class ListDocumentModel {
         if (cfl.logoot_start.lt(node.logoot_start)) {
           // Is to left
           let expected = false
-          if (cfl.true_right === DocEnd) {
+          let right = cfl.true_right
+          if (right === DocEnd) {
             expected = true
           } else {
-            expected = cfl.true_right.gt(node.logoot_start)
+            if (right.length > node.logoot_end.length) {
+              right = right.truncateTo(node.logoot_start.length)
+            }
+            expected = right.gt(node.logoot_start)
           }
           if (node.conflict_with.has(cfl) !== expected) {
             throw new FatalError(
@@ -851,10 +853,14 @@ class ListDocumentModel {
         } else {
           // Is to right
           let expected = false
-          if (cfl.true_left === DocStart) {
+          let left = cfl.true_left
+          if (left === DocStart) {
             expected = true
           } else {
-            expected = cfl.true_left.lt(node.logoot_end)
+            if (left.length > node.logoot_end.length) {
+              left = left.truncateTo(node.logoot_end.length)
+            }
+            expected = left.lt(node.logoot_end)
           }
           if (node.conflict_with.has(cfl) !== expected) {
             throw new FatalError(
@@ -973,6 +979,10 @@ export {
   Removal,
   ListDocumentModel,
   OperationBuffer,
+  Operation,
+  InsertionOperation,
+  RemovalOperation,
+  MarkOperation,
   constructSkipRanges,
   fillSkipRanges,
   linkFilledSkipRanges,
