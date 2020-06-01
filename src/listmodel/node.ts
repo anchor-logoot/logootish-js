@@ -175,31 +175,30 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
     return this.logoot_start.cmp(other.logoot_start)
   }
 
-  lengthOnLevel(level: number): number {
-    if (level > this.logoot_start.length) {
-      return Infinity
-    } else if (level < this.logoot_start.length) {
-      return 0
-    } else {
-      return this.length
-    }
-  }
   positionOf(pos: LogootPosition): number {
     const level = this.logoot_start.length
-    if (pos.length < level) {
+    if (
+      pos.length < level ||
+      pos.lt(this.logoot_start) ||
+      pos.gt(this.logoot_end)
+    ) {
       return undefined
     }
     const lval = pos.l(level - 1)[0].copy()
     lval.sub(this.logoot_start.l(level - 1)[0])
     return lval.js_int
   }
-  splitAround(pos: number): AnchorLogootNode {
+  splitAround(
+    pos: number,
+    next: IterableIterator<AnchorLogootNode> = this.successorIterator()
+  ): AnchorLogootNode {
     if (this.length < 2) {
       throw new TypeError('This node cannot be split. It is too small.')
     }
     if (pos < 1 || pos >= this.length) {
       throw new TypeError('The split position is not in the node.')
     }
+
     const node = new AnchorLogootNode(
       this.logoot_start.offsetLowest(pos),
       this.length - pos,
@@ -208,10 +207,23 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
     )
     node.value = this.ldoc_start + pos
     this.length = pos
+
     node.conflict_with = new Set<AnchorLogootNode>(this.conflict_with)
     node.right_anchor = this.right_anchor
     delete this.right_anchor
     delete node.left_anchor
+
+    let value: AnchorLogootNode
+    let done: boolean
+    while (
+      ({value, done} = next.next()) &&
+      !done &&
+      value.conflict_with.has(this)
+    ) {
+      value.conflict_with.delete(this)
+      value.conflict_with.add(node)
+    }
+
     return node
   }
 

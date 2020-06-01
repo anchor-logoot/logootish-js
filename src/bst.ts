@@ -213,6 +213,12 @@ abstract class DBstNode<T extends DBstNode<T>> {
     }
     return undefined
   }
+  *successorIterator(): IterableIterator<T> {
+    let node: T = (this as unknown) as T
+    while (node = node.inorder_successor) {
+      yield node
+    }
+  }
 
   /**
    * The previous node in sequence.
@@ -233,6 +239,12 @@ abstract class DBstNode<T extends DBstNode<T>> {
       node = node.parent_node
     }
     return undefined
+  }
+  *predecessorIterator(): IterableIterator<T> {
+    let node: T = (this as unknown) as T
+    while (node = node.inorder_predecessor) {
+      yield node
+    }
   }
 
   /**

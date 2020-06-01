@@ -7,7 +7,7 @@ import {
   DocEnd,
   LeftAnchor,
   RightAnchor
-} from '../src/listmodel/logoot'
+} from '../src/listmodel/node'
 import { BranchOrder } from '../src/listmodel/branch'
 import {
   OperationBuffer,
@@ -29,6 +29,18 @@ describe('AnchorLogootNode', () => {
     o.i(u1)
     o.i(u2)
     o.i(u3)
+  })
+
+  it('preferential_cmp orders by start', () => {
+    const a = new AnchorLogootNode(
+      LogootPosition.fromIntsBranches(o, [1, u1]),
+      10
+    )
+    const b = new AnchorLogootNode(
+      LogootPosition.fromIntsBranches(o, [3, u1]),
+      2
+    )
+    expect(a.preferential_cmp(b)).to.be.equal(-1)
   })
 
   describe('property getters', () => {
@@ -121,6 +133,160 @@ describe('AnchorLogootNode', () => {
         expect((node.true_right as LogootPosition).eq(node.logoot_end))
           .to.be.true
       })
+    })
+  })
+
+  describe('positionOf', () => {
+    it('should return `undefined` if on higher level', () => {
+      const node = new AnchorLogootNode(
+        LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [3, u1]),
+        5
+      )
+      const pos = LogootPosition.fromIntsBranches(o, [1, u1], [2, u1])
+      expect(node.positionOf(pos)).to.be.undefined
+    })
+    it('should return `undefined` if less', () => {
+      const node = new AnchorLogootNode(
+        LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [3, u1]),
+        5
+      )
+      const pos = LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [1, u1])
+      expect(node.positionOf(pos)).to.be.undefined
+    })
+    it('should return `undefined` if greater', () => {
+      const node = new AnchorLogootNode(
+        LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [3, u1]),
+        5
+      )
+      const pos = LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [9, u1])
+      expect(node.positionOf(pos)).to.be.undefined
+    })
+    it('should be correct in range', () => {
+      const node = new AnchorLogootNode(
+        LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [3, u1]),
+        5
+      )
+      const pos = LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [5, u1])
+      expect(node.positionOf(pos)).to.be.equal(2)
+    })
+  })
+
+  describe('splitAround', () => {
+    it('should throw error if length < 2', () => {
+      const node = new AnchorLogootNode(
+        LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [3, u1]),
+        1
+      )
+      expect(() => node.splitAround(1)).to.throw(
+        TypeError, 'This node cannot be split. It is too small.'
+      )
+    })
+    it('should throw error if position not in middle of node', () => {
+      const node = new AnchorLogootNode(
+        LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [3, u1]),
+        5
+      )
+      expect(() => node.splitAround(0)).to.throw(
+        TypeError, 'The split position is not in the node.'
+      )
+      expect(() => node.splitAround(5)).to.throw(
+        TypeError, 'The split position is not in the node.'
+      )
+    })
+    it('should generate correct positions', () => {
+      const pos = LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [3, u1])
+      const n1 = new AnchorLogootNode(pos, 5)
+      n1.value = 2
+      const n2 = n1.splitAround(2)
+      expect(n1.logoot_start.eq(pos)).to.be.true
+      expect(n1.length).to.be.equal(2)
+      expect(n1.ldoc_start).to.be.equal(2)
+      expect(n2.logoot_start.eq(pos.offsetLowest(2))).to.be.true
+      expect(n2.length).to.be.equal(3)
+      expect(n2.ldoc_start).to.be.equal(4)
+    })
+    it('should preserve types', () => {
+      const pos = LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [3, u1])
+
+      const n1 = new AnchorLogootNode(pos, 5, NodeType.REMOVAL)
+      const n2 = n1.splitAround(2)
+
+      const n3 = new AnchorLogootNode(pos, 5, NodeType.DUMMY)
+      const n4 = n3.splitAround(2)
+
+      expect(n2.type).to.be.equal(NodeType.REMOVAL)
+      expect(n4.type).to.be.equal(NodeType.DUMMY)
+    })
+    it('should copy conflicts', () => {
+      const pos = LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [3, u1])
+      const c = new AnchorLogootNode(pos.inverseOffsetLowest(20), 5)
+      c.right_anchor = pos.offsetLowest(20)
+
+      const n1 = new AnchorLogootNode(pos, 5)
+      n1.conflict_with.add(c)
+      const n2 = n1.splitAround(2)
+
+      expect(n1.conflict_with).to.not.be.equal(n2.conflict_with)
+      expect(n1.conflict_with).to.be.deep.equal(n2.conflict_with)
+    })
+    it('should reassign anchors', () => {
+      const pos = LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [3, u1])
+
+      const n1 = new AnchorLogootNode(pos, 5)
+      n1.left_anchor = pos.inverseOffsetLowest(20)
+      n1.right_anchor = pos.offsetLowest(20)
+      const n2 = n1.splitAround(2)
+
+      expect(n1.true_left).to.be.an.instanceOf(LogootPosition)
+      expect((n1.true_left as LogootPosition).eq(pos.inverseOffsetLowest(20)))
+        .to.be.true
+      expect(n1.true_right).to.be.an.instanceOf(LogootPosition)
+      expect((n1.true_right as LogootPosition).eq(pos.offsetLowest(2)))
+        .to.be.true
+
+      expect(n2.true_left).to.be.an.instanceOf(LogootPosition)
+      expect((n2.true_left as LogootPosition).eq(pos.offsetLowest(2)))
+        .to.be.true
+      expect(n2.true_right).to.be.an.instanceOf(LogootPosition)
+      expect((n2.true_right as LogootPosition).eq(pos.offsetLowest(20)))
+        .to.be.true
+    })
+    it('should reassign conflicts by defaulting to `inorder_successor`', () => {
+      const pos = LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [3, u1])
+      const c1 = new AnchorLogootNode(pos.offsetLowest(10), 2)
+      const c2 = new AnchorLogootNode(pos.offsetLowest(14), 3)
+      c1.value = 7
+      c2.value = 9
+      c1.addChild(c2)
+
+      const n1 = new AnchorLogootNode(pos, 5)
+      n1.value = 2
+      n1.addChild(c1)
+      n1.right_anchor = pos.offsetLowest(20)
+      c1.conflict_with.add(n1)
+      c2.conflict_with.add(n1)
+      const n2 = n1.splitAround(2)
+
+      expect(c1.conflict_with.has(n1)).to.be.false
+      expect(c2.conflict_with.has(n1)).to.be.false
+      expect(c1.conflict_with.has(n2)).to.be.true
+      expect(c2.conflict_with.has(n2)).to.be.true
+    })
+    it('should reassign conflicts by using the provided iterator', () => {
+      const pos = LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [3, u1])
+      const c1 = new AnchorLogootNode(pos.offsetLowest(10), 2)
+      const c2 = new AnchorLogootNode(pos.offsetLowest(14), 3)
+
+      const n1 = new AnchorLogootNode(pos, 5)
+      n1.right_anchor = pos.offsetLowest(20)
+      c1.conflict_with.add(n1)
+      c2.conflict_with.add(n1)
+      const n2 = n1.splitAround(2, [c1, c2].values())
+
+      expect(c1.conflict_with.has(n1)).to.be.false
+      expect(c2.conflict_with.has(n1)).to.be.false
+      expect(c1.conflict_with.has(n2)).to.be.true
+      expect(c2.conflict_with.has(n2)).to.be.true
     })
   })
 

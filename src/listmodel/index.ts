@@ -15,7 +15,7 @@ import {
   NodeType,
   DocStart,
   DocEnd
-} from './logoot'
+} from './node'
 import { BranchKey, BranchOrder } from './branch'
 import { TypeRange, CompareResult, RangeBounds, NumberRange } from '../compare'
 import { InternalError, FatalError } from '../utils'
