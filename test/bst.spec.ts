@@ -85,7 +85,7 @@ describe('DBst (Differential Binary Search Tree)', () => {
       expect(b.bst_root.left_node.left_node).to.be.equal(n2)
       expect(n2.value).to.be.equal(0)
     })
-    it('should move lesser node down if an equal node is inserted', () => {
+    it('should insert equal node to correct side of lesser', () => {
       const n1 = new DummyNode(5, 6)
       const n2 = new DummyNode(2)
       const n3 = new DummyNode(5, 3)
@@ -95,10 +95,10 @@ describe('DBst (Differential Binary Search Tree)', () => {
 
       expect(b.bst_root).to.be.equal(n1)
       expect(n1.value).to.be.equal(5)
-      expect(b.bst_root.left_node).to.be.equal(n3)
-      expect(n3.value).to.be.equal(0)
-      expect(b.bst_root.left_node.left_node).to.be.equal(n2)
+      expect(n1.left_node).to.be.equal(n2)
       expect(n2.value).to.be.equal(-3)
+      expect(n2.right_node).to.be.equal(n3)
+      expect(n3.value).to.be.equal(3)
     })
     it('should form a complete tree', () => {
       const { n2, n3, n4, n5, n6, n7, n8 } = constructFullTree()
@@ -350,10 +350,10 @@ describe('DBst (Differential Binary Search Tree)', () => {
       n3.replaceWith(n4n)
       expect(n5.left_node).to.be.equal(n4n, 'Node is not in correct position')
       expect(n4n.parent_node).to.be.equal(n5, 'Parent is not correct')
-      expect(n4n.left_node).to.be.equal(n4, 'Equal node was not nested')
+      expect(n4n.left_node).to.be.equal(n2, 'Left node is not in correct')
+      expect(n2.absolute_value).to.be.equal(2, 'Left node value was changed')
+      expect(n2.right_node).to.be.equal(n4, 'Equal node was not nested')
       expect(n4.absolute_value).to.be.equal(4, 'Equal node value is wrong')
-      expect(n4.left_node).to.be.equal(n2, 'Lesser node was not nested')
-      expect(n2.absolute_value).to.be.equal(2, 'Lesser node value is wrong')
     })
     it('should remove node from previous location', () => {
       const { n2, n3, n4, n5, n6, n7, n8 } = constructFullTree()

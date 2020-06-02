@@ -90,42 +90,32 @@ abstract class DBstNode<T extends DBstNode<T>> {
         ;(node as DBstNode<T>).parent_node = (this as unknown) as T
       }
     } else {
-      if (node.value === 0) {
-        if (this.preferential_cmp(node) < 0) {
-          if (this.parent_node) {
-            if (this.value <= 0) {
-              this.parent_node.left_node = node
-            } else {
-              this.parent_node.right_node = node
-            }
-          } else if (rootUpdate) {
-            rootUpdate(node)
+      if (node.value === 0 && this.preferential_cmp(node) < 0) {
+        if (this.parent_node) {
+          if (this.value <= 0) {
+            this.parent_node.left_node = node
           } else {
-            throw new Error('Unexpected undefined parent node in DBST')
+            this.parent_node.right_node = node
           }
-          node.parent_node = this.parent_node
-          const old_right = this.right_node
-          node.value = this.value
-
-          if (node.right_node) {
-            node.right_node.parent_node = node
-          }
-          delete this.right_node
-          node.addChild((this as unknown) as T)
-          if (old_right) {
-            old_right.value += node.value
-            node.addChild(old_right)
-          }
-          return
-        } else if (this.left_node && this.left_node.value !== 0) {
-          node.parent_node = (this as unknown) as T
-          node.left_node = this.left_node
-          delete node.right_node
-
-          this.left_node.parent_node = node
-          this.left_node = node
-          return
+        } else if (rootUpdate) {
+          rootUpdate(node)
+        } else {
+          throw new Error('Unexpected undefined parent node in DBST')
         }
+        node.parent_node = this.parent_node
+        const old_right = this.right_node
+        node.value = this.value
+
+        if (node.right_node) {
+          node.right_node.parent_node = node
+        }
+        delete this.right_node
+        node.addChild((this as unknown) as T)
+        if (old_right) {
+          old_right.value += node.value
+          node.addChild(old_right)
+        }
+        return
       }
       if (this.left_node) {
         this.left_node.addChild(node)
@@ -698,6 +688,12 @@ class DBst<T extends DBstNode<T>> {
     if (this.bst_root) {
       this.bst_root.operateOnAll(cb)
     }
+  }
+
+  get all_nodes(): T[] {
+    const nodes: T[] = []
+    this.operateOnAll((n) => nodes.push(n))
+    return nodes
   }
 
   toString(): string {
