@@ -1078,6 +1078,24 @@ describe('ListDocumentModel', () => {
       o,
       ...ns.map((n) => [n, u1]) as [number, string][]
     )
+  const expectAnchors = (
+    node: AnchorLogootNode,
+    l: LeftAnchor,
+    r: RightAnchor
+  ): void => {
+    if (l === DocStart) {
+      expect(node.true_left).to.be.equal(l)
+    } else {
+      expect(node.true_left).to.be.an.instanceOf(LogootPosition)
+      expect((node.true_left as LogootPosition).eq(l)).to.be.true
+    }
+    if (r === DocEnd) {
+      expect(node.true_right).to.be.equal(r)
+    } else {
+      expect(node.true_right).to.be.an.instanceOf(LogootPosition)
+      expect((node.true_right as LogootPosition).eq(r)).to.be.true
+    }
+  }
   beforeEach(() => {
     o = new BranchOrder()
     ldm = new ListDocumentModel(o)
@@ -1626,6 +1644,54 @@ describe('ListDocumentModel', () => {
         expect(nodes[4].true_left).to.be.an.instanceOf(LogootPosition)
         expect((nodes[4].true_left as LogootPosition).eq(p(1))).to.be.true
         expect(nodes[4].true_right).to.be.equal(DocEnd)
+      })
+      it('consecutive removal anchor replacement', () => {
+        ldm.insertLogoot(u1, undefined, undefined, 1, new LogootInt(0))
+        ldm.insertLogoot(
+          u3,
+          LogootPosition.fromIntsBranches(o, [1, u1]),
+          undefined,
+          3,
+          new LogootInt(0)
+        )
+        ldm.insertLogoot(
+          u2,
+          LogootPosition.fromIntsBranches(o, [1, u1]),
+          LogootPosition.fromIntsBranches(o, [0, u3]),
+          2,
+          new LogootInt(0)
+        )
+        ldm.removeLogoot(
+          LogootPosition.fromIntsBranches(o, [0, u3]),
+          1,
+          new LogootInt(0)
+        )
+        ldm.removeLogoot(
+          LogootPosition.fromIntsBranches(o, [0, u2]),
+          2,
+          new LogootInt(0)
+        )
+        const nodes = ldm.all_nodes
+        expectAnchors(
+          nodes[0],
+          DocStart,
+          LogootPosition.fromIntsBranches(o, [1, u3])
+        )
+        expectAnchors(
+          nodes[1],
+          LogootPosition.fromIntsBranches(o, [1, u1]),
+          LogootPosition.fromIntsBranches(o, [0, u3])
+        )
+        expectAnchors(
+          nodes[2],
+          LogootPosition.fromIntsBranches(o, [2, u2]),
+          LogootPosition.fromIntsBranches(o, [1, u3])
+        )
+        expectAnchors(
+          nodes[3],
+          LogootPosition.fromIntsBranches(o, [1, u1]),
+          DocEnd
+        )
       })
     })
   })

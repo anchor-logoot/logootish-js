@@ -16,6 +16,7 @@
     "dev": "webpack --progress --colors --watch --env dev",
     "check-types": "tsc",
     "test": "mocha --timeout 100000 --require ./test/babel-register.js --colors ./test/*.spec.ts ./test/**/*.spec.ts",
+    "test:nopractical": "mocha --timeout 100000 --require ./test/babel-register.js --colors ./test/*.spec.ts",
     "test:watch": "mocha --timeout 100000 --require ./test/babel-register.js --colors -w ./test/*.spec.ts ./test/**/*.spec.ts",
     "test:cover": "cross-env NODE_ENV=test nyc mocha --timeout 100000 --require ./test/babel-register.js --require source-map-support/register --recursive --colors ./test/*.spec.ts test/**/*.ts",
     "test:lint": "eslint ./test/*.spec.ts test/**/*.spec.ts",

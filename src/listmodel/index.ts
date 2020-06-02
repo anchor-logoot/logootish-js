@@ -380,10 +380,10 @@ function patchRemovalAnchors(
           return
         }
         if (!backwards && apos.lt(node.logoot_end)) {
-          snode.right_anchor = node.logoot_end
+          snode.right_anchor = node.true_right
         }
         if (backwards && apos.gt(node.logoot_start)) {
-          snode.left_anchor = node.logoot_start
+          snode.left_anchor = node.true_left
         }
         node.conflict_with.add(snode)
       })
@@ -860,9 +860,7 @@ class ListDocumentModel {
   }
 
   get all_nodes(): AnchorLogootNode[] {
-    const nodes: AnchorLogootNode[] = []
-    this.bst.operateOnAll((node: AnchorLogootNode) => nodes.push(node))
-    return nodes
+    return this.bst.all_nodes
   }
   /**
    * An extremely expensive operation that scans the BSTs for obvious signs of

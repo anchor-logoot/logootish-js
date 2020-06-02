@@ -268,11 +268,16 @@ function sliceNodesIntoRanges(
         // | buckets[i] |-----------| buckets[i+1] |
         //              [1,0]   [1,1]
         //               ---|node|---
-        if (cb && node.logoot_start.copy().truncateTo(cb.length).eq(cb)) {
+        if (
+          cb &&
+          node.logoot_start.length > cb.length &&
+          node.logoot_start.copy().truncateTo(cb.length).eq(cb)
+        ) {
           return
         }
         bucket.push(node)
-        if (boundaries[i] && node.logoot_end.gt(boundaries[i])) {
+        const pos = boundaries[i] && node.positionOf(boundaries[i])
+        if (boundaries[i] && node.logoot_end.gt(boundaries[i]) && pos && pos > 0 && pos < node.length) {
           node = node.splitAround(node.positionOf(boundaries[i]))
           onNewNode(node)
         } else {
