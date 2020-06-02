@@ -32,10 +32,9 @@ type LdmOptions = {
  * A Logoot removal.
  */
 type Removal = {
-  branch: BranchKey
   start: LogootPosition
   length: number
-  rclk: LogootInt
+  clk: LogootInt
 }
 
 type RemovalOperation = {
@@ -411,6 +410,8 @@ class ListDocumentModel {
    */
   bst: DBst<AnchorLogootNode> = new DBst()
 
+  max_clk = new LogootInt(0)
+
   /**
    * An optional instance of the `ListDocumentModel.Logger` class to log all
    * operations that modify the BST (all calls to `_mergeNode`) to help with
@@ -488,6 +489,59 @@ class ListDocumentModel {
     }
   }
 
+  removeLocal(start: number, length: number): Removal[] {
+    const { buckets } = this.bst.search(
+      new NumberRange(start, start + length, RangeBounds.LCGO)
+    )
+    const range = buckets.lesser
+      .concat(buckets.range)
+      .map(([, node]) => node)
+      .filter((node) => node.type === NodeType.DATA)
+    const removal_sets: { [key: number]: {start: LogootPosition, length: number}[] } = {}
+
+    const remove = (start: LogootPosition, length: number): void => {
+      if (length < 1) {
+        return
+      }
+      if (!removal_sets[start.length]) {
+        removal_sets[start.length] = []
+      }
+      const removals = removal_sets[start.length]
+      const last_rm = removals[removals.length - 1]
+      if (last_rm && last_rm.start.offsetLowest(last_rm.length).eq(start)) {
+        last_rm.length += length
+      } else {
+        removals.push({ start, length })
+      }
+    }
+
+    let max_clk = this.max_clk.copy()
+
+    range.forEach((node) => {
+      const rm_s = Math.max(start, node.ldoc_start)
+      const rm_e = Math.min(start + length, node.ldoc_end)
+      const rm_l = rm_e - rm_s
+      const rm_o = rm_s - node.ldoc_start
+
+      if (rm_l > 0) {
+        // Unlike previous algorithms that I've written, the max clock is
+        // always used. This makes it easier for recieving clients to squash
+        // nodes since neighboring nodes will be more likely to have the same
+        // clock.
+        if (node.clk.gteq(max_clk)) {
+          max_clk.assign(node.clk.copy().add(1))
+        }
+
+        remove(node.logoot_start.offsetLowest(rm_o), rm_l)
+      }
+    })
+
+    return Object
+      .values(removal_sets)
+      .flat()
+      .map(({ start, length }) => ({ start, length, clk: max_clk }))
+  }
+
   insertLogoot(
     br: BranchKey,
     left: LogootPosition,
@@ -501,6 +555,10 @@ class ListDocumentModel {
           this.bst.selfTest()
         }
       : (n: AnchorLogootNode): AnchorLogootNode => this.bst.add(n)
+
+    if (clk.gt(this.max_clk)) {
+      this.max_clk.assign(clk)
+    }
 
     const start = new LogootPosition(br, length, left, right, this.branch_order)
     const end = start.offsetLowest(length)
@@ -664,6 +722,10 @@ class ListDocumentModel {
           this.bst.selfTest()
         }
       : (n: AnchorLogootNode): AnchorLogootNode => this.bst.add(n)
+
+    if (clk.gt(this.max_clk)) {
+      this.max_clk.assign(clk)
+    }
 
     const cf = (a: AnchorLogootNode, b: AnchorLogootNode): CompareResult =>
       a.preferential_cmp(b)

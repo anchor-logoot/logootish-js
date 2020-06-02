@@ -1129,6 +1129,58 @@ describe('ListDocumentModel', () => {
       expect(length).to.be.equal(5)
     })
   })
+  describe('removeLocal', () => {
+    let last_position
+    beforeEach(() => {
+      last_position = 0
+    })
+    const node = (
+      pos: LogootPosition,
+      len: number,
+      clk: LogootInt | number = 0
+    ): AnchorLogootNode => {
+      const node = new AnchorLogootNode(pos, len)
+      node.clk.assign(clk)
+      if (ldm.max_clk.lt(clk)) {
+        ldm.max_clk.assign(clk)
+      }
+      node.value = last_position
+      last_position += len
+      return node
+    }
+    it('should calculate start/end single removals', () => {
+      ldm.bst.add(node(p(0), 5))
+      const rm = ldm.removeLocal(1, 2)
+      expect(rm.length).to.be.equal(1)
+      expect(rm[0].start.eq(p(1))).to.be.true
+      expect(rm[0].length).to.be.equal(2)
+    })
+    it('should condense removals', () => {
+      ldm.bst.add(node(p(0), 1))
+      ldm.bst.add(node(p(1, 0), 1))
+      ldm.bst.add(node(p(1), 1))
+      const rm = ldm.removeLocal(0, 3)
+      expect(rm.length).to.be.equal(2)
+      expect(rm[0].start.eq(p(0))).to.be.true
+      expect(rm[0].length).to.be.equal(2)
+      expect(rm[1].start.eq(p(1, 0))).to.be.true
+      expect(rm[1].length).to.be.equal(1)
+    })
+    it('should default to max_clk', () => {
+      ldm.bst.add(node(p(0), 1, 5))
+      ldm.bst.add(node(p(1), 1, 1))
+      const rm = ldm.removeLocal(1, 1)
+      expect(rm.length).to.be.equal(1)
+      expect(rm[0].clk.js_int).to.be.equal(5)
+    })
+    it('should increment the clock if necessary', () => {
+      ldm.bst.add(node(p(0), 1, 5))
+      ldm.bst.add(node(p(1), 1, 1))
+      const rm = ldm.removeLocal(0, 2)
+      expect(rm.length).to.be.equal(1)
+      expect(rm[0].clk.js_int).to.be.equal(6)
+    })
+  })
   describe('insertLogoot', () => {
     afterEach('self-test', () => {
       ldm.selfTest()
