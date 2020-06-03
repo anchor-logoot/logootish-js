@@ -154,11 +154,13 @@ function constructSkipRanges(
     n: AnchorLogootNode
   ): AnchorLogootNode => bst.add(n)
 ): {
+  lesser: AnchorLogootNode
   anchor_left: AnchorLogootNode
   nc_left: AnchorLogootNode[]
   skip_ranges: AnchorLogootNode[]
   nc_right: AnchorLogootNode[]
   anchor_right: AnchorLogootNode
+  greater: AnchorLogootNode
 } {
   const cf = (a: AnchorLogootNode, b: AnchorLogootNode): CompareResult =>
     a.preferential_cmp(b)
@@ -232,21 +234,25 @@ function constructSkipRanges(
     anchor_right = undefined
   }
   return {
+    lesser: lowestData(aleft.reverse()),
     anchor_left,
     nc_left,
     skip_ranges,
     nc_right,
-    anchor_right
+    anchor_right,
+    greater: lowestData(aright)
   }
 }
 
 function fillSkipRanges(
+  left: LogootPosition,
+  right: LogootPosition,
   start: LogootPosition,
   clk: LogootInt,
   type: NodeType,
   skip_ranges: AnchorLogootNode[],
   opbuf: OperationBuffer,
-  bstadd: (n: AnchorLogootNode) => void
+  onnewnode: (n: AnchorLogootNode) => void
 ): AnchorLogootNode[] {
   const level = start.levels
   const start_int = start.l(level)[0].i
@@ -254,7 +260,7 @@ function fillSkipRanges(
   // since the space between `start` and `end` is numerically offset
   let last_level_pos = start.l(level)[0].i
 
-  return skip_ranges.flatMap((node) => {
+  return skip_ranges.flatMap((node, i) => {
     // Insert into empty space
     const space_avail = node.logoot_start.l(level)[0].copy().sub(last_level_pos)
       .js_int
@@ -266,10 +272,14 @@ function fillSkipRanges(
       const offset = last_level_pos.copy().sub(start_int)
       nnode = new AnchorLogootNode(nstart, space_avail, type, clk.copy())
       nnode.value = node.ldoc_start
-      nnode.left_anchor = DocStart
-      nnode.right_anchor = DocEnd
+      nnode.left_anchor = offset.eq(0)
+      ? left?.copy() || DocStart
+      : start.offsetLowest(offset.js_int)
+      nnode.right_anchor = node.type === NodeType.DUMMY
+        ? right?.copy() || DocEnd
+        : start.offsetLowest(space_avail + offset.js_int)
 
-      bstadd(nnode)
+      onnewnode(nnode)
       // If the node is not a data node, the zero-length insertion will be
       // ignored
       opbuf.insert(nnode, nnode.ldoc_start, offset.js_int, nnode.ldoc_length)
@@ -283,6 +293,17 @@ function fillSkipRanges(
     ) {
       const offset = node.logoot_start.l(level)[0].copy().sub(start_int)
       node.clk = clk.copy()
+
+      node.reduceLeft(
+        offset.eq(0)
+          ? left?.copy() || DocStart
+          : node.logoot_start
+      )
+      node.reduceRight(
+        i === skip_ranges.length - 1
+          ? right?.copy() || DocEnd
+          : node.logoot_end
+      )
 
       // If this node is not a `DATA` node, the remove function will ignore
       // a length of zero
@@ -306,6 +327,9 @@ function linkFilledSkipRanges(
   filled_skip_ranges: AnchorLogootNode[],
   level: number
 ): void {
+  // Technically, we specified that all nodes in the skip ranges are linked to
+  // each other because they were originally part of the same string. First,
+  // update the anchors so that these links are known
   let last_level_anchor = left
   let last_node_to_anchor: AnchorLogootNode
   filled_skip_ranges
@@ -323,6 +347,22 @@ function linkFilledSkipRanges(
   if (last_node_to_anchor && right) {
     last_node_to_anchor.reduceRight(right)
   }
+  /* // Now, there may be nodes in the middle that link to added nodes. Ensure
+  // that added node ends are reduced
+  filled_skip_ranges.forEach((node, i, nodes) => {
+    if (node.logoot_start.length > level) {
+      const last = nodes[i - 1]
+      const next = nodes[i + 1]
+      const left = node.true_left
+      const right = node.true_right
+      if (last && left !== DocStart && last.logoot_end.eq(left)) {
+        last.reduceRight(node.logoot_start)
+      }
+      if (next && right !== DocEnd && next.logoot_start.eq(right)) {
+        next.reduceLeft(node.logoot_end)
+      }
+    }
+  }) */
 }
 
 function fillRangeConflicts(
@@ -563,13 +603,7 @@ class ListDocumentModel {
     const start = new LogootPosition(br, length, left, right, this.branch_order)
     const end = start.offsetLowest(length)
 
-    const {
-      anchor_left,
-      nc_left,
-      nc_right,
-      skip_ranges,
-      anchor_right
-    } = constructSkipRanges(
+    const data = constructSkipRanges(
       this.bst,
       {
         left: left,
@@ -579,134 +613,118 @@ class ListDocumentModel {
       },
       bstadd
     )
+    const { nc_left, skip_ranges, nc_right } = data
+    const lesser = nc_left[nc_left.length - 1] || data.lesser
+    const greater = nc_right[0] || data.greater
 
     const opbuf = new OperationBuffer(this.bst, this.opts, length)
     if (skip_ranges[skip_ranges.length - 1].type === NodeType.DUMMY) {
       opbuf.dummy_node = skip_ranges[skip_ranges.length - 1]
     }
 
+    const new_nodes: AnchorLogootNode[] = []
     const filled_skip_ranges = fillSkipRanges(
+      left,
+      right,
       start,
       clk,
       NodeType.DATA,
       skip_ranges,
       opbuf,
-      bstadd
+      (n: AnchorLogootNode) => {
+        bstadd(n)
+        new_nodes.push(n)
+      }
     )
 
-    linkFilledSkipRanges(left, right, filled_skip_ranges, start.length)
+    const capped_range = [...filled_skip_ranges]
+    lesser && capped_range.unshift(lesser)
+    greater && capped_range.push(greater)
 
-    const nl_lesser = nc_left[nc_left.length - 1] || anchor_left
-    const nl_greater = nc_right[0] || anchor_right
-
-    const createScanset = (node: AnchorLogootNode): Set<AnchorLogootNode> => {
-      const all_scan = new Set<AnchorLogootNode>(node.conflict_with)
-      all_scan.add(node)
-      return all_scan
-    }
-    const first_node = filled_skip_ranges[0]
-    if (nl_lesser && first_node) {
-      const set = createScanset(nl_lesser)
-      set.forEach((node) => {
-        const l = node.true_left
-        if (l !== DocStart && l.eq(first_node.logoot_end)) {
-          first_node.reduceRight(node.logoot_start)
-        }
-      })
-    }
-    const last_node = filled_skip_ranges[filled_skip_ranges.length - 1]
-    if (nl_greater && last_node) {
-      const set = createScanset(nl_greater)
-      set.forEach((node) => {
-        const l = node.true_left
-        if (l !== DocStart && l.eq(last_node.logoot_end)) {
-          last_node.reduceRight(node.logoot_start)
-        }
-      })
-    }
-
-    fillRangeConflicts(nl_lesser, nl_greater, filled_skip_ranges, bstadd)
-
-    if (filled_skip_ranges[0]) {
-      let stoppos: LogootPosition
-      if (first_node.true_left !== DocStart) {
-        stoppos = first_node.true_left
+    // Mutually reduce any nodes that anchor to the new nodes or that these
+    // nodes anchor to
+    // TODO: Do we actually need to do this for middle nodes?
+    // TODO: Will only testing for equality work? (If the answer is yes, then
+    // probably no for above)
+    capped_range.forEach((node: AnchorLogootNode) => {
+      const last = capped_range[capped_range.indexOf(node) - 1]
+      const next = capped_range[capped_range.indexOf(node) + 1]
+      let scan_nodes: Set<AnchorLogootNode>
+      // First, check for nodes that may anchor here by searching the anchors
+      // of the last node and its conflicts
+      if (last) {
+        scan_nodes = new Set<AnchorLogootNode>(last?.conflict_with)
+        scan_nodes.add(last)
+        scan_nodes.forEach((snode) => {
+          const s_right = snode.true_right
+          const n_left = node.true_left
+          if (
+            (s_right !== DocEnd && s_right.eq(node.logoot_start)) ||
+            (n_left !== DocStart && n_left.eq(snode.logoot_end))
+          ) {
+            snode.reduceRight(node.logoot_start)
+            node.reduceLeft(snode.logoot_end)
+          }
+        })
       }
-      nc_left.reverse().every((node) => {
-        node.conflict_with.add(filled_skip_ranges[0])
-        if (stoppos && node.logoot_end.lteq(stoppos)) {
-          return false
-        }
-        return true
-      })
-    }
-    if (filled_skip_ranges[filled_skip_ranges.length - 1]) {
-      let stoppos: LogootPosition
-      if (last_node.true_right !== DocEnd) {
-        stoppos = last_node.true_right
+      // Do the same, but for the next node
+      if (next) {
+        scan_nodes = new Set<AnchorLogootNode>(next?.conflict_with)
+        scan_nodes.add(next)
+        scan_nodes.forEach((snode) => {
+          const s_left = snode.true_left
+          const n_right = node.true_right
+          if (
+            (s_left !== DocStart && s_left.eq(node.logoot_end)) ||
+            (n_right !== DocEnd && n_right.eq(snode.logoot_start))
+          ) {
+            snode.reduceLeft(node.logoot_end)
+            node.reduceRight(snode.logoot_start)
+          }
+        })
       }
-      nc_right.every((node) => {
-        if (stoppos && node.logoot_start.gteq(stoppos)) {
-          return false
-        }
-        node.conflict_with.add(
-          filled_skip_ranges[filled_skip_ranges.length - 1]
-        )
-        return true
-      })
+    })
+    fillRangeConflicts(lesser, greater, filled_skip_ranges, bstadd)
+
+    // Find the first and last nodes from the filled skip ranges
+    const first = filled_skip_ranges[0]
+    const last = filled_skip_ranges[filled_skip_ranges.length - 1]
+    const true_left = first.true_left
+    const true_right = first.true_right
+
+    // Add conflicts to lesser nodes
+    let node = first.inorder_predecessor
+    let expected: boolean
+    let getExpectedValue = (): boolean => {
+      expected = true_left === DocStart ||
+        node.logoot_end.gt(true_left) ||
+        // Account for nodes with lower level ends:
+        node.logoot_end.equalsHigherLevel(true_left)
+      return expected
     }
-
-    // Update the destination anchors. Here, we should reduce the other node's
-    // anchor.
-    if (anchor_left) {
-      // Before:
-      // | AL |------| OUR NODES |------>
-      // After:
-      // | AL |----->| OUR NODES |xxxxxxx
-      // The problem is that we have to clear conflicts out of the range with
-      // xs and `OUR NODES`.
-      anchor_left.reduceRight(start)
-
-      // Traverse over nodes and clear out old conflicts
-      let node = filled_skip_ranges[0]
-      while (node && node.conflict_with.has(anchor_left)) {
-        node.conflict_with.delete(anchor_left)
-        node = node.inorder_successor
+    while(node && node.conflict_with.has(first) !== getExpectedValue()) {
+      if (expected) {
+        node.conflict_with.add(first)
+      } else {
+        node.conflict_with.delete(first)
       }
+      node = node.inorder_predecessor
     }
-    if (anchor_right) {
-      // Before:
-      // <---| OUR NODES |-------| AR |
-      // After:
-      // xxxx| OUR NODES |<------| AR |
-      // The problem is that we have to clear conflicts out of the range with
-      // xs and `OUR NODES`.
-      anchor_right.reduceLeft(end)
 
-      // Traverse over nodes and clear out old conflicts
-      let node = filled_skip_ranges[filled_skip_ranges.length - 1]
-      while (node && node.conflict_with.has(anchor_right)) {
-        node.conflict_with.delete(anchor_right)
-        node = node.inorder_predecessor
+    // Add conflicts to greater nodes
+    node = last.inorder_successor
+    getExpectedValue = (): boolean => {
+      expected = true_right === DocEnd || node.logoot_start.lt(true_right)
+      return expected
+    }
+    while(node && node.conflict_with.has(last) !== getExpectedValue()) {
+      if (expected) {
+        node.conflict_with.add(last)
+      } else {
+        node.conflict_with.delete(last)
       }
+      node = node.inorder_successor
     }
-
-    patchRemovalAnchors(
-      [
-        ...(nl_lesser ? [nl_lesser] : []),
-        ...filled_skip_ranges,
-        ...(nl_greater ? [nl_greater] : [])
-      ],
-      false
-    )
-    patchRemovalAnchors(
-      [
-        ...(nl_lesser ? [nl_lesser] : []),
-        ...filled_skip_ranges,
-        ...(nl_greater ? [nl_greater] : [])
-      ],
-      true
-    )
 
     return opbuf.operations
   }
@@ -780,7 +798,8 @@ class ListDocumentModel {
      * When a data node that is converted to a removal is surrounded by
      * removals, its anchors will point to the surrounding data nodes and will
      * skip over the removal nodes since data nodes can't "see" removal nodes.
-     * This fixes that.
+     * This fixes that by linking the removal nodes and removing the associated
+     * conflicts.
      * @todo Implement some kind of node priority system for a generalized
      * method for this sort of thing.
      * @param range The range to correct anchors in
@@ -921,6 +940,9 @@ class ListDocumentModel {
               left = left.copy().truncateTo(node.logoot_end.length)
             }
             expected = left.lt(node.logoot_end)
+            if (node.logoot_end.equalsHigherLevel(left)) {
+              expected = true
+            }
           }
           if (node.conflict_with.has(cfl) !== expected) {
             throw new FatalError(

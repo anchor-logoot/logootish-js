@@ -133,7 +133,10 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
       // Right
       if (node.true_left === 'S') {
         tryAdd(node)
-      } else if (node.true_left.lt(this.logoot_end)) {
+      } else if (
+        node.true_left.lt(this.logoot_end) ||
+        this.logoot_end.equalsHigherLevel(node.true_left)
+      ) {
         // eslint-disable-next-line
         let cf_node: AnchorLogootNode = this
         if (node.true_left.gt(this.logoot_start)) {

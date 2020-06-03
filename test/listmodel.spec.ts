@@ -585,6 +585,26 @@ describe('AnchorLogootNode', () => {
   })
 })
 
+
+const expectAnchors = (
+  node: AnchorLogootNode,
+  l: LeftAnchor,
+  r: RightAnchor
+): void => {
+  if (l === DocStart) {
+    expect(node.true_left).to.be.equal(l)
+  } else {
+    expect(node.true_left).to.be.an.instanceOf(LogootPosition)
+    expect((node.true_left as LogootPosition).eq(l)).to.be.true
+  }
+  if (r === DocEnd) {
+    expect(node.true_right).to.be.equal(r)
+  } else {
+    expect(node.true_right).to.be.an.instanceOf(LogootPosition)
+    expect((node.true_right as LogootPosition).eq(r)).to.be.true
+  }
+}
+
 describe('LDM support functions', () => {
   const u1 = 'U1'
   const u2 = 'U2'
@@ -827,6 +847,8 @@ describe('LDM support functions', () => {
       const added_nodes: AnchorLogootNode[] = []
       const start = LogootPosition.fromIntsBranches(o, [-3, u1])
       const final_ranges = fillSkipRanges(
+        LogootPosition.fromIntsBranches(o, [-10, u1]),
+        LogootPosition.fromIntsBranches(o, [20, u1]),
         start,
         new LogootInt(4),
         NodeType.DATA,
@@ -845,6 +867,11 @@ describe('LDM support functions', () => {
       expect(final_ranges[0].type).to.be.equal(NodeType.DATA)
       expect(final_ranges[0].clk.eq(4)).to.be.true
       expect(final_ranges[0].length).to.be.equal(5)
+      expectAnchors(
+        final_ranges[0],
+        LogootPosition.fromIntsBranches(o, [-10, u1]),
+        LogootPosition.fromIntsBranches(o, [20, u1])
+      )
     })
     it('basic fill on lower level', () => {
       const dummy = new AnchorLogootNode(
@@ -857,6 +884,8 @@ describe('LDM support functions', () => {
       const added_nodes: AnchorLogootNode[] = []
       const start = LogootPosition.fromIntsBranches(o, [1, u1], [0, u1])
       const final_ranges = fillSkipRanges(
+        LogootPosition.fromIntsBranches(o, [-10, u1]),
+        LogootPosition.fromIntsBranches(o, [20, u1]),
         start,
         new LogootInt(4),
         NodeType.DATA,
@@ -875,6 +904,11 @@ describe('LDM support functions', () => {
       expect(final_ranges[0].type).to.be.equal(NodeType.DATA)
       expect(final_ranges[0].clk.eq(4)).to.be.true
       expect(final_ranges[0].length).to.be.equal(5)
+      expectAnchors(
+        final_ranges[0],
+        LogootPosition.fromIntsBranches(o, [-10, u1]),
+        LogootPosition.fromIntsBranches(o, [20, u1])
+      )
     })
     it('nested skipping fill', () => {
       const dummy = new AnchorLogootNode(
@@ -894,6 +928,8 @@ describe('LDM support functions', () => {
       const added_nodes: AnchorLogootNode[] = []
       const start = LogootPosition.fromIntsBranches(o, [0, u1])
       const final_ranges = fillSkipRanges(
+        LogootPosition.fromIntsBranches(o, [-10, u1]),
+        LogootPosition.fromIntsBranches(o, [20, u1]),
         start,
         new LogootInt(4),
         NodeType.DATA,
@@ -914,6 +950,16 @@ describe('LDM support functions', () => {
 
       expect(added_nodes[0].logoot_start.eq(start)).to.be.true
       expect(added_nodes[1].logoot_start.eq(start.offsetLowest(2))).to.be.true
+      expectAnchors(
+        added_nodes[0],
+        LogootPosition.fromIntsBranches(o, [-10, u1]),
+        LogootPosition.fromIntsBranches(o, [2, u1])
+      )
+      expectAnchors(
+        added_nodes[1],
+        LogootPosition.fromIntsBranches(o, [2, u1]),
+        LogootPosition.fromIntsBranches(o, [20, u1])
+      )
     })
     it('overwrite fill', () => {
       const dummy = new AnchorLogootNode(
@@ -928,11 +974,15 @@ describe('LDM support functions', () => {
         1,
         NodeType.DATA
       )
+      embedded.left_anchor = DocStart
+      embedded.right_anchor = DocEnd
       embedded.value = 2
 
       const added_nodes: AnchorLogootNode[] = []
       const start = LogootPosition.fromIntsBranches(o, [0, u1])
       const final_ranges = fillSkipRanges(
+        LogootPosition.fromIntsBranches(o, [-10, u1]),
+        LogootPosition.fromIntsBranches(o, [20, u1]),
         start,
         new LogootInt(4),
         NodeType.DATA,
@@ -958,6 +1008,22 @@ describe('LDM support functions', () => {
 
       expect(added_nodes[0].logoot_start.eq(start)).to.be.true
       expect(added_nodes[1].logoot_start.eq(start.offsetLowest(2))).to.be.true
+
+      expectAnchors(
+        final_ranges[0],
+        LogootPosition.fromIntsBranches(o, [-10, u1]),
+        LogootPosition.fromIntsBranches(o, [1, u1])
+      )
+      expectAnchors(
+        final_ranges[1],
+        LogootPosition.fromIntsBranches(o, [1, u1]),
+        LogootPosition.fromIntsBranches(o, [2, u1])
+      )
+      expectAnchors(
+        final_ranges[2],
+        LogootPosition.fromIntsBranches(o, [2, u1]),
+        LogootPosition.fromIntsBranches(o, [20, u1])
+      )
     })
     it('new node has priority', () => {
       const dummy = new AnchorLogootNode(
@@ -977,6 +1043,8 @@ describe('LDM support functions', () => {
       const added_nodes: AnchorLogootNode[] = []
       const start = LogootPosition.fromIntsBranches(o, [0, u1])
       fillSkipRanges(
+        LogootPosition.fromIntsBranches(o, [-10, u1]),
+        LogootPosition.fromIntsBranches(o, [20, u1]),
         start,
         new LogootInt(0),
         NodeType.DATA,
@@ -1078,24 +1146,6 @@ describe('ListDocumentModel', () => {
       o,
       ...ns.map((n) => [n, u1]) as [number, string][]
     )
-  const expectAnchors = (
-    node: AnchorLogootNode,
-    l: LeftAnchor,
-    r: RightAnchor
-  ): void => {
-    if (l === DocStart) {
-      expect(node.true_left).to.be.equal(l)
-    } else {
-      expect(node.true_left).to.be.an.instanceOf(LogootPosition)
-      expect((node.true_left as LogootPosition).eq(l)).to.be.true
-    }
-    if (r === DocEnd) {
-      expect(node.true_right).to.be.equal(r)
-    } else {
-      expect(node.true_right).to.be.an.instanceOf(LogootPosition)
-      expect((node.true_right as LogootPosition).eq(r)).to.be.true
-    }
-  }
   beforeEach(() => {
     o = new BranchOrder()
     ldm = new ListDocumentModel(o)
@@ -1373,10 +1423,26 @@ describe('ListDocumentModel', () => {
           2,
           new LogootInt(2)
         )
+        nodes = ldm.all_nodes
         expect(ops).to.be.deep.equal([
           { type: 'i', start: 0, offset: 0, length: 1 },
           { type: 'i', start: 2, offset: 1, length: 1 }
         ])
+        expectAnchors(
+          nodes[1],
+          LogootPosition.fromIntsBranches(o, [1, u1]),
+          LogootPosition.fromIntsBranches(o, [1, u1])
+        )
+        expectAnchors(
+          nodes[0],
+          DocStart,
+          LogootPosition.fromIntsBranches(o, [1, u1], [0, u1])
+        )
+        expectAnchors(
+          nodes[2],
+          LogootPosition.fromIntsBranches(o, [1, u1], [1, u1]),
+          DocEnd
+        )
       })
       it('insertion in middle', () => {
         ldm.insertLogoot(
@@ -1523,6 +1589,28 @@ describe('ListDocumentModel', () => {
         expect(nodes[1].conflict_with).to.include(nodes[0])
         expect(nodes[0].conflict_with).to.include(nodes[1])
       })
+      it('adds conflict to possibly many nodes', () => {
+        const nodes = [0,1,2].map((i) => {
+          const node = new AnchorLogootNode(p(5 + i), 1)
+          node.value = i
+          ldm.bst.add(node)
+          return node
+        })
+        nodes[0].left_anchor = DocStart
+        nodes[2].right_anchor = DocEnd
+        ldm.insertLogoot(
+          u1,
+          undefined,
+          undefined,
+          1,
+          new LogootInt(0)
+        )
+        const newnode = ldm.all_nodes[0]
+        expect(newnode.conflict_with).to.include(nodes[0])
+        nodes.forEach((node) => {
+          expect(node.conflict_with).to.include(newnode)
+        })
+      })
       it('retroactive reductions', () => {
         const pos = LogootPosition.fromIntsBranches(o, [2, u1])
         let ops = ldm.insertLogoot(
@@ -1644,6 +1732,22 @@ describe('ListDocumentModel', () => {
         expect(nodes[4].true_left).to.be.an.instanceOf(LogootPosition)
         expect((nodes[4].true_left as LogootPosition).eq(p(1))).to.be.true
         expect(nodes[4].true_right).to.be.equal(DocEnd)
+      })
+      it('removal from sequence with multiple surrounding removals', () => {
+        const nodes = ([0,1,2,3,4,5]).map((i) => {
+          const n = new AnchorLogootNode(p(i), 1)
+          n.value = i
+          return n
+        })
+        nodes[0].left_anchor = DocStart
+        nodes[4].right_anchor = DocEnd
+        nodes.forEach((n) => ldm.bst.add(n))
+
+        ldm.removeLogoot(p(1), 1, new LogootInt(0))
+        ldm.removeLogoot(p(2), 1, new LogootInt(0))
+        ldm.removeLogoot(p(3), 1, new LogootInt(0))
+        ldm.removeLogoot(p(4), 1, new LogootInt(0))
+        ldm.selfTest()
       })
       it('consecutive removal anchor replacement', () => {
         ldm.insertLogoot(u1, undefined, undefined, 1, new LogootInt(0))
