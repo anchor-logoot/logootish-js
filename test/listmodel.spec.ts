@@ -627,13 +627,10 @@ describe('LDM support functions', () => {
       bst = new DBst<AnchorLogootNode>()
     })
     it('should default to a dummy node in skip ranges', () => {
-      const left = LogootPosition.fromIntsBranches(o, [0, u1])
       const start = LogootPosition.fromIntsBranches(o, [5, u2], [0, u2])
       const end = LogootPosition.fromIntsBranches(o, [5, u2], [2, u2])
-      const right = LogootPosition.fromIntsBranches(o, [9000, u3])
-      const d = constructSkipRanges(bst, { left, start, end, right })
+      const d = constructSkipRanges(bst, { start, end })
 
-      expect(d.nc_left.length).to.be.equal(0)
       expect(d.skip_ranges.length).to.be.equal(1)
       expect(d.skip_ranges[0].type).to.be.equal(NodeType.DUMMY)
       expect(d.skip_ranges[0].ldoc_start).to.be.equal(0)
@@ -641,194 +638,106 @@ describe('LDM support functions', () => {
         d.skip_ranges[0].logoot_start
           .cmp(LogootPosition.fromIntsBranches(o, [5, u2], [2, u2]))
       ).to.be.equal(0)
-      expect(d.nc_right.length).to.be.equal(0)
-      expect(d.anchor_left).to.be.undefined
-      expect(d.anchor_right).to.be.undefined
+      expect(d.lesser).to.be.undefined
+      expect(d.greater).to.be.undefined
     })
     it('should place nodes into correct category', () => {
-      const left = LogootPosition.fromIntsBranches(o, [1, u1])
       const start = LogootPosition.fromIntsBranches(o, [2, u1])
       const end = LogootPosition.fromIntsBranches(o, [4, u1])
-      const right = LogootPosition.fromIntsBranches(o, [6, u1])
 
-      const nodes = ([0,1,2,3,4,5,6,7,8]).map((i) => {
+      const nodes = ([0,1,2,3,4,5]).map((i) => {
         const n = new AnchorLogootNode(p(i), 1)
         n.value = i
         return n
       })
       nodes.forEach((n) => bst.add(n))
-      const d = constructSkipRanges(bst, { left, start, end, right })
+      const d = constructSkipRanges(bst, { start, end })
 
-      expect(d.nc_left).to.have.same.members(nodes.slice(1, 2))
+      expect(d.lesser).to.be.equal(nodes[1])
       expect(d.skip_ranges).to.have.same.members(nodes.slice(2, 4))
-      expect(d.nc_right).to.have.same.members(nodes.slice(4, 6))
-      expect(d.anchor_left).to.be.equal(nodes[0])
-      expect(d.anchor_right).to.be.equal(nodes[6])
+      expect(d.greater).to.be.equal(nodes[4])
     })
-    it('should discover nodes on lower levels', () => {
-      const left = LogootPosition.fromIntsBranches(o, [1, u2])
-      const right = LogootPosition.fromIntsBranches(o, [2, u2])
-      const start = LogootPosition.fromIntsBranches(o, [1, u2], [0, u2])
-      const end = LogootPosition.fromIntsBranches(o, [1, u2], [2, u2])
+    it('should infer position for dummy node', () => {
+      const start = LogootPosition.fromIntsBranches(o, [5, u2])
+      const end = LogootPosition.fromIntsBranches(o, [9000, u2])
 
-      const nodes: AnchorLogootNode[] = []
-      let position = 0
-      const addnode = (pos: LogootPosition, length: number): void => {
-        const n = new AnchorLogootNode(pos, length)
-        n.value = position
-        position += length
-        bst.add(n)
-        nodes.push(n)
-      }
-      addnode(LogootPosition.fromIntsBranches(o, [0, u2]), 1)
-      addnode(LogootPosition.fromIntsBranches(o, [1, u2], [0, u1]), 1)
-      addnode(LogootPosition.fromIntsBranches(o, [1, u2], [0, u2]), 1)
-      addnode(LogootPosition.fromIntsBranches(o, [1, u2], [0, u3]), 1)
-      addnode(LogootPosition.fromIntsBranches(o, [2, u2]), 1)
+      bst.add(new AnchorLogootNode(
+        LogootPosition.fromIntsBranches(o, [0, u1]),
+        1
+      ))
+      const { skip_ranges } = constructSkipRanges(bst, { start, end })
 
-      const d = constructSkipRanges(bst, { left, start, end, right })
-      expect(d.anchor_left).to.be.equal(nodes[0])
-      expect(d.anchor_right).to.be.equal(nodes[4])
-      expect(d.nc_left, '`nc_left` wrong').to.same.members([nodes[1]])
-      expect(d.skip_ranges.length, '`skip_ranges` wrong').to.be.equal(2)
-      expect(d.skip_ranges[0], '`skip_ranges` wrong').to.be.equal(nodes[2])
-      expect(d.nc_right, '`nc_right` wrong').to.same.members([nodes[3]])
+      expect(skip_ranges.length).to.be.equal(1)
+      expect(skip_ranges[0].type).to.be.equal(NodeType.DUMMY)
+      expect(skip_ranges[0].ldoc_start).to.be.equal(1, 'Did not infer pos')
+      expect(
+        skip_ranges[0].logoot_start
+          .cmp(LogootPosition.fromIntsBranches(o, [9000, u2]))
+      ).to.be.equal(0)
     })
-    describe('splitting', () => {
-      it('should split into skip_ranges', () => {
-        const left = LogootPosition.fromIntsBranches(o, [0, u1])
-        const start = LogootPosition.fromIntsBranches(o, [2, u1])
-        const end = LogootPosition.fromIntsBranches(o, [4, u1])
-        const right = LogootPosition.fromIntsBranches(o, [6, u1])
+    it('should split into skip_ranges', () => {
+      const start = LogootPosition.fromIntsBranches(o, [2, u1])
+      const end = LogootPosition.fromIntsBranches(o, [4, u1])
 
-        const n = new AnchorLogootNode(
-          LogootPosition.fromIntsBranches(o, [0, u1]),
-          3
-        )
-        bst.add(n)
-        const { nc_left, skip_ranges, nc_right } = constructSkipRanges(
-          bst,
-          { left, start, end, right }
-        )
+      const n = new AnchorLogootNode(
+        LogootPosition.fromIntsBranches(o, [0, u1]),
+        3
+      )
+      bst.add(n)
+      const { lesser, skip_ranges, greater } = constructSkipRanges(
+        bst,
+        { start, end }
+      )
 
-        expect(nc_left).to.have.same.members([n])
+      expect(lesser).to.be.equal(n)
 
-        expect(skip_ranges.length).to.be.equal(2)
-        expect(
-          skip_ranges[0].logoot_start
-            .cmp(LogootPosition.fromIntsBranches(o, [2, u1]))
-        ).to.be.equal(0)
-        expect(skip_ranges[0].ldoc_start).to.be.equal(2)
-        expect(skip_ranges[0].length).to.be.equal(1)
+      expect(skip_ranges.length).to.be.equal(2)
+      expect(
+        skip_ranges[0].logoot_start
+          .cmp(LogootPosition.fromIntsBranches(o, [2, u1]))
+      ).to.be.equal(0)
+      expect(skip_ranges[0].ldoc_start).to.be.equal(2)
+      expect(skip_ranges[0].length).to.be.equal(1)
 
-        expect(
-          skip_ranges[1].logoot_start
-            .cmp(LogootPosition.fromIntsBranches(o, [4, u1]))
-        ).to.be.equal(0)
-        expect(skip_ranges[1].ldoc_start).to.be.equal(3)
-        expect(skip_ranges[1].type).to.be.equal(NodeType.DUMMY)
+      expect(
+        skip_ranges[1].logoot_start
+          .cmp(LogootPosition.fromIntsBranches(o, [4, u1]))
+      ).to.be.equal(0)
+      expect(skip_ranges[1].ldoc_start).to.be.equal(3)
+      expect(skip_ranges[1].type).to.be.equal(NodeType.DUMMY)
 
-        expect(nc_right.length).to.be.equal(0)
-      })
-      it('should split into nc_right', () => {
-        const left = LogootPosition.fromIntsBranches(o, [0, u1])
-        const start = LogootPosition.fromIntsBranches(o, [2, u1])
-        const end = LogootPosition.fromIntsBranches(o, [4, u1])
-        const right = LogootPosition.fromIntsBranches(o, [6, u1])
+      expect(greater).to.be.undefined
+    })
+    it('should split multiple times', () => {
+      const start = LogootPosition.fromIntsBranches(o, [2, u1])
+      const end = LogootPosition.fromIntsBranches(o, [4, u1])
 
-        const n = new AnchorLogootNode(
-          LogootPosition.fromIntsBranches(o, [0, u1]),
-          2
-        )
-        bst.add(n)
-        const n2 = new AnchorLogootNode(
-          LogootPosition.fromIntsBranches(o, [3, u1]),
-          2
-        )
-        n2.value = 2
-        bst.add(n2)
-        const { nc_left, skip_ranges, nc_right } = constructSkipRanges(
-          bst,
-          { left, start, end, right }
-        )
+      const n = new AnchorLogootNode(
+        LogootPosition.fromIntsBranches(o, [0, u1]),
+        10
+      )
+      bst.add(n)
+      const { lesser, skip_ranges, greater } = constructSkipRanges(
+        bst,
+        { start, end }
+      )
 
-        expect(nc_left).to.have.same.members([n])
+      expect(lesser).to.be.equal(n)
 
-        expect(skip_ranges.length).to.be.equal(1)
-        expect(
-          skip_ranges[0].logoot_start
-            .cmp(LogootPosition.fromIntsBranches(o, [3, u1]))
-        ).to.be.equal(0)
-        expect(skip_ranges[0].ldoc_start).to.be.equal(2)
-        expect(skip_ranges[0].length).to.be.equal(1)
+      expect(skip_ranges.length).to.be.equal(1)
+      expect(
+        skip_ranges[0].logoot_start
+          .cmp(LogootPosition.fromIntsBranches(o, [2, u1]))
+      ).to.be.equal(0)
+      expect(skip_ranges[0].ldoc_start).to.be.equal(2)
+      expect(skip_ranges[0].length).to.be.equal(2)
 
-        expect(nc_right.length).to.be.equal(1)
-        expect(
-          nc_right[0].logoot_start
-            .cmp(LogootPosition.fromIntsBranches(o, [4, u1]))
-        ).to.be.equal(0)
-        expect(nc_right[0].ldoc_start).to.be.equal(3)
-        expect(nc_right[0].length).to.be.equal(1)
-      })
-      it('should split into skip_ranges and nc_right', () => {
-        const left = LogootPosition.fromIntsBranches(o, [0, u1])
-        const start = LogootPosition.fromIntsBranches(o, [2, u1])
-        const end = LogootPosition.fromIntsBranches(o, [4, u1])
-        const right = LogootPosition.fromIntsBranches(o, [6, u1])
-
-        const n = new AnchorLogootNode(
-          LogootPosition.fromIntsBranches(o, [0, u1]),
-          5
-        )
-        bst.add(n)
-        const { nc_left, skip_ranges, nc_right } = constructSkipRanges(
-          bst,
-          { left, start, end, right }
-        )
-
-        expect(nc_left).to.have.same.members([n])
-
-        expect(skip_ranges.length).to.be.equal(1)
-        expect(
-          skip_ranges[0].logoot_start
-            .cmp(LogootPosition.fromIntsBranches(o, [2, u1]))
-        ).to.be.equal(0)
-        expect(skip_ranges[0].ldoc_start).to.be.equal(2)
-        expect(skip_ranges[0].length).to.be.equal(2)
-
-        expect(nc_right.length).to.be.equal(1)
-        expect(
-          nc_right[0].logoot_start
-            .cmp(LogootPosition.fromIntsBranches(o, [4, u1]))
-        ).to.be.equal(0)
-        expect(nc_right[0].ldoc_start).to.be.equal(4)
-        expect(nc_right[0].length).to.be.equal(1)
-      })
-      it('should infer position from dummy node', () => {
-        const left = LogootPosition.fromIntsBranches(o, [4, u2])
-        const start = LogootPosition.fromIntsBranches(o, [5, u2])
-        const end = LogootPosition.fromIntsBranches(o, [6, u2])
-        const right = LogootPosition.fromIntsBranches(o, [9000, u3])
-
-        bst.add(new AnchorLogootNode(
-          LogootPosition.fromIntsBranches(o, [0, u1]),
-          1
-        ))
-        const { nc_left, skip_ranges, nc_right } = constructSkipRanges(
-          bst,
-          { left, start, end, right }
-        )
-
-        expect(nc_left.length).to.be.equal(0)
-        expect(skip_ranges.length).to.be.equal(1)
-        expect(skip_ranges[0].type).to.be.equal(NodeType.DUMMY)
-        expect(skip_ranges[0].ldoc_start).to.be.equal(1, 'Did not infer pos')
-        expect(
-          skip_ranges[0].logoot_start
-            .cmp(LogootPosition.fromIntsBranches(o, [6, u2]))
-        ).to.be.equal(0)
-        expect(nc_right.length).to.be.equal(0)
-      })
+      expect(
+        greater.logoot_start
+          .cmp(LogootPosition.fromIntsBranches(o, [4, u1]))
+      ).to.be.equal(0)
+      expect(greater.ldoc_start).to.be.equal(4)
+      expect(greater.length).to.be.equal(6)
     })
   })
   describe('fillSkipRanges', () => {
@@ -1610,6 +1519,30 @@ describe('ListDocumentModel', () => {
         nodes.forEach((node) => {
           expect(node.conflict_with).to.include(newnode)
         })
+      })
+      it('splits destination node to make conflicts work', () => {
+        const cnode = new AnchorLogootNode(p(5), 5)
+        ldm.bst.add(cnode)
+        cnode.left_anchor = DocStart
+        cnode.right_anchor = DocEnd
+
+        ldm.insertLogoot(
+          u1,
+          p(0),
+          p(6),
+          1,
+          new LogootInt(0)
+        )
+
+        const newnode = ldm.all_nodes[0]
+        const ncnode = cnode.inorder_successor
+        expect(cnode.length).to.be.equal(1)
+        expect(ncnode).to.not.be.undefined
+        expect(ncnode.length).to.be.equal(4)
+        expect(newnode.conflict_with).to.include(cnode)
+        expect(newnode.conflict_with).to.not.include(ncnode)
+        expect(cnode.conflict_with).to.include(newnode)
+        expect(ncnode.conflict_with).to.not.include(newnode)
       })
       it('retroactive reductions', () => {
         const pos = LogootPosition.fromIntsBranches(o, [2, u1])

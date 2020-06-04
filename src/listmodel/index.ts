@@ -142,33 +142,27 @@ class OperationBuffer {
 }
 
 type SkipRangeSearch = {
-  left: LogootPosition
   start: LogootPosition
   end: LogootPosition
-  right: LogootPosition
 }
 function constructSkipRanges(
   bst: DBst<AnchorLogootNode>,
-  { left, start, end, right }: SkipRangeSearch,
+  { start, end }: SkipRangeSearch,
   bstadd: (n: AnchorLogootNode) => void = (
     n: AnchorLogootNode
   ): AnchorLogootNode => bst.add(n)
 ): {
   lesser: AnchorLogootNode
-  anchor_left: AnchorLogootNode
-  nc_left: AnchorLogootNode[]
   skip_ranges: AnchorLogootNode[]
-  nc_right: AnchorLogootNode[]
-  anchor_right: AnchorLogootNode
   greater: AnchorLogootNode
 } {
   const cf = (a: AnchorLogootNode, b: AnchorLogootNode): CompareResult =>
     a.preferential_cmp(b)
   const range = new TypeRange(
     cf,
-    left ? new AnchorLogootNode(left.inverseOffsetLowest(1), 0) : undefined,
-    right ? new AnchorLogootNode(right, 0) : undefined,
-    RangeBounds.LOGO
+    new AnchorLogootNode(start, 0),
+    new AnchorLogootNode(end, 0),
+    RangeBounds.LCGO
   )
   const { buckets } = bst.prefSearch(range)
 
@@ -179,23 +173,11 @@ function constructSkipRanges(
     .concat(buckets.greater.map(([node]) => node))
     .sort((a, b) => a.preferential_cmp(b))
 
-  const [aleft, nc_left, skip_ranges, nc_right, aright] = sliceNodesIntoRanges(
-    [left || start, start, end, right || end],
+  const [lesser, skip_ranges, greater] = sliceNodesIntoRanges(
+    [start, end],
     blob,
     (node: AnchorLogootNode) => bstadd(node)
   )
-  // If there's no left/right anchor, the ends of the sliced ranges are the
-  // nodes that are not contained in the provided ranges. Normally, this would
-  // be the anchor, but since one of the search bounds is undefined, this
-  // contains the entire conflict range
-  if (!left) {
-    nc_left.push(...aleft)
-    aleft.length = 0
-  }
-  if (!right) {
-    nc_right.push(...aright)
-    aright.length = 0
-  }
 
   if (
     skip_ranges.length === 0 ||
@@ -205,42 +187,19 @@ function constructSkipRanges(
     // Search every available array to find an end position
     if (skip_ranges.length) {
       dummy.value = skip_ranges[skip_ranges.length - 1].ldoc_end
-    } else if (nc_right.length) {
-      dummy.value = nc_right[0].ldoc_start
-    } else if (nc_left.length) {
-      dummy.value = nc_left[nc_left.length - 1].ldoc_end
-    } else if (buckets.lesser.length) {
-      dummy.value = buckets.lesser[buckets.lesser.length - 1][0].ldoc_end
+    } else if (greater.length) {
+      dummy.value = greater[0].ldoc_start
+    } else if (lesser.length) {
+      dummy.value = lesser[lesser.length - 1].ldoc_end
     }
 
     skip_ranges.push(dummy)
   }
 
-  const lowestData = (in_array: AnchorLogootNode[]): AnchorLogootNode => {
-    const it = in_array.values()
-    while (true) {
-      const node = it.next().value
-      if (!node || node.type === NodeType.DATA) {
-        return node
-      }
-    }
-  }
-  let anchor_left = lowestData(aleft.reverse())
-  if (!left || (anchor_left && !anchor_left.logoot_end.eq(left))) {
-    anchor_left = undefined
-  }
-  let anchor_right = lowestData(aright)
-  if (!right || (anchor_right && !anchor_right.logoot_start.eq(right))) {
-    anchor_right = undefined
-  }
   return {
-    lesser: lowestData(aleft.reverse()),
-    anchor_left,
-    nc_left,
+    lesser: lesser[lesser.length - 1],
     skip_ranges,
-    nc_right,
-    anchor_right,
-    greater: lowestData(aright)
+    greater: greater[0]
   }
 }
 
@@ -347,22 +306,60 @@ function linkFilledSkipRanges(
   if (last_node_to_anchor && right) {
     last_node_to_anchor.reduceRight(right)
   }
-  /* // Now, there may be nodes in the middle that link to added nodes. Ensure
-  // that added node ends are reduced
-  filled_skip_ranges.forEach((node, i, nodes) => {
-    if (node.logoot_start.length > level) {
-      const last = nodes[i - 1]
-      const next = nodes[i + 1]
-      const left = node.true_left
-      const right = node.true_right
-      if (last && left !== DocStart && last.logoot_end.eq(left)) {
-        last.reduceRight(node.logoot_start)
-      }
-      if (next && right !== DocEnd && next.logoot_start.eq(right)) {
-        next.reduceLeft(node.logoot_end)
-      }
+}
+
+function reduceInferredRangeAnchors(
+  lesser: AnchorLogootNode,
+  filled_skip_ranges: AnchorLogootNode[],
+  greater: AnchorLogootNode
+): void {
+  const capped_range = [...filled_skip_ranges]
+  lesser && capped_range.unshift(lesser)
+  greater && capped_range.push(greater)
+
+  // Mutually reduce any nodes that anchor to the new nodes or that these
+  // nodes anchor to
+  // TODO: Do we actually need to do this for middle nodes?
+  // TODO: Will only testing for equality work? (If the answer is yes, then
+  // probably no for above)
+  capped_range.forEach((node: AnchorLogootNode) => {
+    const last = capped_range[capped_range.indexOf(node) - 1]
+    const next = capped_range[capped_range.indexOf(node) + 1]
+    let scan_nodes: Set<AnchorLogootNode>
+    // First, check for nodes that may anchor here by searching the anchors
+    // of the last node and its conflicts
+    if (last) {
+      scan_nodes = new Set<AnchorLogootNode>(last?.conflict_with)
+      scan_nodes.add(last)
+      scan_nodes.forEach((snode) => {
+        const s_right = snode.true_right
+        const n_left = node.true_left
+        if (
+          (s_right !== DocEnd && s_right.eq(node.logoot_start)) ||
+          (n_left !== DocStart && n_left.eq(snode.logoot_end))
+        ) {
+          snode.reduceRight(node.logoot_start)
+          node.reduceLeft(snode.logoot_end)
+        }
+      })
     }
-  }) */
+    // Do the same, but for the next node
+    if (next) {
+      scan_nodes = new Set<AnchorLogootNode>(next?.conflict_with)
+      scan_nodes.add(next)
+      scan_nodes.forEach((snode) => {
+        const s_left = snode.true_left
+        const n_right = node.true_right
+        if (
+          (s_left !== DocStart && s_left.eq(node.logoot_end)) ||
+          (n_right !== DocEnd && n_right.eq(snode.logoot_start))
+        ) {
+          snode.reduceLeft(node.logoot_end)
+          node.reduceRight(snode.logoot_start)
+        }
+      })
+    }
+  })
 }
 
 function fillRangeConflicts(
@@ -385,6 +382,60 @@ function fillRangeConflicts(
   range.reverse()
   range.every(cfupdate)
   range.reverse()
+}
+
+function insertTrailingConflicts(
+  filled_skip_ranges: AnchorLogootNode[],
+  bstadd: (n: AnchorLogootNode) => void
+): void {
+  // Find the first and last nodes from the filled skip ranges
+  const first = filled_skip_ranges[0]
+  const last = filled_skip_ranges[filled_skip_ranges.length - 1]
+  const true_left = first.true_left
+  const true_right = first.true_right
+
+  // Add conflicts to lesser nodes
+  let node = first.inorder_predecessor
+  let expected: boolean
+  let getExpectedValue = (): boolean => {
+    const pos = true_left !== DocStart && node.positionOf(true_left)
+    if (pos && pos < node.length) {
+      node = node.splitAround(pos)
+      bstadd(node)
+    }
+    expected = true_left === DocStart ||
+      node.logoot_end.gt(true_left) ||
+      // Account for nodes with lower level ends:
+      node.logoot_end.equalsHigherLevel(true_left)
+    return expected
+  }
+  while(node && node.conflict_with.has(first) !== getExpectedValue()) {
+    if (expected) {
+      node.conflict_with.add(first)
+    } else {
+      node.conflict_with.delete(first)
+    }
+    node = node.inorder_predecessor
+  }
+
+  // Add conflicts to greater nodes
+  node = last.inorder_successor
+  getExpectedValue = (): boolean => {
+    const pos = true_right !== DocEnd && node.positionOf(true_right)
+    if (pos && pos < node.length) {
+      bstadd(node.splitAround(pos))
+    }
+    expected = true_right === DocEnd || node.logoot_start.lt(true_right)
+    return expected
+  }
+  while(node && node.conflict_with.has(last) !== getExpectedValue()) {
+    if (expected) {
+      node.conflict_with.add(last)
+    } else {
+      node.conflict_with.delete(last)
+    }
+    node = node.inorder_successor
+  }
 }
 
 function patchRemovalAnchors(
@@ -603,19 +654,11 @@ class ListDocumentModel {
     const start = new LogootPosition(br, length, left, right, this.branch_order)
     const end = start.offsetLowest(length)
 
-    const data = constructSkipRanges(
+    const { lesser, skip_ranges, greater } = constructSkipRanges(
       this.bst,
-      {
-        left: left,
-        start,
-        end,
-        right: right
-      },
+      { start, end },
       bstadd
     )
-    const { nc_left, skip_ranges, nc_right } = data
-    const lesser = nc_left[nc_left.length - 1] || data.lesser
-    const greater = nc_right[0] || data.greater
 
     const opbuf = new OperationBuffer(this.bst, this.opts, length)
     if (skip_ranges[skip_ranges.length - 1].type === NodeType.DUMMY) {
@@ -637,94 +680,9 @@ class ListDocumentModel {
       }
     )
 
-    const capped_range = [...filled_skip_ranges]
-    lesser && capped_range.unshift(lesser)
-    greater && capped_range.push(greater)
-
-    // Mutually reduce any nodes that anchor to the new nodes or that these
-    // nodes anchor to
-    // TODO: Do we actually need to do this for middle nodes?
-    // TODO: Will only testing for equality work? (If the answer is yes, then
-    // probably no for above)
-    capped_range.forEach((node: AnchorLogootNode) => {
-      const last = capped_range[capped_range.indexOf(node) - 1]
-      const next = capped_range[capped_range.indexOf(node) + 1]
-      let scan_nodes: Set<AnchorLogootNode>
-      // First, check for nodes that may anchor here by searching the anchors
-      // of the last node and its conflicts
-      if (last) {
-        scan_nodes = new Set<AnchorLogootNode>(last?.conflict_with)
-        scan_nodes.add(last)
-        scan_nodes.forEach((snode) => {
-          const s_right = snode.true_right
-          const n_left = node.true_left
-          if (
-            (s_right !== DocEnd && s_right.eq(node.logoot_start)) ||
-            (n_left !== DocStart && n_left.eq(snode.logoot_end))
-          ) {
-            snode.reduceRight(node.logoot_start)
-            node.reduceLeft(snode.logoot_end)
-          }
-        })
-      }
-      // Do the same, but for the next node
-      if (next) {
-        scan_nodes = new Set<AnchorLogootNode>(next?.conflict_with)
-        scan_nodes.add(next)
-        scan_nodes.forEach((snode) => {
-          const s_left = snode.true_left
-          const n_right = node.true_right
-          if (
-            (s_left !== DocStart && s_left.eq(node.logoot_end)) ||
-            (n_right !== DocEnd && n_right.eq(snode.logoot_start))
-          ) {
-            snode.reduceLeft(node.logoot_end)
-            node.reduceRight(snode.logoot_start)
-          }
-        })
-      }
-    })
+    reduceInferredRangeAnchors(lesser, filled_skip_ranges, greater)
     fillRangeConflicts(lesser, greater, filled_skip_ranges, bstadd)
-
-    // Find the first and last nodes from the filled skip ranges
-    const first = filled_skip_ranges[0]
-    const last = filled_skip_ranges[filled_skip_ranges.length - 1]
-    const true_left = first.true_left
-    const true_right = first.true_right
-
-    // Add conflicts to lesser nodes
-    let node = first.inorder_predecessor
-    let expected: boolean
-    let getExpectedValue = (): boolean => {
-      expected = true_left === DocStart ||
-        node.logoot_end.gt(true_left) ||
-        // Account for nodes with lower level ends:
-        node.logoot_end.equalsHigherLevel(true_left)
-      return expected
-    }
-    while(node && node.conflict_with.has(first) !== getExpectedValue()) {
-      if (expected) {
-        node.conflict_with.add(first)
-      } else {
-        node.conflict_with.delete(first)
-      }
-      node = node.inorder_predecessor
-    }
-
-    // Add conflicts to greater nodes
-    node = last.inorder_successor
-    getExpectedValue = (): boolean => {
-      expected = true_right === DocEnd || node.logoot_start.lt(true_right)
-      return expected
-    }
-    while(node && node.conflict_with.has(last) !== getExpectedValue()) {
-      if (expected) {
-        node.conflict_with.add(last)
-      } else {
-        node.conflict_with.delete(last)
-      }
-      node = node.inorder_successor
-    }
+    insertTrailingConflicts(filled_skip_ranges, bstadd)
 
     return opbuf.operations
   }
