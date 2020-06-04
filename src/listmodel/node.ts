@@ -101,6 +101,45 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
     }
   }
 
+  findLeftAnchorNode(left = this.inorder_predecessor) : AnchorLogootNode {
+    if (!left) {
+      return undefined
+    }
+    const true_left = this.true_left
+    if (true_left === DocStart) {
+      return undefined
+    }
+
+    const it = new Set<AnchorLogootNode>(left.conflict_with).add(left).values()
+    let value: AnchorLogootNode
+    while (({ value } = it.next()) && value) {
+      if (value.logoot_end.eq(true_left)) {
+        return value
+      }
+    }
+    return undefined
+  }
+  findRightAnchorNode(right = this.inorder_successor) : AnchorLogootNode {
+    if (!right) {
+      return undefined
+    }
+    const true_right = this.true_right
+    if (true_right === DocEnd) {
+      return undefined
+    }
+
+    const it = new Set<AnchorLogootNode>(
+      right.conflict_with
+    ).add(right).values()
+    let value: AnchorLogootNode
+    while (({ value } = it.next()) && value) {
+      if (value.logoot_start.eq(true_right)) {
+        return value
+      }
+    }
+    return undefined
+  }
+
   addConflictsFromNode(
     node: AnchorLogootNode
   ): {
