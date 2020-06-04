@@ -1572,6 +1572,54 @@ describe('ListDocumentModel', () => {
         expect((nodes[1].true_left as LogootPosition).eq(pos)).to.be.true
         expect(nodes[1].true_right).to.be.equal(DocEnd)
       })
+      it('does not reduce if removal anchors to start', () => {
+        const cnode = new AnchorLogootNode(p(3), 1, NodeType.REMOVAL)
+        ldm.bst.add(cnode)
+        cnode.left_anchor = p(1)
+        cnode.right_anchor = DocEnd
+
+        ldm.insertLogoot(
+          u1,
+          undefined,
+          undefined,
+          1,
+          new LogootInt(0)
+        )
+
+        const newnode = ldm.all_nodes[0]
+
+        expectAnchors(newnode, DocStart, DocEnd)
+        expectAnchors(cnode, p(1), DocEnd)
+        expect(cnode.conflict_with).to.include(newnode)
+        expect(newnode.conflict_with).to.not.include(cnode)
+      })
+      it('if anchored to removal, replaces anchor', () => {
+        const cnode = new AnchorLogootNode(p(3), 1, NodeType.REMOVAL)
+        ldm.bst.add(cnode)
+        cnode.left_anchor = p(1)
+        cnode.right_anchor = p(4)
+        const cnode2 = new AnchorLogootNode(p(4), 1, NodeType.REMOVAL)
+        ldm.bst.add(cnode2)
+        cnode2.left_anchor = p(4)
+        cnode2.right_anchor = p(20)
+
+        ldm.insertLogoot(
+          u1,
+          p(0),
+          p(3),
+          1,
+          new LogootInt(0)
+        )
+
+        const newnode = ldm.all_nodes[0]
+
+        expectAnchors(newnode, p(0), p(20))
+        expectAnchors(cnode, p(1), p(4))
+        expectAnchors(cnode2, p(4), p(20))
+        expect(cnode.conflict_with).to.include(newnode)
+        expect(newnode.conflict_with).to.not.include(cnode)
+        expect(newnode.conflict_with).to.not.include(cnode2)
+      })
     })
   })
   describe('removeLogoot', () => {

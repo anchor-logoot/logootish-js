@@ -322,9 +322,9 @@ function reduceInferredRangeAnchors(
   // TODO: Do we actually need to do this for middle nodes?
   // TODO: Will only testing for equality work? (If the answer is yes, then
   // probably no for above)
-  capped_range.forEach((node: AnchorLogootNode) => {
-    const last = capped_range[capped_range.indexOf(node) - 1]
-    const next = capped_range[capped_range.indexOf(node) + 1]
+  capped_range.forEach((node: AnchorLogootNode, i) => {
+    const last = capped_range[i - 1]
+    const next = capped_range[i + 1]
     let scan_nodes: Set<AnchorLogootNode>
     // First, check for nodes that may anchor here by searching the anchors
     // of the last node and its conflicts
@@ -333,13 +333,58 @@ function reduceInferredRangeAnchors(
       scan_nodes.add(last)
       scan_nodes.forEach((snode) => {
         const s_right = snode.true_right
-        const n_left = node.true_left
+        let n_left = node.true_left
+        // If `node` is anchored to the newly discovered node OR this node is
+        // anchored to `node`...
         if (
           (s_right !== DocEnd && s_right.eq(node.logoot_start)) ||
           (n_left !== DocStart && n_left.eq(snode.logoot_end))
         ) {
-          snode.reduceRight(node.logoot_start)
-          node.reduceLeft(snode.logoot_end)
+          // Don't reduce to a removal. Removals can be reduced to each other
+          if (
+            snode.type === NodeType.REMOVAL &&
+            node.type !== NodeType.REMOVAL
+          ) {
+            // If `node` is anchored to a removal, update to anchor to a data
+            // node. We only have to do this for `node` and not `snode` since
+            // only `node` is new -- `snode` should've already been updated
+            if (n_left !== DocStart && n_left.eq(snode.logoot_end)) {
+              let itnode = snode
+              // TODO: Take a shortcut using node conflicts instead of iterating
+              // Again, it sucks that I can't generalize this easily
+              // This basically follows the chain of anchors until it finds a
+              // node that isn't a removal or hits the end
+              while (itnode && itnode.type === NodeType.REMOVAL) {
+                node.left_anchor = itnode.left_anchor
+                n_left = node.left_anchor
+
+                const predecessor = itnode.inorder_predecessor
+                itnode = undefined
+                if (predecessor) {
+                  // Now that we have all possible nodes, find where our
+                  // conflict points to:
+                  const it = new Set<AnchorLogootNode>(
+                    predecessor.conflict_with
+                  ).add(predecessor).values()
+
+                  let value: AnchorLogootNode
+                  while (!itnode && ({ value } = it.next()) && value) {
+                    if (n_left !== DocStart && n_left.eq(value.logoot_end)) {
+                      itnode = value
+                    }
+                  }
+                }
+              }
+            }
+          } else {
+            node.reduceLeft(snode.logoot_end)
+          }
+          if (
+            node.type !== NodeType.REMOVAL ||
+            snode.type === NodeType.REMOVAL
+          ) {
+            snode.reduceRight(node.logoot_start)
+          }
         }
       })
     }
@@ -349,13 +394,49 @@ function reduceInferredRangeAnchors(
       scan_nodes.add(next)
       scan_nodes.forEach((snode) => {
         const s_left = snode.true_left
-        const n_right = node.true_right
+        let n_right = node.true_right
+        // See comments above. Unfortunately, not enough of the code is similar
+        // for me to generalize this in a readable way.
         if (
           (s_left !== DocStart && s_left.eq(node.logoot_end)) ||
           (n_right !== DocEnd && n_right.eq(snode.logoot_start))
         ) {
-          snode.reduceLeft(node.logoot_end)
-          node.reduceRight(snode.logoot_start)
+          if (
+            node.type !== NodeType.REMOVAL ||
+            snode.type === NodeType.REMOVAL
+          ) {
+            snode.reduceLeft(node.logoot_end)
+          }
+          if (
+            snode.type === NodeType.REMOVAL &&
+            node.type !== NodeType.REMOVAL
+          ) {
+            if (n_right !== DocEnd && n_right.eq(snode.logoot_start)) {
+              let itnode = snode
+              // TODO: Take a shortcut using node conflicts instead of iterating
+              while (itnode && itnode.type === NodeType.REMOVAL) {
+                node.right_anchor = itnode.right_anchor
+                n_right = node.right_anchor
+
+                const successor = itnode.inorder_successor
+                itnode = undefined
+                if (successor) {
+                  const it = new Set<AnchorLogootNode>(
+                    successor.conflict_with
+                  ).add(successor).values()
+
+                  let value: AnchorLogootNode
+                  while (!itnode && ({ value } = it.next()) && value) {
+                    if (n_right !== DocEnd && n_right.eq(value.logoot_start)) {
+                      itnode = value
+                    }
+                  }
+                }
+              }
+            }
+          } else {
+            node.reduceRight(snode.logoot_start)
+          }
         }
       })
     }
