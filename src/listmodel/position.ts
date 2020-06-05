@@ -1,5 +1,3 @@
-import 'regenerator-runtime/runtime'
-
 import { LogootInt } from './int'
 import { CompareResult, FatalError } from '../utils'
 import { BranchKey, BranchOrder } from './branch'
@@ -519,7 +517,7 @@ class LogootPosition extends Comparable<LogootPosition> {
     return this
   }
 
-  equalsHigherLevel(to: LogootPosition) {
+  equalsHigherLevel(to: LogootPosition): boolean {
     return to.length < this.length && this.copy().truncateTo(to.length).eq(to)
   }
 
@@ -531,13 +529,14 @@ class LogootPosition extends Comparable<LogootPosition> {
         return b
       }
     }
-    return this.branch_array.map((br, i) => ([this.lp.l(i).toJSON(), jb(br)]))
+    return this.branch_array.map((br, i) => [this.lp.l(i).toJSON(), jb(br)])
   }
 
   toMappedOrderJSON(order: BranchOrder): LogootPosition.MappedOrderJSON {
-    return this.branch_array.map(
-      (br, i) => ([this.lp.l(i).toJSON(), order.i(br)])
-    )
+    return this.branch_array.map((br, i) => [
+      this.lp.l(i).toJSON(),
+      order.i(br)
+    ])
   }
 
   toString(): string {
@@ -556,10 +555,7 @@ namespace LogootPosition {
       type: 'array',
       items: {
         type: 'array',
-        items: [
-          LogootInt.JSON.Schema,
-          { type: ['number', 'string'] }
-        ]
+        items: [LogootInt.JSON.Schema, { type: ['number', 'string'] }]
       }
     }
   }

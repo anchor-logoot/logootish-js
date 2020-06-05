@@ -4,7 +4,6 @@
  * @author Nathan Pennie <kb1rd@kb1rd.net>
  */
 /** */
-import 'regenerator-runtime/runtime'
 
 import { DBst } from '../bst'
 import { LogootInt } from './int'
@@ -238,11 +237,12 @@ function fillSkipRanges(
       nnode = new AnchorLogootNode(nstart, space_avail, type, clk.copy())
       nnode.value = node.ldoc_start
       nnode.left_anchor = offset.eq(0)
-      ? left?.copy() || DocStart
-      : start.offsetLowest(offset.js_int)
-      nnode.right_anchor = node.type === NodeType.DUMMY
-        ? right?.copy() || DocEnd
-        : start.offsetLowest(space_avail + offset.js_int)
+        ? left?.copy() || DocStart
+        : start.offsetLowest(offset.js_int)
+      nnode.right_anchor =
+        node.type === NodeType.DUMMY
+          ? right?.copy() || DocEnd
+          : start.offsetLowest(space_avail + offset.js_int)
 
       onnewnode(nnode)
       // If the node is not a data node, the zero-length insertion will be
@@ -260,14 +260,10 @@ function fillSkipRanges(
       node.clk = clk.copy()
 
       node.reduceLeft(
-        offset.eq(0)
-          ? left?.copy() || DocStart
-          : node.logoot_start
+        offset.eq(0) ? left?.copy() || DocStart : node.logoot_start
       )
       node.reduceRight(
-        i === skip_ranges.length - 1
-          ? right?.copy() || DocEnd
-          : node.logoot_end
+        i === skip_ranges.length - 1 ? right?.copy() || DocEnd : node.logoot_end
       )
 
       // If this node is not a `DATA` node, the remove function will ignore
@@ -378,7 +374,7 @@ function reduceInferredRangeAnchors(
               // Now, add conflicts to all the newly anchored nodes
               itnode = snode
               const true_right = node.true_right
-              while(
+              while (
                 (itnode = itnode.inorder_successor) &&
                 (true_right === DocEnd || true_right.gt(itnode.logoot_start))
               ) {
@@ -464,16 +460,15 @@ function insertTrailingConflicts(
       node = node.splitAround(pos)
       bstadd(node)
     }
-    expected = true_left === DocStart ||
-      (
-        node.logoot_end.gt(true_left) &&
-        !true_left.equalsHigherLevel(node.logoot_end)
-      ) ||
+    expected =
+      true_left === DocStart ||
+      (node.logoot_end.gt(true_left) &&
+        !true_left.equalsHigherLevel(node.logoot_end)) ||
       // Account for nodes with lower level ends:
       node.logoot_end.equalsHigherLevel(true_left)
     return expected
   }
-  while(node && node.conflict_with.has(first) !== getExpectedValue()) {
+  while (node && node.conflict_with.has(first) !== getExpectedValue()) {
     if (expected) {
       node.conflict_with.add(first)
     } else {
@@ -492,7 +487,7 @@ function insertTrailingConflicts(
     expected = true_right === DocEnd || node.logoot_start.lt(true_right)
     return expected
   }
-  while(node && node.conflict_with.has(last) !== getExpectedValue()) {
+  while (node && node.conflict_with.has(last) !== getExpectedValue()) {
     if (expected) {
       node.conflict_with.add(last)
     } else {
@@ -521,7 +516,7 @@ function conflictOverNodesInRange(
     // the value of `backwards`)
     const scan_nodes = new Set<AnchorLogootNode>(last?.conflict_with)
     last && scan_nodes.add(last)
-    
+
     scan_nodes.forEach((snode) => {
       if (
         !backwards &&
@@ -533,10 +528,8 @@ function conflictOverNodesInRange(
         let cnode = node
         while (
           cnode &&
-          (
-            snode.right_anchor === DocEnd ||
-            cnode.logoot_start.lt(snode.right_anchor)
-          )
+          (snode.right_anchor === DocEnd ||
+            cnode.logoot_start.lt(snode.right_anchor))
         ) {
           cnode.conflict_with.add(snode)
           cnode = cnode.inorder_successor
@@ -551,11 +544,9 @@ function conflictOverNodesInRange(
         let cnode = node
         while (
           cnode &&
-          (
-            snode.left_anchor === DocStart ||
+          (snode.left_anchor === DocStart ||
             cnode.logoot_end.gt(snode.left_anchor) ||
-            cnode.logoot_end.equalsHigherLevel(snode.left_anchor)
-          )
+            cnode.logoot_end.equalsHigherLevel(snode.left_anchor))
         ) {
           cnode.conflict_with.add(snode)
           cnode = cnode.inorder_predecessor
@@ -674,7 +665,9 @@ class ListDocumentModel {
       .concat(buckets.range)
       .map(([, node]) => node)
       .filter((node) => node.type === NodeType.DATA)
-    const removal_sets: { [key: number]: {start: LogootPosition, length: number}[] } = {}
+    const removal_sets: {
+      [key: number]: { start: LogootPosition; length: number }[]
+    } = {}
 
     const remove = (start: LogootPosition, length: number): void => {
       if (length < 1) {
@@ -692,7 +685,7 @@ class ListDocumentModel {
       }
     }
 
-    let max_clk = this.max_clk.copy()
+    const max_clk = this.max_clk.copy()
 
     range.forEach((node) => {
       const rm_s = Math.max(start, node.ldoc_start)
@@ -713,8 +706,7 @@ class ListDocumentModel {
       }
     })
 
-    return Object
-      .values(removal_sets)
+    return Object.values(removal_sets)
       .flat()
       .map(({ start, length }) => ({ start, length, clk: max_clk }))
   }

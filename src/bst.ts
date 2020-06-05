@@ -205,7 +205,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
   }
   *successorIterator(): IterableIterator<T> {
     let node: T = (this as unknown) as T
-    while (node = node.inorder_successor) {
+    while ((node = node.inorder_successor)) {
       yield node
     }
   }
@@ -232,7 +232,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
   }
   *predecessorIterator(): IterableIterator<T> {
     let node: T = (this as unknown) as T
-    while (node = node.inorder_predecessor) {
+    while ((node = node.inorder_predecessor)) {
       yield node
     }
   }

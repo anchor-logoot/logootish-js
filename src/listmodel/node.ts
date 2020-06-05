@@ -101,7 +101,7 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
     }
   }
 
-  findLeftAnchorNode(left = this.inorder_predecessor) : AnchorLogootNode {
+  findLeftAnchorNode(left = this.inorder_predecessor): AnchorLogootNode {
     if (!left) {
       return undefined
     }
@@ -119,7 +119,7 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
     }
     return undefined
   }
-  findRightAnchorNode(right = this.inorder_successor) : AnchorLogootNode {
+  findRightAnchorNode(right = this.inorder_successor): AnchorLogootNode {
     if (!right) {
       return undefined
     }
@@ -128,9 +128,9 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
       return undefined
     }
 
-    const it = new Set<AnchorLogootNode>(
-      right.conflict_with
-    ).add(right).values()
+    const it = new Set<AnchorLogootNode>(right.conflict_with)
+      .add(right)
+      .values()
     let value: AnchorLogootNode
     while (({ value } = it.next()) && value) {
       if (value.logoot_start.eq(true_right)) {
@@ -176,10 +176,8 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
       if (node.true_left === 'S') {
         tryAdd(node)
       } else if (
-        (
-          node.true_left.lt(this.logoot_end) &&
-          !node.true_left.equalsHigherLevel(this.logoot_end)
-        ) ||
+        (node.true_left.lt(this.logoot_end) &&
+          !node.true_left.equalsHigherLevel(this.logoot_end)) ||
         this.logoot_end.equalsHigherLevel(node.true_left)
       ) {
         // eslint-disable-next-line
@@ -274,7 +272,7 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
     let value: AnchorLogootNode
     let done: boolean
     while (
-      ({value, done} = next.next()) &&
+      ({ value, done } = next.next()) &&
       !done &&
       value.conflict_with.has(this)
     ) {
@@ -285,10 +283,20 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
     return node
   }
 
-  toString(): string {
+  toString(short?: boolean): string {
     return (
       `${this.type} ${this.logoot_start},${this.ldoc_start} + ${this.length} ` +
-      `@ ${this.clk} (${this.true_left}<---->${this.true_right})`
+      `@ ${this.clk} (${this.true_left}<---->${this.true_right})` +
+      (this.conflict_with.size === 0 || short
+        ? ''
+        : ((): string => {
+            let str = ' {\n'
+            this.conflict_with.forEach(
+              (n) => (str += `  ${n.toString(true)}\n`)
+            )
+            str += '}'
+            return str
+          })())
     )
   }
 }
@@ -325,7 +333,13 @@ function sliceNodesIntoRanges(
         }
         bucket.push(node)
         const pos = boundaries[i] && node.positionOf(boundaries[i])
-        if (boundaries[i] && node.logoot_end.gt(boundaries[i]) && pos && pos > 0 && pos < node.length) {
+        if (
+          boundaries[i] &&
+          node.logoot_end.gt(boundaries[i]) &&
+          pos &&
+          pos > 0 &&
+          pos < node.length
+        ) {
           node = node.splitAround(node.positionOf(boundaries[i]))
           onNewNode(node)
         } else {
