@@ -150,6 +150,9 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
     let did_add = false
 
     const tryAdd = (n: AnchorLogootNode, to: AnchorLogootNode = this): void => {
+      if (n === to) {
+        return
+      }
       if (!to.conflict_with.has(n)) {
         did_add = true
         to.conflict_with.add(n)
@@ -173,7 +176,10 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
       if (node.true_left === 'S') {
         tryAdd(node)
       } else if (
-        node.true_left.lt(this.logoot_end) ||
+        (
+          node.true_left.lt(this.logoot_end) &&
+          !node.true_left.equalsHigherLevel(this.logoot_end)
+        ) ||
         this.logoot_end.equalsHigherLevel(node.true_left)
       ) {
         // eslint-disable-next-line

@@ -374,7 +374,17 @@ function reduceInferredRangeAnchors(
                 nodes_passed_over.push(itnode)
                 itnode = itnode.findRightAnchorNode()
               }
-              
+
+              // Now, add conflicts to all the newly anchored nodes
+              itnode = snode
+              const true_right = node.true_right
+              while(
+                (itnode = itnode.inorder_successor) &&
+                (true_right === DocEnd || true_right.gt(itnode.logoot_start))
+              ) {
+                itnode.conflict_with.add(node)
+              }
+
               if (itnode) {
                 // Ensure that removals between here and the data node are
                 // marked as conflicted
@@ -396,6 +406,17 @@ function reduceInferredRangeAnchors(
   })
 }
 
+/**
+ * When new nodes are added, their conflicts are not immediately populated.
+ * This function fixes that issue by populating each node's conflcits based on
+ * that of its neighbors. This should **not** be relied upon to add conflicts
+ * from *changed* anchors, only from existing anchors from other parts of the
+ * document.
+ * @param nl_lesser Node less than range
+ * @param nl_greater Node greater than range
+ * @param range The range of nodes to fix
+ * @param bstadd Add a new node to the BST node (if a node is split)
+ */
 function fillRangeConflicts(
   nl_lesser: AnchorLogootNode,
   nl_greater: AnchorLogootNode,
@@ -418,6 +439,12 @@ function fillRangeConflicts(
   range.reverse()
 }
 
+/**
+ * Adds the trailing conflicts off the start and end of the range based on the
+ * first and last `filled_skip_ranges`. This recursively traverses the BST.
+ * @param filled_skip_ranges Filled in skip ranges with new nodes
+ * @param bstadd Add a new node to the BST if a node is split
+ */
 function insertTrailingConflicts(
   filled_skip_ranges: AnchorLogootNode[],
   bstadd: (n: AnchorLogootNode) => void
@@ -438,7 +465,10 @@ function insertTrailingConflicts(
       bstadd(node)
     }
     expected = true_left === DocStart ||
-      node.logoot_end.gt(true_left) ||
+      (
+        node.logoot_end.gt(true_left) &&
+        !true_left.equalsHigherLevel(node.logoot_end)
+      ) ||
       // Account for nodes with lower level ends:
       node.logoot_end.equalsHigherLevel(true_left)
     return expected
@@ -790,7 +820,7 @@ class ListDocumentModel {
     if (!this.opts.disable_conflicts) {
       reduceInferredRangeAnchors(lesser, filled_skip_ranges, greater)
       fillRangeConflicts(lesser, greater, filled_skip_ranges, bstadd)
-      insertTrailingConflicts(filled_skip_ranges, bstadd)
+      // insertTrailingConflicts(filled_skip_ranges, bstadd)
     }
 
     return opbuf.operations

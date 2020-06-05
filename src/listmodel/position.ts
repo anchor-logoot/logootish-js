@@ -534,6 +534,12 @@ class LogootPosition extends Comparable<LogootPosition> {
     return this.branch_array.map((br, i) => ([this.lp.l(i).toJSON(), jb(br)]))
   }
 
+  toMappedOrderJSON(order: BranchOrder): LogootPosition.MappedOrderJSON {
+    return this.branch_array.map(
+      (br, i) => ([this.lp.l(i).toJSON(), order.i(br)])
+    )
+  }
+
   toString(): string {
     // Corruption can cause some seriously weird errors here. If the user is
     // `console.log`ging stuff, then it's probably fine to do a quick self test
@@ -544,6 +550,7 @@ class LogootPosition extends Comparable<LogootPosition> {
 }
 namespace LogootPosition {
   export type JSON = [LogootInt.JSON, number | string][]
+  export type MappedOrderJSON = [LogootInt.JSON, number][]
   export namespace JSON {
     export const Schema = {
       type: 'array',
