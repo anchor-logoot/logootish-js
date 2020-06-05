@@ -29,8 +29,7 @@ fi
 
 echo
 echo Upgrading all packages past major versions.
-# npx yarn-upgrade-all
-echo FAKE UPGRADE LOL
+npx yarn-upgrade-all
 
 echo
 echo Now checking that everything builds n stuff...

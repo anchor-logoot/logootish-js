@@ -31,6 +31,7 @@ module.exports = {
     // the code to make syntax better (for example, to create a child class)
     '@typescript-eslint/no-namespace': 'off',
     // Conflicts with prettier settings
-    '@typescript-eslint/member-delimiter-style': 'off'
+    '@typescript-eslint/member-delimiter-style': 'off',
+    '@typescript-eslint/no-extra-semi': 'off'
   }
 }

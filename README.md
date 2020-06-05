@@ -46,7 +46,10 @@ operations that must be performed for a given Logoot operation are determined
 by the `insertLogoot` and `removeLogoot` methods, respectively.
 
 Conflict resolution is mostly implemented, but mark operations need to be fixed
-(issues #11 and #12) before that's ready for normal usage.
+(issues #11 and #12) before that's ready for normal usage. A new algorithm has
+been created known as "Anchor Logoot." This is not compatible with previous
+versions below `0.4.0`. Currently, conflict creation is experimental and is
+only implemented in the model. Mark operations are not created yet.
 
 ## Installation
 ```sh

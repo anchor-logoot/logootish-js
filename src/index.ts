@@ -6,44 +6,8 @@
  */
 /** */
 
-import {
-  ListDocumentModel,
-  LogootInt,
-  LogootPosition,
-  NodeType,
-  InsertionConflictError
-} from './listmodel'
+import { ListDocumentModel, LogootInt, LogootPosition } from './listmodel'
 
-enum EventState {
-  /**
-   * Not being actively sent and can be modified.
-   */
-  PENDING,
-  /**
-   * In transit. Cannot be modified.
-   */
-  SENDING,
-  /**
-   * Already sent. Also cannot be modified.
-   */
-  COMPLETE
-}
+import { BranchOrder, BranchKey } from './listmodel/branch'
 
-/**
- * Generic event interface.
- */
-interface LogootishEvent {
-  state: EventState
-  readonly type: string
-  // eslint-disable-next-line
-  toJSON(): any
-}
-
-export {
-  EventState,
-  ListDocumentModel,
-  LogootInt,
-  LogootPosition,
-  NodeType,
-  InsertionConflictError
-}
+export { ListDocumentModel, LogootInt, LogootPosition, BranchOrder, BranchKey }

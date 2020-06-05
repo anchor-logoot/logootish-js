@@ -5,7 +5,6 @@
  * @author Nathan Pennie <kb1rd@kb1rd.net>
  */
 /** */
-import 'regenerator-runtime/runtime'
 
 import { CompareResult } from './utils'
 import { TypeRange, NumberRange } from './compare'
