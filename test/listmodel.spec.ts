@@ -1620,6 +1620,33 @@ describe('ListDocumentModel', () => {
         expect(newnode.conflict_with).to.not.include(cnode)
         expect(newnode.conflict_with).to.not.include(cnode2)
       })
+      it('removal skipping reduces node anchor', () => {
+        const cnode = new AnchorLogootNode(p(3), 1, NodeType.REMOVAL)
+        ldm.bst.add(cnode)
+        cnode.left_anchor = p(1)
+        cnode.right_anchor = p(4)
+        const cnode2 = new AnchorLogootNode(p(4), 1, NodeType.DATA)
+        ldm.bst.add(cnode2)
+        cnode2.left_anchor = DocStart
+        cnode2.right_anchor = p(20)
+
+        ldm.insertLogoot(
+          u1,
+          p(0),
+          p(3),
+          1,
+          new LogootInt(0)
+        )
+
+        const newnode = ldm.all_nodes[0]
+
+        expectAnchors(newnode, p(0), p(4))
+        expectAnchors(cnode, p(1), p(4))
+        expectAnchors(cnode2, p(1), p(20))
+        expect(cnode.conflict_with).to.include(newnode)
+        expect(newnode.conflict_with).to.not.include(cnode)
+        expect(newnode.conflict_with).to.not.include(cnode2)
+      })
     })
   })
   describe('removeLogoot', () => {
@@ -1721,12 +1748,15 @@ describe('ListDocumentModel', () => {
           return n
         })
         nodes[0].left_anchor = DocStart
-        nodes[4].right_anchor = DocEnd
+        nodes[5].right_anchor = DocEnd
         nodes.forEach((n) => ldm.bst.add(n))
 
         ldm.removeLogoot(p(1), 1, new LogootInt(0))
+        ldm.selfTest()
         ldm.removeLogoot(p(2), 1, new LogootInt(0))
+        ldm.selfTest()
         ldm.removeLogoot(p(3), 1, new LogootInt(0))
+        ldm.selfTest()
         ldm.removeLogoot(p(4), 1, new LogootInt(0))
         ldm.selfTest()
       })

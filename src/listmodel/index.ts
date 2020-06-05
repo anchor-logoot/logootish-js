@@ -26,6 +26,12 @@ type LdmOptions = {
    * **DO NOT** enable in production.
    */
   agressively_test_bst?: boolean
+  /**
+   * Disables detection of conflicts. Conflicts will still be present, but mark
+   * operations will not be performed and the processing overhead will be
+   * eliminated.
+   */
+  disable_conflicts?: boolean
 }
 
 /**
@@ -328,7 +334,7 @@ function reduceInferredRangeAnchors(
     let scan_nodes: Set<AnchorLogootNode>
     // First, check for nodes that may anchor here by searching the anchors
     // of the last node and its conflicts
-    if (last) {
+    if (last && false) {
       scan_nodes = new Set<AnchorLogootNode>(last?.conflict_with)
       scan_nodes.add(last)
       scan_nodes.forEach((snode) => {
@@ -390,8 +396,8 @@ function reduceInferredRangeAnchors(
       scan_nodes.forEach((snode) => {
         const s_left = snode.true_left
         let n_right = node.true_right
-        // See comments above. Unfortunately, not enough of the code is similar
-        // for me to generalize this in a readable way.
+        // If `node` is anchored to the newly discovered node OR this node is
+        // anchored to `node`...
         if (
           (s_left !== DocStart && s_left.eq(node.logoot_end)) ||
           (n_right !== DocEnd && n_right.eq(snode.logoot_start))
@@ -401,13 +407,25 @@ function reduceInferredRangeAnchors(
             snode.type === NodeType.REMOVAL
           ) {
             snode.reduceLeft(node.logoot_end)
+            let ctgt = snode.findLeftAnchorNode(node)
+            while (ctgt && ctgt.conflict_with.has(snode)) {
+              ctgt.conflict_with.delete(snode)
+              ctgt = ctgt.inorder_predecessor
+            }
           }
+          // Don't reduce to a removal. Removals can be reduced to each other
           if (
             snode.type === NodeType.REMOVAL &&
             node.type !== NodeType.REMOVAL
           ) {
+            // If `node` is anchored to a removal, update to anchor to a data
+            // node. We only have to do this for `node` and not `snode` since
+            // only `node` is new -- `snode` should've already been updated
             if (n_right !== DocEnd && n_right.eq(snode.logoot_start)) {
               let itnode = snode
+              // TODO: Take a shortcut using node conflicts instead of iterating
+              // This basically follows the chain of anchors until it finds a
+              // node that isn't a removal or hits the end
               const nodes_passed_over: AnchorLogootNode[] = []
               while (itnode && itnode.type === NodeType.REMOVAL) {
                 node.right_anchor = itnode.right_anchor
@@ -418,12 +436,19 @@ function reduceInferredRangeAnchors(
               }
               
               if (itnode) {
+                // Ensure that removals between here and the data node are
+                // marked as conflicted
                 nodes_passed_over.forEach((n) => n.conflict_with.add(itnode))
                 itnode.reduceLeft(node.logoot_end)
               }
             }
           } else {
             node.reduceRight(snode.logoot_start)
+            let ctgt = node.findRightAnchorNode(next)
+            while (ctgt && ctgt.conflict_with.has(node)) {
+              ctgt.conflict_with.delete(node)
+              ctgt = ctgt.inorder_successor
+            }
           }
         }
       })
@@ -507,50 +532,71 @@ function insertTrailingConflicts(
   }
 }
 
-function patchRemovalAnchors(
-  range: AnchorLogootNode[],
+function conflictOverNodesInRange(
+  last: AnchorLogootNode,
+  skip_ranges: AnchorLogootNode[],
+  level: number,
   backwards: boolean
 ): void {
-  let scan_nodes = new Set<AnchorLogootNode>()
   if (backwards) {
-    range.reverse()
+    skip_ranges.reverse()
   }
-  range.forEach((node) => {
-    if (node.type === NodeType.DATA) {
-      scan_nodes = new Set<AnchorLogootNode>(node.conflict_with)
-      scan_nodes.add(node)
-      scan_nodes.forEach((snode) => {
-        if (
-          (!backwards && snode.true_right === DocEnd) ||
-          (backwards && snode.true_left === DocStart)
-        ) {
-          scan_nodes.delete(snode)
-        }
-      })
-    } else {
-      scan_nodes.forEach((snode) => {
-        const apos = (backwards
-          ? snode.true_left
-          : snode.true_right) as LogootPosition
-        if (
-          (!backwards && apos.lt(node.logoot_start)) ||
-          (backwards && apos.gt(node.logoot_end))
-        ) {
-          scan_nodes.delete(snode)
-          return
-        }
-        if (!backwards && apos.lt(node.logoot_end)) {
-          snode.right_anchor = node.true_right
-        }
-        if (backwards && apos.gt(node.logoot_start)) {
-          snode.left_anchor = node.true_left
-        }
-        node.conflict_with.add(snode)
-      })
+  skip_ranges.forEach((node) => {
+    if (node.logoot_start.length !== level) {
+      last = node
+      return
     }
+
+    // Scan nodes, always "last" (either lesser or greater depending on
+    // the value of `backwards`)
+    const scan_nodes = new Set<AnchorLogootNode>(last?.conflict_with)
+    last && scan_nodes.add(last)
+    
+    scan_nodes.forEach((snode) => {
+      if (
+        !backwards &&
+        snode.type === NodeType.DATA &&
+        snode.true_right !== DocEnd &&
+        snode.true_right.eq(node.logoot_start)
+      ) {
+        snode.right_anchor = node.true_right
+        let cnode = node
+        while (
+          cnode &&
+          (
+            snode.right_anchor === DocEnd ||
+            cnode.logoot_start.lt(snode.right_anchor)
+          )
+        ) {
+          cnode.conflict_with.add(snode)
+          cnode = cnode.inorder_successor
+        }
+      } else if (
+        backwards &&
+        snode.type === NodeType.DATA &&
+        snode.true_left !== DocStart &&
+        snode.true_left.eq(node.logoot_end)
+      ) {
+        snode.left_anchor = node.true_left
+        let cnode = node
+        while (
+          cnode &&
+          (
+            snode.left_anchor === DocStart ||
+            cnode.logoot_end.gt(snode.left_anchor) ||
+            cnode.logoot_end.equalsHigherLevel(snode.left_anchor)
+          )
+        ) {
+          cnode.conflict_with.add(snode)
+          cnode = cnode.inorder_predecessor
+        }
+      }
+    })
+
+    last = node
   })
   if (backwards) {
-    range.reverse()
+    skip_ranges.reverse()
   }
 }
 
@@ -580,7 +626,8 @@ class ListDocumentModel {
   // debug_logger?: ListDocumentModel.Logger
 
   opts: LdmOptions = {
-    agressively_test_bst: false
+    agressively_test_bst: false,
+    disable_conflicts: false
   }
 
   constructor(public readonly branch_order: BranchOrder = new BranchOrder()) {}
@@ -734,7 +781,6 @@ class ListDocumentModel {
       opbuf.dummy_node = skip_ranges[skip_ranges.length - 1]
     }
 
-    const new_nodes: AnchorLogootNode[] = []
     const filled_skip_ranges = fillSkipRanges(
       left,
       right,
@@ -743,15 +789,14 @@ class ListDocumentModel {
       NodeType.DATA,
       skip_ranges,
       opbuf,
-      (n: AnchorLogootNode) => {
-        bstadd(n)
-        new_nodes.push(n)
-      }
+      bstadd
     )
 
-    reduceInferredRangeAnchors(lesser, filled_skip_ranges, greater)
-    fillRangeConflicts(lesser, greater, filled_skip_ranges, bstadd)
-    insertTrailingConflicts(filled_skip_ranges, bstadd)
+    if (!this.opts.disable_conflicts) {
+      reduceInferredRangeAnchors(lesser, filled_skip_ranges, greater)
+      fillRangeConflicts(lesser, greater, filled_skip_ranges, bstadd)
+      insertTrailingConflicts(filled_skip_ranges, bstadd)
+    }
 
     return opbuf.operations
   }
@@ -772,135 +817,85 @@ class ListDocumentModel {
       this.max_clk.assign(clk)
     }
 
-    const cf = (a: AnchorLogootNode, b: AnchorLogootNode): CompareResult =>
-      a.preferential_cmp(b)
-    const range = new TypeRange(
-      cf,
-      new AnchorLogootNode(start, 0),
-      new AnchorLogootNode(start.offsetLowest(length), 0),
-      RangeBounds.LCGO
-    )
-    const { buckets } = this.bst.prefSearch(range)
+    const end = start.offsetLowest(length)
 
-    const opbuf = new OperationBuffer(this.bst, this.opts, 0)
-
-    const blob = buckets.lesser
-      .map(([, node]) => node)
-      .concat(buckets.range.map(([, node]) => node))
-      .concat(buckets.greater.map(([, node]) => node))
-    const [lesser, rm_range, greater] = sliceNodesIntoRanges(
-      [start, start.offsetLowest(length)],
-      blob,
+    const { lesser, skip_ranges, greater } = constructSkipRanges(
+      this.bst,
+      { start, end },
       bstadd
     )
 
-    rm_range.forEach((node) => {
-      if (node.clk.lteq(clk) && node.logoot_start.length === start.length) {
-        opbuf.remove(node, node.ldoc_start, node.ldoc_length)
-        node.type = NodeType.REMOVAL
-        node.clk.assign(clk)
-      }
-    })
-
-    let node = lesser[0]
-    while (
-      lesser[0]?.type === NodeType.REMOVAL &&
-      node &&
-      (node = node.inorder_predecessor)
-    ) {
-      lesser.unshift(node)
-    }
-    node = greater[greater.length - 1]
-    while (
-      greater[greater.length - 1]?.type === NodeType.REMOVAL &&
-      node &&
-      (node = node.inorder_successor)
-    ) {
-      greater.push(node)
+    const opbuf = new OperationBuffer(this.bst, this.opts, length)
+    if (skip_ranges[skip_ranges.length - 1].type === NodeType.DUMMY) {
+      opbuf.dummy_node = skip_ranges[skip_ranges.length - 1]
     }
 
-    const full_range = lesser.concat(rm_range).concat(greater)
+    if (!this.opts.disable_conflicts) {
+      conflictOverNodesInRange(lesser, skip_ranges, start.length, false)
+      conflictOverNodesInRange(greater, skip_ranges, start.length, true)
+    }
 
-    /**
-     * When a data node that is converted to a removal is surrounded by
-     * removals, its anchors will point to the surrounding data nodes and will
-     * skip over the removal nodes since data nodes can't "see" removal nodes.
-     * This fixes that by linking the removal nodes and removing the associated
-     * conflicts.
-     * @todo Implement some kind of node priority system for a generalized
-     * method for this sort of thing.
-     * @param range The range to correct anchors in
-     * @param backwards Forwards or backwards. For a complete patch, both
-     * forwards and backwards must be run
-     */
-    const patchNewRemovalAnchors = (
-      range: AnchorLogootNode[],
-      backwards: boolean
-    ): void => {
-      let scan_nodes = new Set<AnchorLogootNode>()
-      // A backwards list of removal nodes before this one used for updating
-      // the node's `conflict_with`
-      const rm_nodes: AnchorLogootNode[] = []
-      if (backwards) {
-        range.reverse()
-      }
-      range.forEach((node) => {
-        if (node.type === NodeType.DATA) {
-          rm_nodes.length = 0
-        } else {
-          scan_nodes.forEach((snode) => {
-            const fixConflicts = (): void => {
-              rm_nodes.every((cnode) => {
-                if (!cnode.conflict_with.has(node)) {
-                  return false
-                }
-                if (
-                  !backwards &&
-                  cnode.logoot_end.lteq(node.true_left as LogootPosition)
-                ) {
-                  cnode.conflict_with.delete(node)
-                } else if (
-                  backwards &&
-                  cnode.logoot_start.gteq(node.true_right as LogootPosition)
-                ) {
-                  cnode.conflict_with.delete(node)
-                }
-                return true
-              })
+    // TODO: Fix anchors
+    const filled_skip_ranges = fillSkipRanges(
+      undefined,
+      undefined,
+      start,
+      clk,
+      NodeType.REMOVAL,
+      skip_ranges,
+      opbuf,
+      bstadd
+    )
+
+    /*const capped_range = [...filled_skip_ranges]
+    lesser && capped_range.unshift(lesser)
+    greater && capped_range.push(greater)
+    capped_range.forEach((node: AnchorLogootNode, i) => {
+      const last = capped_range[i - 1]
+      const next = capped_range[i + 1]
+      let scan_nodes: Set<AnchorLogootNode>
+      // First, check for nodes that may anchor here by searching the anchors
+      // of the last node and its conflicts
+      if (last) {
+        scan_nodes = new Set<AnchorLogootNode>(last?.conflict_with)
+        scan_nodes.add(last)
+        scan_nodes.forEach((snode) => {
+          const s_right = snode.true_right
+          if (node.type === NodeType.REMOVAL && snode.type === NodeType.DATA) {
+            if (s_right !== DocEnd && s_right.eq(node.logoot_start)) {
+              let itnode = node
+              while (itnode && itnode.type === NodeType.REMOVAL) {
+                itnode.conflict_with.add(snode)
+                itnode = itnode.findRightAnchorNode()
+              }
+              snode.right_anchor = itnode.logoot_start
             }
-            if (
-              !backwards &&
-              snode.true_right !== DocEnd &&
-              snode.true_right.eq(node.logoot_start)
-            ) {
-              node.reduceLeft(snode.logoot_end)
-              fixConflicts()
-            } else if (
-              backwards &&
-              snode.true_left !== DocStart &&
-              snode.true_left.eq(node.logoot_end)
-            ) {
-              node.reduceRight(snode.logoot_start)
-              fixConflicts()
-            }
-          })
-          if (backwards) {
-            rm_nodes.push(node)
-          } else {
-            rm_nodes.unshift(node)
           }
-        }
-        scan_nodes = new Set<AnchorLogootNode>(node.conflict_with)
-        scan_nodes.add(node)
-      })
-      if (backwards) {
-        range.reverse()
+        })
       }
+      if (next) {
+        scan_nodes = new Set<AnchorLogootNode>(next?.conflict_with)
+        scan_nodes.add(next)
+        scan_nodes.forEach((snode) => {
+          const s_left = snode.true_left
+          if (node.type === NodeType.REMOVAL && snode.type === NodeType.DATA) {
+            if (s_left !== DocStart && s_left.eq(node.logoot_end)) {
+              let itnode = node
+              while (itnode && itnode.type === NodeType.REMOVAL) {
+                itnode.conflict_with.add(snode)
+                itnode = itnode.findLeftAnchorNode()
+              }
+              snode.left_anchor = itnode.logoot_end
+            }
+          }
+        })
+      }
+    })*/
+    if (!this.opts.disable_conflicts) {
+      reduceInferredRangeAnchors(lesser, filled_skip_ranges, greater)
+      // fillRangeConflicts(lesser, greater, filled_skip_ranges, bstadd)
+      // insertTrailingConflicts(filled_skip_ranges, bstadd)
     }
-    patchNewRemovalAnchors(full_range, false)
-    patchNewRemovalAnchors(full_range, true)
-    patchRemovalAnchors(full_range, false)
-    patchRemovalAnchors(full_range, true)
 
     return opbuf.operations
   }
