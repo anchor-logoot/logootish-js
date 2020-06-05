@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>&quot;bst&quot; | @kb1rd/logootish-js</title>
+	<title>&quot;listmodel/position&quot; | @kb1rd/logootish-js</title>
 	<meta name="description" content="Documentation for @kb1rd/logootish-js">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="../assets/css/main.css">
@@ -56,30 +56,16 @@
 					<a href="../globals.html">Globals</a>
 				</li>
 				<li>
-					<a href="_bst_.html">&quot;bst&quot;</a>
+					<a href="_listmodel_position_.html">&quot;listmodel/position&quot;</a>
 				</li>
 			</ul>
-			<h1>Module &quot;bst&quot;</h1>
+			<h1>Module &quot;listmodel/position&quot;</h1>
 		</div>
 	</div>
 </header>
 <div class="container container-main">
 	<div class="row">
 		<div class="col-8 col-content">
-			<section class="tsd-panel tsd-comment">
-				<div class="tsd-comment tsd-typography">
-					<dl class="tsd-comment-tags">
-						<dt>file</dt>
-						<dd><p>A binary search tree implementation for finding ranges within the tree
-								and finding neighboring nodes. The documentation for this is, erm, not super
-							amazing.</p>
-						</dd>
-						<dt>author</dt>
-						<dd><p>Nathan Pennie <a href="mailto:&#x6b;&#98;&#49;&#x72;&#100;&#64;&#x6b;&#x62;&#x31;&#114;&#x64;&#x2e;&#110;&#101;&#116;">&#x6b;&#98;&#49;&#x72;&#100;&#64;&#x6b;&#x62;&#x31;&#114;&#x64;&#x2e;&#110;&#101;&#116;</a></p>
-						</dd>
-					</dl>
-				</div>
-			</section>
 			<section class="tsd-panel-group tsd-index-group">
 				<h2>Index</h2>
 				<section class="tsd-panel tsd-index-panel">
@@ -87,15 +73,15 @@
 						<section class="tsd-index-section ">
 							<h3>Classes</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-class tsd-parent-kind-module tsd-has-type-parameter"><a href="../classes/_bst_.dbst.html" class="tsd-kind-icon">DBst</a></li>
-								<li class="tsd-kind-class tsd-parent-kind-module tsd-has-type-parameter"><a href="../classes/_bst_.dbstnode.html" class="tsd-kind-icon">DBst<wbr>Node</a></li>
-								<li class="tsd-kind-class tsd-parent-kind-module tsd-has-type-parameter tsd-is-not-exported"><a href="../classes/_bst_.typerangesearch.html" class="tsd-kind-icon">Type<wbr>Range<wbr>Search</a></li>
+								<li class="tsd-kind-class tsd-parent-kind-module"><a href="../classes/_listmodel_position_.branchorderinconsistencyerror.html" class="tsd-kind-icon">Branch<wbr>Order<wbr>Inconsistency<wbr>Error</a></li>
+								<li class="tsd-kind-class tsd-parent-kind-module"><a href="../classes/_listmodel_position_.logootposition.html" class="tsd-kind-icon">Logoot<wbr>Position</a></li>
+								<li class="tsd-kind-class tsd-parent-kind-module"><a href="../classes/_listmodel_position_.logootishposition.html" class="tsd-kind-icon">Logootish<wbr>Position</a></li>
 							</ul>
 						</section>
 						<section class="tsd-index-section tsd-is-not-exported">
 							<h3>Functions</h3>
 							<ul class="tsd-index-list">
-								<li class="tsd-kind-function tsd-parent-kind-module tsd-is-not-exported"><a href="_bst_.html#norootupdatefunction" class="tsd-kind-icon">no<wbr>Root<wbr>Update<wbr>Function</a></li>
+								<li class="tsd-kind-function tsd-parent-kind-module tsd-is-not-exported"><a href="_listmodel_position_.html#positionscompatible" class="tsd-kind-icon">positions<wbr>Compatible</a></li>
 							</ul>
 						</section>
 					</div>
@@ -104,19 +90,28 @@
 			<section class="tsd-panel-group tsd-member-group tsd-is-not-exported">
 				<h2>Functions</h2>
 				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module tsd-is-not-exported">
-					<a name="norootupdatefunction" class="tsd-anchor"></a>
-					<h3><span class="tsd-flag ts-flagConst">Const</span> no<wbr>Root<wbr>Update<wbr>Function</h3>
+					<a name="positionscompatible" class="tsd-anchor"></a>
+					<h3>positions<wbr>Compatible</h3>
 					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module tsd-is-not-exported">
-						<li class="tsd-signature tsd-kind-icon">no<wbr>Root<wbr>Update<wbr>Function<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+						<li class="tsd-signature tsd-kind-icon">positions<wbr>Compatible<span class="tsd-signature-symbol">(</span>s<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_position_.logootposition.html" class="tsd-signature-type">LogootPosition</a>, e<span class="tsd-signature-symbol">: </span><a href="../classes/_listmodel_position_.logootposition.html" class="tsd-signature-type">LogootPosition</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/bst.ts#L42">src/bst.ts:42</a></li>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L280">src/listmodel/position.ts:280</a></li>
 								</ul>
 							</aside>
-							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>s: <a href="../classes/_listmodel_position_.logootposition.html" class="tsd-signature-type">LogootPosition</a></h5>
+								</li>
+								<li>
+									<h5>e: <a href="../classes/_listmodel_position_.logootposition.html" class="tsd-signature-type">LogootPosition</a></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
 						</li>
 					</ul>
 				</section>
@@ -128,7 +123,7 @@
 					<li class="globals  ">
 						<a href="../globals.html"><em>Globals</em></a>
 					</li>
-					<li class="current tsd-kind-module">
+					<li class=" tsd-kind-module">
 						<a href="_bst_.html">&quot;bst&quot;</a>
 					</li>
 					<li class=" tsd-kind-module">
@@ -149,7 +144,7 @@
 					<li class=" tsd-kind-module">
 						<a href="_listmodel_node_.html">&quot;listmodel/node&quot;</a>
 					</li>
-					<li class=" tsd-kind-module">
+					<li class="current tsd-kind-module">
 						<a href="_listmodel_position_.html">&quot;listmodel/position&quot;</a>
 					</li>
 					<li class=" tsd-kind-module">
@@ -159,17 +154,17 @@
 			</nav>
 			<nav class="tsd-navigation secondary menu-sticky">
 				<ul class="before-current">
-					<li class=" tsd-kind-class tsd-parent-kind-module tsd-has-type-parameter">
-						<a href="../classes/_bst_.dbst.html" class="tsd-kind-icon">DBst</a>
+					<li class=" tsd-kind-class tsd-parent-kind-module">
+						<a href="../classes/_listmodel_position_.branchorderinconsistencyerror.html" class="tsd-kind-icon">Branch<wbr>Order<wbr>Inconsistency<wbr>Error</a>
 					</li>
-					<li class=" tsd-kind-class tsd-parent-kind-module tsd-has-type-parameter">
-						<a href="../classes/_bst_.dbstnode.html" class="tsd-kind-icon">DBst<wbr>Node</a>
+					<li class=" tsd-kind-class tsd-parent-kind-module">
+						<a href="../classes/_listmodel_position_.logootposition.html" class="tsd-kind-icon">Logoot<wbr>Position</a>
 					</li>
-					<li class=" tsd-kind-class tsd-parent-kind-module tsd-has-type-parameter tsd-is-not-exported">
-						<a href="../classes/_bst_.typerangesearch.html" class="tsd-kind-icon">Type<wbr>Range<wbr>Search</a>
+					<li class=" tsd-kind-class tsd-parent-kind-module">
+						<a href="../classes/_listmodel_position_.logootishposition.html" class="tsd-kind-icon">Logootish<wbr>Position</a>
 					</li>
 					<li class=" tsd-kind-function tsd-parent-kind-module tsd-is-not-exported">
-						<a href="_bst_.html#norootupdatefunction" class="tsd-kind-icon">no<wbr>Root<wbr>Update<wbr>Function</a>
+						<a href="_listmodel_position_.html#positionscompatible" class="tsd-kind-icon">positions<wbr>Compatible</a>
 					</li>
 				</ul>
 			</nav>

@@ -110,7 +110,10 @@
 					operations that must be performed for a given Logoot operation are determined
 				by the <code>insertLogoot</code> and <code>removeLogoot</code> methods, respectively.</p>
 				<p>Conflict resolution is mostly implemented, but mark operations need to be fixed
-				(issues #11 and #12) before that&#39;s ready for normal usage.</p>
+					(issues #11 and #12) before that&#39;s ready for normal usage. A new algorithm has
+					been created known as &quot;Anchor Logoot.&quot; This is not compatible with previous
+					versions below <code>0.4.0</code>. Currently, conflict creation is experimental and is
+				only implemented in the model. Mark operations are not created yet.</p>
 				<a href="#installation" id="installation" style="color: inherit; text-decoration: none;">
 					<h2>Installation</h2>
 				</a>
@@ -154,16 +157,19 @@ yarn link</code></pre>
 						<a href="modules/_debug_.html">&quot;debug&quot;</a>
 					</li>
 					<li class=" tsd-kind-module">
-						<a href="modules/_index_.html">&quot;index&quot;</a>
+						<a href="modules/_ints_.html">&quot;ints&quot;</a>
 					</li>
 					<li class=" tsd-kind-module">
-						<a href="modules/_ints_.html">&quot;ints&quot;</a>
+						<a href="modules/_listmodel_branch_.html">&quot;listmodel/branch&quot;</a>
 					</li>
 					<li class=" tsd-kind-module">
 						<a href="modules/_listmodel_index_.html">&quot;listmodel/index&quot;</a>
 					</li>
 					<li class=" tsd-kind-module">
-						<a href="modules/_listmodel_logoot_.html">&quot;listmodel/logoot&quot;</a>
+						<a href="modules/_listmodel_node_.html">&quot;listmodel/node&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="modules/_listmodel_position_.html">&quot;listmodel/position&quot;</a>
 					</li>
 					<li class=" tsd-kind-module">
 						<a href="modules/_utils_.html">&quot;utils&quot;</a>
@@ -182,16 +188,10 @@ yarn link</code></pre>
 		<h2>Legend</h2>
 		<div class="tsd-legend-group">
 			<ul class="tsd-legend">
-				<li class="tsd-kind-object-literal"><span class="tsd-kind-icon">Object literal</span></li>
 				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
 				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
-				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
 				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
 				<li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li>
-			</ul>
-			<ul class="tsd-legend">
-				<li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>
-				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
 			</ul>
 			<ul class="tsd-legend">
 				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
@@ -199,6 +199,9 @@ yarn link</code></pre>
 			</ul>
 			<ul class="tsd-legend">
 				<li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
 			</ul>
 		</div>
 	</div>

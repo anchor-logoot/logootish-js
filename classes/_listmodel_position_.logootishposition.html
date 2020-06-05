@@ -1,0 +1,1043 @@
+<!doctype html>
+<html class="default no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>LogootishPosition | @kb1rd/logootish-js</title>
+	<meta name="description" content="Documentation for @kb1rd/logootish-js">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+<header>
+	<div class="tsd-page-toolbar">
+		<div class="container">
+			<div class="table-wrap">
+				<div class="table-cell" id="tsd-search" data-index="../assets/js/search.json" data-base="..">
+					<div class="field">
+						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
+						<input id="tsd-search-field" type="text" />
+					</div>
+					<ul class="results">
+						<li class="state loading">Preparing search index...</li>
+						<li class="state failure">The search index is not available</li>
+					</ul>
+					<a href="../index.html" class="title">@kb1rd/logootish-js</a>
+				</div>
+				<div class="table-cell" id="tsd-widgets">
+					<div id="tsd-filter">
+						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
+						<div class="tsd-filter-group">
+							<div class="tsd-select" id="tsd-filter-visibility">
+								<span class="tsd-select-label">All</span>
+								<ul class="tsd-select-list">
+									<li data-value="public">Public</li>
+									<li data-value="protected">Public/Protected</li>
+									<li data-value="private" class="selected">All</li>
+								</ul>
+							</div>
+							<input type="checkbox" id="tsd-filter-inherited" checked />
+							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
+							<input type="checkbox" id="tsd-filter-externals" checked />
+							<label class="tsd-widget" for="tsd-filter-externals">Externals</label>
+							<input type="checkbox" id="tsd-filter-only-exported" />
+							<label class="tsd-widget" for="tsd-filter-only-exported">Only exported</label>
+						</div>
+					</div>
+					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="tsd-page-title">
+		<div class="container">
+			<ul class="tsd-breadcrumb">
+				<li>
+					<a href="../globals.html">Globals</a>
+				</li>
+				<li>
+					<a href="../modules/_listmodel_position_.html">&quot;listmodel/position&quot;</a>
+				</li>
+				<li>
+					<a href="_listmodel_position_.logootishposition.html">LogootishPosition</a>
+				</li>
+			</ul>
+			<h1>Class LogootishPosition</h1>
+		</div>
+	</div>
+</header>
+<div class="container container-main">
+	<div class="row">
+		<div class="col-8 col-content">
+			<section class="tsd-panel tsd-comment">
+				<div class="tsd-comment tsd-typography">
+					<div class="lead">
+						<p>A comparable position from the original Logootish algorithm, This is just an
+							array of numbers with some utility functions. In Logoot, it must always be
+							possible to allocate a position between any possible two positions. In this
+							algorithm, a position with more <code>levels</code> (or elements in the array) comes
+						first. Positions are represented in writing the same as arrays: <code>[1,2,3]</code></p>
+					</div>
+					<dl class="tsd-comment-tags">
+						<dt>example</dt>
+						<dd><pre><code class="language-typescript"><span class="hljs-keyword">const</span> a = <span class="hljs-keyword">new</span> LogootishPosition()
+<span class="hljs-built_in">console</span>.log(a.toString()) <span class="hljs-comment">// [0]</span>
+
+<span class="hljs-keyword">const</span> b = a.offsetLowest(<span class="hljs-number">1</span>)
+<span class="hljs-built_in">console</span>.log(b.toString()) <span class="hljs-comment">// [1]</span>
+
+<span class="hljs-built_in">console</span>.log(<span class="hljs-keyword">new</span> LogootishPosition(<span class="hljs-number">1</span>, a, b).toString()) <span class="hljs-comment">// [0]</span>
+<span class="hljs-built_in">console</span>.log(<span class="hljs-keyword">new</span> LogootishPosition(<span class="hljs-number">2</span>, a, b).toString()) <span class="hljs-comment">// [0,0]</span></code></pre>
+						</dd>
+					</dl>
+				</div>
+			</section>
+			<section class="tsd-panel tsd-hierarchy">
+				<h3>Hierarchy</h3>
+				<ul class="tsd-hierarchy">
+					<li>
+						<a href="_compare_.comparable.html" class="tsd-signature-type">Comparable</a><span class="tsd-signature-symbol">&lt;</span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a><span class="tsd-signature-symbol">&gt;</span>
+						<ul class="tsd-hierarchy">
+							<li>
+								<span class="target">LogootishPosition</span>
+							</li>
+						</ul>
+					</li>
+				</ul>
+			</section>
+			<section class="tsd-panel-group tsd-index-group">
+				<h2>Index</h2>
+				<section class="tsd-panel tsd-index-panel">
+					<div class="tsd-index-content">
+						<section class="tsd-index-section ">
+							<h3>Namespaces</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-namespace tsd-parent-kind-class"><a href="../modules/_listmodel_position_.logootishposition.json.html" class="tsd-kind-icon">JSON</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section ">
+							<h3>Type aliases</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-type-alias tsd-parent-kind-class tsd-is-static"><a href="_listmodel_position_.logootishposition.html#json-1" class="tsd-kind-icon">JSON</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section ">
+							<h3>Constructors</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-constructor tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#constructor" class="tsd-kind-icon">constructor</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section ">
+							<h3>Properties</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#array" class="tsd-kind-icon">array</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#end" class="tsd-kind-icon">end</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#immutable" class="tsd-kind-icon">immutable</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#start" class="tsd-kind-icon">start</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section ">
+							<h3>Accessors</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-get-signature tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#length" class="tsd-kind-icon">length</a></li>
+								<li class="tsd-kind-get-signature tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#levels" class="tsd-kind-icon">levels</a></li>
+							</ul>
+						</section>
+						<section class="tsd-index-section ">
+							<h3>Methods</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#clamp" class="tsd-kind-icon">clamp</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-overwrite"><a href="_listmodel_position_.logootishposition.html#cmp" class="tsd-kind-icon">cmp</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-private"><a href="_listmodel_position_.logootishposition.html#cmp_level" class="tsd-kind-icon">cmp_<wbr>level</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#copy" class="tsd-kind-icon">copy</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_listmodel_position_.logootishposition.html#eq" class="tsd-kind-icon">eq</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#equivalentpositionatlevel" class="tsd-kind-icon">equivalent<wbr>Position<wbr>AtLevel</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_listmodel_position_.logootishposition.html#gt" class="tsd-kind-icon">gt</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_listmodel_position_.logootishposition.html#gteq" class="tsd-kind-icon">gteq</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#inverseoffsetlowest" class="tsd-kind-icon">inverse<wbr>Offset<wbr>Lowest</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#iterator" class="tsd-kind-icon">iterator</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#l" class="tsd-kind-icon">l</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#level" class="tsd-kind-icon">level</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_listmodel_position_.logootishposition.html#lt" class="tsd-kind-icon">lt</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><a href="_listmodel_position_.logootishposition.html#lteq" class="tsd-kind-icon">lteq</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#offsetlowest" class="tsd-kind-icon">offset<wbr>Lowest</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#tojson" class="tsd-kind-icon">toJSON</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class"><a href="_listmodel_position_.logootishposition.html#tostring" class="tsd-kind-icon">to<wbr>String</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-static"><a href="_listmodel_position_.logootishposition.html#fromints" class="tsd-kind-icon">from<wbr>Ints</a></li>
+								<li class="tsd-kind-method tsd-parent-kind-class tsd-is-static"><a href="_listmodel_position_.logootishposition.html#fromjson" class="tsd-kind-icon">fromJSON</a></li>
+							</ul>
+						</section>
+					</div>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Type aliases</h2>
+				<section class="tsd-panel tsd-member tsd-kind-type-alias tsd-parent-kind-class tsd-is-static">
+					<a name="json-1" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagStatic">Static</span> JSON</h3>
+					<div class="tsd-signature tsd-kind-icon">JSON<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">LogootInt.JSON</span><span class="tsd-signature-symbol">[]</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L267">src/listmodel/position.ts:267</a></li>
+						</ul>
+					</aside>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Constructors</h2>
+				<section class="tsd-panel tsd-member tsd-kind-constructor tsd-parent-kind-class">
+					<a name="constructor" class="tsd-anchor"></a>
+					<h3>constructor</h3>
+					<ul class="tsd-signatures tsd-kind-constructor tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">new <wbr>Logootish<wbr>Position<span class="tsd-signature-symbol">(</span>len<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">number</span>, start<span class="tsd-signature-symbol">?: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a>, end<span class="tsd-signature-symbol">?: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L25">src/listmodel/position.ts:25</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>This constructor constructs a new position that is in the range specified
+										by <code>start</code> and <code>end</code>. By using <code>len</code>, it is possible to enforce that a
+										certain number of additional positions are available in the selected range.
+										This guarantees that there&#39;s space for a LogootNode of length <code>len</code> at this
+									position between <code>start</code> and <code>end</code>.</p>
+								</div>
+								<dl class="tsd-comment-tags">
+									<dt>throws</dt>
+									<dd><p>{TypeError} Will throw if <code>start</code> is greater than <code>end</code>.</p>
+									</dd>
+								</dl>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5><span class="tsd-flag ts-flagDefault value">Default value</span> len: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> = 0</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>The length of the allocation to make. The length is never
+												actually stored in the Logoot position, but is used when finding space for
+											the position to be created and <code>len</code> position(s) after it.</p>
+										</div>
+									</div>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> start: <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>This will cause the new position to have a value greater
+												than or equal to this. This value is tricky: It must be the end of the last
+												node. So if <code>A</code> is at <code>[1]</code> and an allocation <em>after</em> it is desired, then
+											<code>[2]</code> would need to be passed to <code>start</code>.</p>
+										</div>
+									</div>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> end: <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h5>
+									<div class="tsd-comment tsd-typography">
+										<div class="lead">
+											<p>This will cause the new position to have a value less than or
+											equal to this, subject to the value of <code>len</code>.</p>
+										</div>
+									</div>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h4>
+						</li>
+					</ul>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Properties</h2>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
+					<a name="array" class="tsd-anchor"></a>
+					<h3>array</h3>
+					<div class="tsd-signature tsd-kind-icon">array<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">LogootInt</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol"> = [new LogootInt(0)]</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L24">src/listmodel/position.ts:24</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
+					<a name="end" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> <span class="tsd-flag ts-flagReadonly">Readonly</span> end</h3>
+					<div class="tsd-signature tsd-kind-icon">end<span class="tsd-signature-symbol">:</span> <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L48">src/listmodel/position.ts:48</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>This will cause the new position to have a value less than or
+							equal to this, subject to the value of <code>len</code>.</p>
+						</div>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
+					<a name="immutable" class="tsd-anchor"></a>
+					<h3>immutable</h3>
+					<div class="tsd-signature tsd-kind-icon">immutable<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol"> = false</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L25">src/listmodel/position.ts:25</a></li>
+						</ul>
+					</aside>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class">
+					<a name="start" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagOptional">Optional</span> <span class="tsd-flag ts-flagReadonly">Readonly</span> start</h3>
+					<div class="tsd-signature tsd-kind-icon">start<span class="tsd-signature-symbol">:</span> <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L47">src/listmodel/position.ts:47</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>This will cause the new position to have a value greater
+								than or equal to this. This value is tricky: It must be the end of the last
+								node. So if <code>A</code> is at <code>[1]</code> and an allocation <em>after</em> it is desired, then
+							<code>[2]</code> would need to be passed to <code>start</code>.</p>
+						</div>
+					</div>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Accessors</h2>
+				<section class="tsd-panel tsd-member tsd-kind-get-signature tsd-parent-kind-class">
+					<a name="length" class="tsd-anchor"></a>
+					<h3>length</h3>
+					<ul class="tsd-signatures tsd-kind-get-signature tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">get</span> length<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L126">src/listmodel/position.ts:126</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+							</div>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">number</span></h4>
+							<p>Internal array length</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-get-signature tsd-parent-kind-class">
+					<a name="levels" class="tsd-anchor"></a>
+					<h3>levels</h3>
+					<ul class="tsd-signatures tsd-kind-get-signature tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">get</span> levels<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L137">src/listmodel/position.ts:137</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Returns the last index of the array. This is useful because before this,
+										the algorithm code often contained many occurences of <code>length - 1</code>. This
+									is used to cut down redundancy.</p>
+								</div>
+							</div>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">number</span></h4>
+						</li>
+					</ul>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Methods</h2>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="clamp" class="tsd-anchor"></a>
+					<h3>clamp</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">clamp<span class="tsd-signature-symbol">(</span>min<span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a>, max<span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a>, preserve_levels<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L244">src/listmodel/position.ts:244</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Return this position if it is between <code>min</code> or <code>max</code>, otherwise return
+									<code>min</code> if this is less and <code>max</code> if this is greater.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>min: <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>The minimum output.</p>
+									</div>
+								</li>
+								<li>
+									<h5>max: <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>The maximum output.</p>
+									</div>
+								</li>
+								<li>
+									<h5><span class="tsd-flag ts-flagOptional">Optional</span> preserve_levels: <span class="tsd-signature-type">undefined</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>If defined, the output number of levels will be
+										equal to <code>preserve_levels</code>.</p>
+									</div>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h4>
+							<p>Either this position, min, or max. It is <strong>not</strong> copied, so if you
+							want to modify it, you should copy it.</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
+					<a name="cmp" class="tsd-anchor"></a>
+					<h3>cmp</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
+						<li class="tsd-signature tsd-kind-icon">cmp<span class="tsd-signature-symbol">(</span>pos<span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="../modules/_compare_.html#compareresult" class="tsd-signature-type">CompareResult</a></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<p>Overrides <a href="_compare_.comparable.html">Comparable</a>.<a href="_compare_.comparable.html#cmp">cmp</a></p>
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L230">src/listmodel/position.ts:230</a></li>
+								</ul>
+							</aside>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>pos: <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="../modules/_compare_.html#compareresult" class="tsd-signature-type">CompareResult</a></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-private">
+					<a name="cmp_level" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagPrivate">Private</span> cmp_<wbr>level</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-private">
+						<li class="tsd-signature tsd-kind-icon">cmp_<wbr>level<span class="tsd-signature-symbol">(</span>pos<span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a>, level<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="../modules/_compare_.html#compareresult" class="tsd-signature-type">CompareResult</a></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L211">src/listmodel/position.ts:211</a></li>
+								</ul>
+							</aside>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>pos: <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h5>
+								</li>
+								<li>
+									<h5>level: <span class="tsd-signature-type">number</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="../modules/_compare_.html#compareresult" class="tsd-signature-type">CompareResult</a></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="copy" class="tsd-anchor"></a>
+					<h3>copy</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">copy<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L193">src/listmodel/position.ts:193</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Duplicates this position.</p>
+								</div>
+							</div>
+							<h4 class="tsd-returns-title">Returns <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+					<a name="eq" class="tsd-anchor"></a>
+					<h3>eq</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+						<li class="tsd-signature tsd-kind-icon">eq<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<p>Inherited from <a href="_compare_.comparable.html">Comparable</a>.<a href="_compare_.comparable.html#eq">eq</a></p>
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/compare.ts#L59">src/compare.ts:59</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>n: <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
+							<p>True if this object is equal to the one provided.</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="equivalentpositionatlevel" class="tsd-anchor"></a>
+					<h3>equivalent<wbr>Position<wbr>AtLevel</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">equivalent<wbr>Position<wbr>AtLevel<span class="tsd-signature-symbol">(</span>level<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L203">src/listmodel/position.ts:203</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Return a copy of this position, but with the number of levels specified by
+									<code>level</code>. If this position has fewer levels, zeroes will be added in place.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>level: <span class="tsd-signature-type">number</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+					<a name="gt" class="tsd-anchor"></a>
+					<h3>gt</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+						<li class="tsd-signature tsd-kind-icon">gt<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<p>Inherited from <a href="_compare_.comparable.html">Comparable</a>.<a href="_compare_.comparable.html#gt">gt</a></p>
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/compare.ts#L47">src/compare.ts:47</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>n: <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
+							<p>True if this object is greater than the one provided.</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+					<a name="gteq" class="tsd-anchor"></a>
+					<h3>gteq</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+						<li class="tsd-signature tsd-kind-icon">gteq<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<p>Inherited from <a href="_compare_.comparable.html">Comparable</a>.<a href="_compare_.comparable.html#gteq">gteq</a></p>
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/compare.ts#L53">src/compare.ts:53</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>n: <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
+							<p>True if this object is greater than or equal to the one provided.</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="inverseoffsetlowest" class="tsd-anchor"></a>
+					<h3>inverse<wbr>Offset<wbr>Lowest</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">inverse<wbr>Offset<wbr>Lowest<span class="tsd-signature-symbol">(</span>offset<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">LogootInt</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L180">src/listmodel/position.ts:180</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Returns a new position with <code>offset</code> subtracted from the lowest level of
+									the position.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>offset: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">LogootInt</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="iterator" class="tsd-anchor"></a>
+					<h3>iterator</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">iterator<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">IterableIterator</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">LogootInt</span><span class="tsd-signature-symbol">&gt;</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L143">src/listmodel/position.ts:143</a></li>
+								</ul>
+							</aside>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">IterableIterator</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">LogootInt</span><span class="tsd-signature-symbol">&gt;</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="l" class="tsd-anchor"></a>
+					<h3>l</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">l<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">LogootInt</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L159">src/listmodel/position.ts:159</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>An array accessor</p>
+								</div>
+								<dl class="tsd-comment-tags">
+									<dt>alias</dt>
+									<dd><p>level</p>
+									</dd>
+								</dl>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>n: <span class="tsd-signature-type">number</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">LogootInt</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="level" class="tsd-anchor"></a>
+					<h3>level</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">level<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">LogootInt</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L149">src/listmodel/position.ts:149</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>An array accessor</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>n: <span class="tsd-signature-type">number</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">LogootInt</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+					<a name="lt" class="tsd-anchor"></a>
+					<h3>lt</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+						<li class="tsd-signature tsd-kind-icon">lt<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<p>Inherited from <a href="_compare_.comparable.html">Comparable</a>.<a href="_compare_.comparable.html#lt">lt</a></p>
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/compare.ts#L71">src/compare.ts:71</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>n: <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
+							<p>True if this object is less than the one provided.</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+					<a name="lteq" class="tsd-anchor"></a>
+					<h3>lteq</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+						<li class="tsd-signature tsd-kind-icon">lteq<span class="tsd-signature-symbol">(</span>n<span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<p>Inherited from <a href="_compare_.comparable.html">Comparable</a>.<a href="_compare_.comparable.html#lteq">lteq</a></p>
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/compare.ts#L65">src/compare.ts:65</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>n: <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">boolean</span></h4>
+							<p>True if this object is less than or equal to the one provided.</p>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="offsetlowest" class="tsd-anchor"></a>
+					<h3>offset<wbr>Lowest</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">offset<wbr>Lowest<span class="tsd-signature-symbol">(</span>offset<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">LogootInt</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L167">src/listmodel/position.ts:167</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Returns a new position with <code>offset</code> added to the lowest level of the
+									position.</p>
+								</div>
+							</div>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>offset: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">LogootInt</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="tojson" class="tsd-anchor"></a>
+					<h3>toJSON</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">toJSON<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="../modules/_listmodel_position_.logootishposition.json.html" class="tsd-signature-type">JSON</a></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L119">src/listmodel/position.ts:119</a></li>
+								</ul>
+							</aside>
+							<h4 class="tsd-returns-title">Returns <a href="../modules/_listmodel_position_.logootishposition.json.html" class="tsd-signature-type">JSON</a></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class">
+					<a name="tostring" class="tsd-anchor"></a>
+					<h3>to<wbr>String</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+						<li class="tsd-signature tsd-kind-icon">to<wbr>String<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L257">src/listmodel/position.ts:257</a></li>
+								</ul>
+							</aside>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-static">
+					<a name="fromints" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagStatic">Static</span> from<wbr>Ints</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-static">
+						<li class="tsd-signature tsd-kind-icon">from<wbr>Ints<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">...</span>ints<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L111">src/listmodel/position.ts:111</a></li>
+								</ul>
+							</aside>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5><span class="tsd-flag ts-flagRest">Rest</span> <span class="tsd-signature-symbol">...</span>ints: <span class="tsd-signature-symbol">(</span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> | </span><a href="_ints_.int32.html" class="tsd-signature-type">Int32</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">[]</span></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h4>
+						</li>
+					</ul>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-static">
+					<a name="fromjson" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagStatic">Static</span> fromJSON</h3>
+					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-static">
+						<li class="tsd-signature tsd-kind-icon">fromJSON<span class="tsd-signature-symbol">(</span>eventnode<span class="tsd-signature-symbol">: </span><a href="../modules/_listmodel_position_.logootishposition.json.html" class="tsd-signature-type">JSON</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/96f7524/src/listmodel/position.ts#L103">src/listmodel/position.ts:103</a></li>
+								</ul>
+							</aside>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>eventnode: <a href="../modules/_listmodel_position_.logootishposition.json.html" class="tsd-signature-type">JSON</a></h5>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <a href="_listmodel_position_.logootishposition.html" class="tsd-signature-type">LogootishPosition</a></h4>
+						</li>
+					</ul>
+				</section>
+			</section>
+		</div>
+		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
+			<nav class="tsd-navigation primary">
+				<ul>
+					<li class="globals  ">
+						<a href="../globals.html"><em>Globals</em></a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../modules/_bst_.html">&quot;bst&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../modules/_compare_.html">&quot;compare&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../modules/_debug_.html">&quot;debug&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../modules/_ints_.html">&quot;ints&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../modules/_listmodel_branch_.html">&quot;listmodel/branch&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../modules/_listmodel_index_.html">&quot;listmodel/index&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../modules/_listmodel_node_.html">&quot;listmodel/node&quot;</a>
+					</li>
+					<li class="current tsd-kind-module">
+						<a href="../modules/_listmodel_position_.html">&quot;listmodel/position&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="../modules/_utils_.html">&quot;utils&quot;</a>
+					</li>
+				</ul>
+			</nav>
+			<nav class="tsd-navigation secondary menu-sticky">
+				<ul class="before-current">
+					<li class=" tsd-kind-class tsd-parent-kind-module">
+						<a href="_listmodel_position_.branchorderinconsistencyerror.html" class="tsd-kind-icon">Branch<wbr>Order<wbr>Inconsistency<wbr>Error</a>
+					</li>
+					<li class=" tsd-kind-class tsd-parent-kind-module">
+						<a href="_listmodel_position_.logootposition.html" class="tsd-kind-icon">Logoot<wbr>Position</a>
+					</li>
+				</ul>
+				<ul class="current">
+					<li class="current tsd-kind-class tsd-parent-kind-module">
+						<a href="_listmodel_position_.logootishposition.html" class="tsd-kind-icon">Logootish<wbr>Position</a>
+						<ul>
+							<li class=" tsd-kind-type-alias tsd-parent-kind-class tsd-is-static">
+								<a href="_listmodel_position_.logootishposition.html#json-1" class="tsd-kind-icon">JSON</a>
+							</li>
+							<li class=" tsd-kind-constructor tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#constructor" class="tsd-kind-icon">constructor</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#array" class="tsd-kind-icon">array</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#end" class="tsd-kind-icon">end</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#immutable" class="tsd-kind-icon">immutable</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#start" class="tsd-kind-icon">start</a>
+							</li>
+							<li class=" tsd-kind-get-signature tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#length" class="tsd-kind-icon">length</a>
+							</li>
+							<li class=" tsd-kind-get-signature tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#levels" class="tsd-kind-icon">levels</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#clamp" class="tsd-kind-icon">clamp</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-overwrite">
+								<a href="_listmodel_position_.logootishposition.html#cmp" class="tsd-kind-icon">cmp</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-private">
+								<a href="_listmodel_position_.logootishposition.html#cmp_level" class="tsd-kind-icon">cmp_<wbr>level</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#copy" class="tsd-kind-icon">copy</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+								<a href="_listmodel_position_.logootishposition.html#eq" class="tsd-kind-icon">eq</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#equivalentpositionatlevel" class="tsd-kind-icon">equivalent<wbr>Position<wbr>AtLevel</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+								<a href="_listmodel_position_.logootishposition.html#gt" class="tsd-kind-icon">gt</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+								<a href="_listmodel_position_.logootishposition.html#gteq" class="tsd-kind-icon">gteq</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#inverseoffsetlowest" class="tsd-kind-icon">inverse<wbr>Offset<wbr>Lowest</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#iterator" class="tsd-kind-icon">iterator</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#l" class="tsd-kind-icon">l</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#level" class="tsd-kind-icon">level</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+								<a href="_listmodel_position_.logootishposition.html#lt" class="tsd-kind-icon">lt</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-inherited">
+								<a href="_listmodel_position_.logootishposition.html#lteq" class="tsd-kind-icon">lteq</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#offsetlowest" class="tsd-kind-icon">offset<wbr>Lowest</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#tojson" class="tsd-kind-icon">toJSON</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class">
+								<a href="_listmodel_position_.logootishposition.html#tostring" class="tsd-kind-icon">to<wbr>String</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-static">
+								<a href="_listmodel_position_.logootishposition.html#fromints" class="tsd-kind-icon">from<wbr>Ints</a>
+							</li>
+							<li class=" tsd-kind-method tsd-parent-kind-class tsd-is-static">
+								<a href="_listmodel_position_.logootishposition.html#fromjson" class="tsd-kind-icon">fromJSON</a>
+							</li>
+						</ul>
+					</li>
+				</ul>
+				<ul class="after-current">
+					<li class=" tsd-kind-function tsd-parent-kind-module tsd-is-not-exported">
+						<a href="../modules/_listmodel_position_.html#positionscompatible" class="tsd-kind-icon">positions<wbr>Compatible</a>
+					</li>
+				</ul>
+			</nav>
+		</div>
+	</div>
+</div>
+<footer class="with-border-bottom">
+	<div class="container">
+		<h2>Legend</h2>
+		<div class="tsd-legend-group">
+			<ul class="tsd-legend">
+				<li class="tsd-kind-class"><span class="tsd-kind-icon">Class</span></li>
+				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
+				<li class="tsd-kind-constructor tsd-parent-kind-class"><span class="tsd-kind-icon">Constructor</span></li>
+				<li class="tsd-kind-property tsd-parent-kind-class"><span class="tsd-kind-icon">Property</span></li>
+				<li class="tsd-kind-method tsd-parent-kind-class"><span class="tsd-kind-icon">Method</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
+				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
+				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
+				<li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-inherited"><span class="tsd-kind-icon">Inherited method</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-private"><span class="tsd-kind-icon">Private method</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-method tsd-parent-kind-class tsd-is-static"><span class="tsd-kind-icon">Static method</span></li>
+			</ul>
+		</div>
+	</div>
+</footer>
+<div class="container tsd-generator">
+	<p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p>
+</div>
+<div class="overlay"></div>
+<script src="../assets/js/main.js"></script>
+<script>if (location.protocol == 'file:') document.write('<script src="../assets/js/search.js"><' + '/script>');</script>
+</body>
+</html>
