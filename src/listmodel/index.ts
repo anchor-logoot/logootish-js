@@ -5,8 +5,6 @@
  */
 /** */
 
-import 'regenerator-runtime/runtime'
-
 import { DBst } from '../bst'
 import { LogootInt } from './int'
 import { LogootPosition } from './position'

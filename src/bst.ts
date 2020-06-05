@@ -6,6 +6,8 @@
  */
 /** */
 
+import 'regenerator-runtime/runtime'
+
 import { CompareResult } from './utils'
 import { TypeRange, NumberRange } from './compare'
 
