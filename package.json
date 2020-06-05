@@ -65,6 +65,7 @@
     "instrument": false
   },
   "dependencies": {
+    "core-js": "^3.6.5",
     "loglevel": "^1.6.8"
   }
 }
