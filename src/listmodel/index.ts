@@ -848,49 +848,51 @@ class ListDocumentModel {
         throw new FatalError(`Node has true length of ${node.length}`)
       }
 
-      all_nodes.forEach((cfl) => {
-        if (cfl === node) {
-          return
-        }
-        if (cfl.logoot_start.lt(node.logoot_start)) {
-          // Is to left
-          let expected = false
-          let right = cfl.true_right
-          if (right === DocEnd) {
-            expected = true
-          } else {
-            if (right.length > node.logoot_end.length) {
-              right = right.copy().truncateTo(node.logoot_start.length)
-            }
-            expected = right.gt(node.logoot_start)
+      if (!this.opts.disable_conflicts) {
+        all_nodes.forEach((cfl) => {
+          if (cfl === node) {
+            return
           }
-          if (node.conflict_with.has(cfl) !== expected) {
-            throw new FatalError(
-              `Expected node to ${expected ? 'have' : 'not have'} conflict`
-            )
-          }
-        } else {
-          // Is to right
-          let expected = false
-          let left = cfl.true_left
-          if (left === DocStart) {
-            expected = true
-          } else {
-            if (left.length > node.logoot_end.length) {
-              left = left.copy().truncateTo(node.logoot_end.length)
-            }
-            expected = left.lt(node.logoot_end)
-            if (node.logoot_end.equalsHigherLevel(left)) {
+          if (cfl.logoot_start.lt(node.logoot_start)) {
+            // Is to left
+            let expected = false
+            let right = cfl.true_right
+            if (right === DocEnd) {
               expected = true
+            } else {
+              if (right.length > node.logoot_end.length) {
+                right = right.copy().truncateTo(node.logoot_start.length)
+              }
+              expected = right.gt(node.logoot_start)
+            }
+            if (node.conflict_with.has(cfl) !== expected) {
+              throw new FatalError(
+                `Expected node to ${expected ? 'have' : 'not have'} conflict`
+              )
+            }
+          } else {
+            // Is to right
+            let expected = false
+            let left = cfl.true_left
+            if (left === DocStart) {
+              expected = true
+            } else {
+              if (left.length > node.logoot_end.length) {
+                left = left.copy().truncateTo(node.logoot_end.length)
+              }
+              expected = left.lt(node.logoot_end)
+              if (node.logoot_end.equalsHigherLevel(left)) {
+                expected = true
+              }
+            }
+            if (node.conflict_with.has(cfl) !== expected) {
+              throw new FatalError(
+                `Expected node to ${expected ? 'have' : 'not have'} conflict`
+              )
             }
           }
-          if (node.conflict_with.has(cfl) !== expected) {
-            throw new FatalError(
-              `Expected node to ${expected ? 'have' : 'not have'} conflict`
-            )
-          }
-        }
-      })
+        })
+      }
 
       last_ldoc = node.ldoc_end
       last_logoot = node.logoot_start

@@ -288,6 +288,15 @@ describe('AnchorLogootNode', () => {
       expect(c1.conflict_with.has(n2)).to.be.true
       expect(c2.conflict_with.has(n2)).to.be.true
     })
+    it('should not offset removal ldoc position', () => {
+      const pos = LogootPosition.fromIntsBranches(o, [1, u1], [2, u1], [3, u1])
+      const n1 = new AnchorLogootNode(pos, 5, NodeType.REMOVAL)
+      n1.value = 2
+      const n2 = n1.splitAround(2)
+      expect(n2.logoot_start.eq(pos.offsetLowest(2))).to.be.true
+      expect(n2.length).to.be.equal(3)
+      expect(n2.ldoc_start).to.be.equal(2)
+    })
   })
 
   describe('reductions', () => {

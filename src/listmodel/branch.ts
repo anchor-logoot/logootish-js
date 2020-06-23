@@ -9,6 +9,10 @@ type BranchKey = symbol | string | number
 class BranchOrder {
   constructor(public readonly order: BranchKey[] = []) {}
 
+  get length() {
+    return this.order.length
+  }
+
   /**
    * Finds the index of `br` and adds it to the order if necessary.
    * @param br The branch to find the index of
