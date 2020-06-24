@@ -896,6 +896,8 @@ describe('LDM support functions', () => {
       embedded.right_anchor = DocEnd
       embedded.value = 2
 
+      let root = embedded
+
       const added_nodes: AnchorLogootNode[] = []
       const start = LogootPosition.fromIntsBranches(o, [0, u1])
       const final_ranges = fillSkipRanges(
@@ -907,7 +909,7 @@ describe('LDM support functions', () => {
         [embedded, dummy],
         opbuf,
         (n: AnchorLogootNode): void => {
-          embedded.addChild(n, () => { throw new Error('Should not happen') })
+          root.addChild(n, (n) => (root = n))
           added_nodes.push(n)
         }
       )
@@ -958,6 +960,8 @@ describe('LDM support functions', () => {
       )
       embedded.value = 2
 
+      let root = embedded
+
       const added_nodes: AnchorLogootNode[] = []
       const start = LogootPosition.fromIntsBranches(o, [0, u1])
       fillSkipRanges(
@@ -969,7 +973,7 @@ describe('LDM support functions', () => {
         [embedded, dummy],
         opbuf,
         (n: AnchorLogootNode): void => {
-          embedded.addChild(n, () => { throw new Error('Should not happen') })
+          root.addChild(n, (n) => (root = n))
           added_nodes.push(n)
         }
       )

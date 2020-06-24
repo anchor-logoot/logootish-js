@@ -8,7 +8,7 @@
 
 import 'regenerator-runtime/runtime'
 
-import { CompareResult } from './utils'
+import { CompareResult, FatalError } from './utils'
 import { TypeRange, NumberRange } from './compare'
 
 class TypeRangeSearch<T, R> {
@@ -49,6 +49,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
   parent_node?: T
   left_node?: T
   right_node?: T
+  readonly equal_nodes: T[] = []
 
   constructor(public value: number = 0) {}
 
@@ -74,8 +75,8 @@ abstract class DBstNode<T extends DBstNode<T>> {
 
   /**
    * Called by the BST only. **DO NOT** use. This is only public because JS has
-   * no concept of C++ `friend` classes. Call the `add` function on the BST
-   * object.
+   * no concept of C++ `friend` classes and I need to use this function in unit
+   * tests. Call the `add` function on the BST object instead.
    * @param node The node to add
    * @param rootUpdate A function that will be called if the BST root needs to
    * be updated. A TypeError will be thrown if one is not provided.
@@ -90,45 +91,58 @@ abstract class DBstNode<T extends DBstNode<T>> {
         // T will always be an instance of DBstNode<T>
         ;(node as DBstNode<T>).parent_node = (this as unknown) as T
       }
-    } else {
-      if (node.value === 0 && this.preferential_cmp(node) < 0) {
-        if (this.parent_node) {
-          if (this.value <= 0) {
-            this.parent_node.left_node = node
-          } else {
-            this.parent_node.right_node = node
-          }
-        } else if (rootUpdate) {
-          rootUpdate(node)
-        } else {
-          throw new Error('Unexpected undefined parent node in DBST')
-        }
-        node.parent_node = this.parent_node
-        const old_right = this.right_node
-        node.value = this.value
-
-        if (node.right_node) {
-          node.right_node.parent_node = node
-        }
-        delete this.right_node
-        node.addChild((this as unknown) as T)
-        if (old_right) {
-          old_right.value += node.value
-          node.addChild(old_right)
-        }
-        return
-      }
+    } else if (node.value < 0) {
       if (this.left_node) {
         this.left_node.addChild(node)
       } else {
         this.left_node = node as T
         ;(node as DBstNode<T>).parent_node = (this as unknown) as T
       }
+    } else {
+      if (this.preferential_cmp(node) > 0) {
+        if (this.parent_node) {
+          if (this.value > 0) {
+            this.parent_node.right_node = node
+          } else {
+            this.parent_node.left_node = node
+          }
+          node.parent_node = this.parent_node
+        } else {
+          rootUpdate(node)
+        }
+
+        node.value = this.value
+        this.value = 0
+
+        if (this.left_node) {
+          node.left_node = this.left_node
+          delete this.left_node
+          node.left_node.parent_node = node
+        }
+        if (this.right_node) {
+          node.right_node = this.right_node
+          delete this.right_node
+          node.right_node.parent_node = node
+        }
+
+        node.equal_nodes.push((this as unknown) as T, ...this.equal_nodes)
+        this.equal_nodes.length = 0
+        node.equal_nodes.forEach((n) => (n.parent_node = node))
+      } else {
+        node.parent_node = (this as unknown) as T
+        for (let i = this.equal_nodes.length - 1; i >= 0; i--) {
+          if (this.equal_nodes[i].preferential_cmp(node) < 0) {
+            this.equal_nodes.splice(i + 1, 0, node)
+            return
+          }
+        }
+        this.equal_nodes.unshift(node)
+      }
     }
   }
 
   /**
-   * Finds the smallest child of this node.
+   * Finds the smallest child of this node **not** including equal nodes.
    */
   get smallest_child(): T {
     if (this.left_node) {
@@ -139,7 +153,8 @@ abstract class DBstNode<T extends DBstNode<T>> {
     return undefined
   }
   /**
-   * Finds the smallest child that is smaller than this node.
+   * Finds the smallest child that is smaller than this node **not** including
+   * equal nodes.
    */
   get smallest_smaller_child(): T {
     if (this.left_node) {
@@ -148,7 +163,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
     return undefined
   }
   /**
-   * Finds the largest child of this node.
+   * Finds the largest child of this node **not** including equal nodes.
    */
   get largest_child(): T {
     if (this.right_node) {
@@ -159,7 +174,8 @@ abstract class DBstNode<T extends DBstNode<T>> {
     return undefined
   }
   /**
-   * Finds the largest child that is larger than this node.
+   * Finds the largest child that is larger than this node **not** including
+   * equal nodes.
    */
   get largest_larger_child(): T {
     if (this.right_node) {
@@ -169,7 +185,8 @@ abstract class DBstNode<T extends DBstNode<T>> {
   }
 
   /**
-   * The highest parent of this node that has the same value.
+   * The highest parent of this node that has the same value or this node if
+   * there is no such node.
    */
   get equal_parent(): T {
     if (this.value === 0 && this.parent_node) {
@@ -191,8 +208,23 @@ abstract class DBstNode<T extends DBstNode<T>> {
     if (this.right_node) {
       return this.right_node.smallest_smaller_child || this.right_node
     }
+    if (this.equal_nodes.length) {
+      return this.equal_nodes[0]
+    }
     let node = (this as undefined) as T
     while (node) {
+      // If we're in an equal node set, find the next node
+      if (node.value === 0) {
+        if (!node.parent_node) {
+          return undefined
+        }
+        const eqn = node.parent_node.equal_nodes
+        const s = eqn[eqn.indexOf(node) + 1]
+        if (s) {
+          return s
+        }
+      }
+      // Return parent if to left
       if (
         node.value <= 0 &&
         node.parent_node &&
@@ -200,6 +232,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
       ) {
         return node.parent_node
       }
+      // Otherwise, traverse up
       node = node.parent_node
     }
     return undefined
@@ -216,15 +249,37 @@ abstract class DBstNode<T extends DBstNode<T>> {
    */
   get inorder_predecessor(): T {
     if (this.left_node) {
-      return this.left_node.largest_larger_child || this.left_node
+      const node = this.left_node.largest_larger_child || this.left_node
+      if (node.equal_nodes.length) {
+        return node.equal_nodes[node.equal_nodes.length - 1]
+      }
+      return node
     }
     let node = (this as undefined) as T
     while (node) {
+      if (node.value === 0) {
+        if (!node.parent_node) {
+          return undefined
+        }
+        const eqn = node.parent_node.equal_nodes
+        const i = eqn.indexOf(node)
+        if (i === 0) {
+          return node.parent_node
+        }
+        const s = eqn[i - 1]
+        if (s) {
+          return s
+        }
+      }
       if (
         node.value > 0 &&
         node.parent_node &&
         node.parent_node.right_node === node
       ) {
+        if (node.parent_node.equal_nodes.length) {
+          const eqn = node.parent_node.equal_nodes
+          return eqn[eqn.length - 1]
+        }
         return node.parent_node
       }
       node = node.parent_node
@@ -264,10 +319,13 @@ abstract class DBstNode<T extends DBstNode<T>> {
     }
     if (data) {
       if (data.parent_node) {
+        let index
         if (data.parent_node.left_node === data) {
           delete data.parent_node.left_node
         } else if (data.parent_node.right_node === data) {
           delete data.parent_node.right_node
+        } else if ((index = data.parent_node.equal_nodes.indexOf(data)) >= 0) {
+          data.parent_node.equal_nodes.splice(index, 1)
         }
         delete data.parent_node
       }
@@ -280,6 +338,13 @@ abstract class DBstNode<T extends DBstNode<T>> {
       }
       if (this.parent_node.right_node === ((this as unknown) as T)) {
         this.parent_node.right_node = data
+      }
+      let index
+      if (
+        (index = this.parent_node.equal_nodes.indexOf((this as unknown) as T))
+        >= 0
+      ) {
+        this.parent_node.equal_nodes.splice(index, 1, data)
       }
     } else {
       rootUpdate(data)
@@ -299,6 +364,9 @@ abstract class DBstNode<T extends DBstNode<T>> {
       data.right_node.parent_node = data
       data.right_node.value += this.value - data.value
     }
+    if (this.equal_nodes.length) {
+      throw new TypeError('Node cannot currently have equal nodes')
+    }
 
     // Clear out this node
     delete this.parent_node
@@ -307,12 +375,58 @@ abstract class DBstNode<T extends DBstNode<T>> {
 
     // Ensure that the right side does not contain equal nodes. This can happen
     // if nodes are replaced in order, but the new node has the same value.
-    if (data && data.right_node && data.right_node.value === 0) {
-      data.right_node.value += data.value
-      delete data.right_node.parent_node
-      const node = data.right_node
-      delete data.right_node
-      data.addChild(node, rootUpdate)
+    // TODO: Decide if necessary
+    let node = data?.right_node
+    let traversal_value = 0
+    while (node) {
+      traversal_value += node.value
+      if (traversal_value === 0) {
+        if (node.left_node) {
+          throw new TypeError(
+            'Out-of-order offset must have been attempted: There are' +
+            'non-successor nodes with equal value'
+          )
+        }
+        break
+      }
+      node = node.left_node
+    }
+    if (node) {
+      data.equal_nodes.push(node, ...node.equal_nodes)
+      node.equal_nodes.forEach((n) => (n.parent_node = data))
+      node.equal_nodes.length = 0
+
+      if (node === data.right_node) {
+        delete data.right_node
+      } else {
+        delete node.parent_node.left_node
+      }
+      node.parent_node = data
+      node.value = 0
+    }
+
+    node = data?.left_node
+    traversal_value = 0
+    while (node) {
+      traversal_value += node.value
+      if (traversal_value === 0) {
+        if (node.right_node) {
+          throw new TypeError(
+            'Out-of-order offset must have been attempted: There are' +
+            'non-successor nodes with equal value'
+          )
+        }
+        break
+      }
+      node = node.right_node
+    }
+    if (node) {
+      data.replaceWith(node)
+      node.equal_nodes.push(data, ...data.equal_nodes)
+      data.equal_nodes.forEach((n) => (n.parent_node = node))
+      data.parent_node = node
+      data.equal_nodes.length = 0
+      data.value = 0
     }
 
     return (this as unknown) as T
@@ -324,7 +438,12 @@ abstract class DBstNode<T extends DBstNode<T>> {
     // is equal to its parents. In that case, the greatest equal parent is
     // chosen and and children are placed in `return_node`
     let return_node: T
-    if (this.right_node && this.left_node) {
+    if (this.equal_nodes.length) {
+      cnode = this.equal_nodes.shift()
+      cnode.equal_nodes.push(...this.equal_nodes)
+      this.equal_nodes.forEach((n) => (n.parent_node = cnode))
+      this.equal_nodes.length = 0
+    } else if (this.right_node && this.left_node) {
       cnode = this.inorder_successor
       while (cnode.value === 0) {
         cnode = cnode.parent_node
@@ -405,11 +524,50 @@ abstract class DBstNode<T extends DBstNode<T>> {
     s: number,
     rootUpdate: (np: T) => void = noRootUpdateFunction
   ): void {
+    let node = this.inorder_predecessor
+    if (node && node.value === 0) {
+      node = node.parent_node || node
+    }
+    if (s < 0 && node && node.absolute_value === this.absolute_value + s) {
+      const equal_nodes = [...this.equal_nodes]
+      this.equal_nodes.length = 0
+      this.remove(rootUpdate)
+      node.equal_nodes.push((this as unknown) as T, ...equal_nodes)
+      equal_nodes.forEach((n) => (n.parent_node = node))
+
+      this.value = -s
+      this.parent_node = node
+      if (node.right_node) {
+        node.right_node.value += s
+      }
+    }
+
+    let id
+    if (
+      s > 0 &&
+      this.parent_node &&
+      (id = this.parent_node.equal_nodes.indexOf((this as unknown) as T)) >= 0
+    ) {
+      const old_parent = this.parent_node
+      old_parent.equal_nodes.splice(id, 1)
+      this.equal_nodes.push(
+        ...old_parent.equal_nodes.splice(
+          id,
+          old_parent.equal_nodes.length - id
+        )
+      )
+      this.equal_nodes.forEach((n) => (n.parent_node = (this as unknown) as T))
+      // TODO: Better way of doing this
+      this.value = 1 + old_parent.value
+      delete this.parent_node
+      old_parent.addChild((this as unknown) as T)
+    }
+
     let next = (this as unknown) as T
     let cumulative = 0
     while (next) {
       // Increment `next` value if it's greater than `this`
-      if (cumulative >= 0 /*&& this.preferential_cmp(next) <= 0*/) {
+      if (cumulative >= 0) {
         cumulative -= next.value
         next.value += s
         // Ensure that the left node's position is not changed
@@ -422,27 +580,10 @@ abstract class DBstNode<T extends DBstNode<T>> {
       next = next.parent_node
     }
 
-    next = (this as unknown) as T
-    let last = next
-    cumulative = 0
-    while (next) {
-      if (cumulative === 0) {
-        if (last.parent_node && next !== ((this as unknown) as T)) {
-          last.value = next.value
-          if (last.parent_node.left_node === last) {
-            delete last.parent_node.left_node
-          } else if (last.parent_node.right_node === last) {
-            delete last.parent_node.right_node
-          }
-          delete last.parent_node
-
-          next.addChild(last, !next.parent_node ? rootUpdate : undefined)
-          last = next
-        }
-      }
-
-      cumulative -= next.value
-      next = next.parent_node
+    // Un-apply shift that was previously applied to make sure nodes go right
+    if (id >= 0) {
+      // TODO: There is a less stupid way of doing this
+      this.addSpaceBefore(-1, rootUpdate)
     }
   }
 
@@ -461,16 +602,16 @@ abstract class DBstNode<T extends DBstNode<T>> {
     if (sec < 0) {
       // We're under the target range...
 
-      // Try assigning this to a bucket (if the current value is greater, this)
-      // will be ignored.
-      s.setBucket('lesser', cval, (this as unknown) as T)
+      // Try assigning this or the last equal node to a bucket (if the current
+      // value is greater, this will be ignored.)
+      s.setBucket(
+        'lesser',
+        cval,
+        this.equal_nodes[this.equal_nodes.length - 1] || (this as unknown) as T
+      )
       // Always traverse right since it could be greater
       if (this.right_node) {
         traverse_right()
-      }
-      // Traverse left if the left node is equal (zero offset)
-      if (this.left_node && this.left_node.value === 0) {
-        traverse_left()
       }
     } else if (sec > 0) {
       // We're above the target range...
@@ -485,6 +626,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
       // We're in the target range...
 
       s.addToBucket('range', cval, (this as unknown) as T)
+      this.equal_nodes.forEach((n) => s.addToBucket('range', cval, n))
       // Now, we have to traverse left **and** right
       if (this.left_node) {
         traverse_left()
@@ -504,26 +646,34 @@ abstract class DBstNode<T extends DBstNode<T>> {
     const traverse_right = (): void => {
       this.right_node.prefSearch(s)
     }
+    const bucket = (name: 'lesser' | 'range' | 'greater', val: T) => {
+      // In this case, both the value and node are the same
+      if (name === 'range') {
+        s.addToBucket(name, val, val)
+      } else {
+        s.setBucket(name, val, val)
+      }
+    }
+
     const sec = s.range.getRangeSection((this as unknown) as T)
     if (sec < 0) {
       // We're under the target range...
 
       // Try assigning this to a bucket (if the current value is greater, this)
       // will be ignored.
-      s.setBucket('lesser', (this as unknown) as T, (this as unknown) as T)
+      bucket(
+        'lesser',
+        this.equal_nodes[this.equal_nodes.length - 1] || (this as unknown) as T
+      )
       // Always traverse right since it could be greater
       if (this.right_node) {
         traverse_right()
-      }
-      // Traverse left if the left node is equal (zero offset)
-      if (this.left_node && this.left_node.value === 0) {
-        traverse_left()
       }
     } else if (sec > 0) {
       // We're above the target range...
 
       // The same as above, but with the `greater` bucket
-      s.setBucket('greater', (this as unknown) as T, (this as unknown) as T)
+      bucket('greater', (this as unknown) as T)
       // Always try to find a smaller node
       if (this.left_node) {
         traverse_left()
@@ -531,7 +681,8 @@ abstract class DBstNode<T extends DBstNode<T>> {
     } else {
       // We're in the target range...
 
-      s.addToBucket('range', (this as unknown) as T, (this as unknown) as T)
+      bucket('range', (this as unknown) as T)
+      this.equal_nodes.forEach((n) => bucket('range', n))
       // Now, we have to traverse left **and** right
       if (this.left_node) {
         traverse_left()
@@ -547,13 +698,14 @@ abstract class DBstNode<T extends DBstNode<T>> {
       this.left_node.operateOnAll(cb)
     }
     cb((this as unknown) as T)
+    this.equal_nodes.forEach((n) => cb(n))
     if (this.right_node) {
       this.right_node.operateOnAll(cb)
     }
   }
 
   toDeepString(): string {
-    let str = `${this}\n`
+    let str = `${this}\n${this.equal_nodes.map((n) => `  ${n}\n`).join('')}`
     const dstr = (node: T): string =>
       node.toDeepString().split('\n').join('\n  ')
     if (this.left_node) {
@@ -574,8 +726,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
     is_left?: boolean,
     mnv = 0,
     mxv = 0,
-    known: DBstNode<T>[] = [],
-    can_have_equal = false
+    known: DBstNode<T>[] = []
   ): void {
     if (known.includes(this)) {
       throw new Error('Duplicate nodes or node loop')
@@ -583,9 +734,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
     known.push(this)
     if (this.value <= mnv) {
       throw new Error('Node has wrong position for location')
-    } else if (this.value > mxv) {
-      throw new Error('Node has wrong position for location')
-    } else if (this.value === mxv && !can_have_equal) {
+    } else if (this.value >= mxv) {
       throw new Error('Node has wrong position for location')
     }
     if (this.parent_node !== parent) {
@@ -602,9 +751,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
         true,
         mnv - this.value,
         0,
-        known,
-        true // The child CAN be equal here since it would start a linked list
-        // of equal children
+        known
       )
     }
     if (this.right_node) {
@@ -613,9 +760,30 @@ abstract class DBstNode<T extends DBstNode<T>> {
         false,
         0,
         mxv - this.value,
-        known,
-        can_have_equal
+        known
       )
+    }
+    this.equal_nodes.forEach((n) => n.selfTestEqual((this as unknown) as T))
+    let last = this
+    this.equal_nodes.forEach((node) => {
+      if (last.preferential_cmp(node) >= 0) {
+        throw new Error('Equal nodes are not sequential')
+      }
+    })
+  }
+  selfTestEqual(parent?: T, known: DBstNode<T>[] = []): void {
+    if (known.includes(this)) {
+      throw new Error('Duplicate nodes or node loop')
+    }
+    known.push(this)
+    if (this.value !== 0) {
+      throw new Error('Equal nodes cannot have value')
+    }
+    if (this.parent_node !== parent) {
+      throw new Error('Node does not have correct parent')
+    }
+    if (this.right_node || this.left_node || this.equal_nodes.length) {
+      throw new Error('Equal nodes cannot have children')
     }
   }
 }
@@ -627,25 +795,7 @@ class DBst<T extends DBstNode<T>> {
     if (!this.bst_root) {
       this.bst_root = node
     } else {
-      if (
-        node.value === this.bst_root.value &&
-        this.bst_root.preferential_cmp(node) < 0
-      ) {
-        node.left_node = this.bst_root
-        node.left_node.parent_node = node
-        node.left_node.value = 0
-
-        node.right_node = this.bst_root.right_node
-        if (node.right_node) {
-          node.right_node.parent_node = node
-          this.bst_root.right_node = undefined
-        }
-
-        node.parent_node = undefined
-        this.bst_root = node
-        return node
-      }
-      this.bst_root.addChild(node)
+      this.bst_root.addChild(node, (n) => (this.bst_root = n))
     }
     return node
   }
