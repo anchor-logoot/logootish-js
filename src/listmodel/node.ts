@@ -261,7 +261,11 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
       this.type,
       this.clk.copy()
     )
-    node.value = this.ldoc_start + pos
+    if (this.type === NodeType.DATA) {
+      node.value = this.ldoc_start + pos
+    } else {
+      node.value = this.ldoc_start
+    }
     this.length = pos
 
     node.conflict_with = new Set<AnchorLogootNode>(this.conflict_with)
