@@ -324,6 +324,28 @@ describe('DBst (Differential Binary Search Tree)', () => {
         b.add(n4)
         expect(n1.inorder_successor).to.be.equal(n2)
       })
+      it('should return first equal node even with right child', () => {
+        const n1 = new DummyNode(1, 1)
+        const n2 = new DummyNode(1, 2)
+        const n3 = new DummyNode(1, 3)
+        const n4 = new DummyNode(2)
+        b.add(n1)
+        b.add(n2)
+        b.add(n3)
+        b.add(n4)
+        expect(n1.inorder_successor).to.be.equal(n2)
+      })
+      it('should jump up from equal node and return right child', () => {
+        const n1 = new DummyNode(1, 1)
+        const n2 = new DummyNode(1, 2)
+        const n3 = new DummyNode(1, 3)
+        const n4 = new DummyNode(2)
+        b.add(n1)
+        b.add(n2)
+        b.add(n3)
+        b.add(n4)
+        expect(n3.inorder_successor).to.be.equal(n4)
+      })
     })
     describe('inorder_predecessor', () => {
       it('should return parent if parent is predecessor', () => {

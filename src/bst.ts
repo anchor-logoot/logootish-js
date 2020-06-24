@@ -205,11 +205,15 @@ abstract class DBstNode<T extends DBstNode<T>> {
    * The next node in sequence.
    */
   get inorder_successor(): T {
+    if (this.equal_nodes.length) {
+      return this.equal_nodes[0]
+    }
     if (this.right_node) {
       return this.right_node.smallest_smaller_child || this.right_node
     }
-    if (this.equal_nodes.length) {
-      return this.equal_nodes[0]
+    if (this.value === 0 && this.parent_node?.right_node) {
+      return this.parent_node.right_node.smallest_smaller_child ||
+        this.parent_node.right_node
     }
     let node = (this as undefined) as T
     while (node) {
@@ -604,11 +608,8 @@ abstract class DBstNode<T extends DBstNode<T>> {
 
       // Try assigning this or the last equal node to a bucket (if the current
       // value is greater, this will be ignored.)
-      s.setBucket(
-        'lesser',
-        cval,
-        this.equal_nodes[this.equal_nodes.length - 1] || (this as unknown) as T
-      )
+      s.setBucket('lesser', cval, (this as unknown) as T)
+      this.equal_nodes.forEach((n) => s.setBucket('lesser', cval, n))
       // Always traverse right since it could be greater
       if (this.right_node) {
         traverse_right()
@@ -618,6 +619,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
 
       // The same as above, but with the `greater` bucket
       s.setBucket('greater', cval, (this as unknown) as T)
+      this.equal_nodes.forEach((n) => s.setBucket('greater', cval, n))
       // Always try to find a smaller node
       if (this.left_node) {
         traverse_left()
@@ -645,6 +647,9 @@ abstract class DBstNode<T extends DBstNode<T>> {
     }
     const traverse_right = (): void => {
       this.right_node.prefSearch(s)
+    }
+    const traverse_equal = (): void => {
+      this.equal_nodes.forEach((n) => n.prefSearch(s))
     }
     const bucket = (name: 'lesser' | 'range' | 'greater', val: T) => {
       // In this case, both the value and node are the same
@@ -682,7 +687,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
       // We're in the target range...
 
       bucket('range', (this as unknown) as T)
-      this.equal_nodes.forEach((n) => bucket('range', n))
+      traverse_equal()
       // Now, we have to traverse left **and** right
       if (this.left_node) {
         traverse_left()
