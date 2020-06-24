@@ -561,10 +561,16 @@ abstract class DBstNode<T extends DBstNode<T>> {
         )
       )
       this.equal_nodes.forEach((n) => (n.parent_node = (this as unknown) as T))
-      // TODO: Better way of doing this
-      this.value = 1 + old_parent.value
-      delete this.parent_node
-      old_parent.addChild((this as unknown) as T)
+
+      // Now, move into the right position. The value of 1 is required so that
+      // the incrementing loop below functions correctly.
+      this.value = 1
+      if (old_parent.right_node) {
+        this.right_node = old_parent.right_node
+        this.right_node.parent_node = (this as unknown) as T
+      }
+      old_parent.right_node = (this as unknown) as T
+      this.parent_node = old_parent
     }
 
     let next = (this as unknown) as T
@@ -584,10 +590,10 @@ abstract class DBstNode<T extends DBstNode<T>> {
       next = next.parent_node
     }
 
-    // Un-apply shift that was previously applied to make sure nodes go right
+    // This is just a sneaky way to check if the `if` statement above ran
     if (id >= 0) {
-      // TODO: There is a less stupid way of doing this
-      this.addSpaceBefore(-1, rootUpdate)
+      // Subtract out the residual 1
+      this.value -= 1
     }
   }
 

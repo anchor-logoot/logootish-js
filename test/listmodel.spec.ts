@@ -1527,11 +1527,16 @@ describe('ListDocumentModel', () => {
           1,
           new LogootInt(0)
         )
+        expect(ldm.all_nodes.length).to.be.equal(1 + nodes.length)
         const newnode = ldm.all_nodes[0]
         expect(newnode.conflict_with).to.include(nodes[0])
         nodes.forEach((node) => {
           expect(node.conflict_with).to.include(newnode)
         })
+        expect(newnode.ldoc_start).to.be.equal(0)
+        expect(nodes[0].ldoc_start).to.be.equal(1)
+        expect(nodes[1].ldoc_start).to.be.equal(2)
+        expect(nodes[2].ldoc_start).to.be.equal(3)
       })
       it('splits destination node to make conflicts work', () => {
         const cnode = new AnchorLogootNode(p(5), 5)

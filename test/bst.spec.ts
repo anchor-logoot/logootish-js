@@ -534,6 +534,24 @@ describe('DBst (Differential Binary Search Tree)', () => {
       expect(n6.absolute_value).to.be.equal(5)
       expect(n7.absolute_value).to.be.equal(5)
     })
+    it('should offset newly added equal node', () => {
+      const nn = new DummyNode(0, 0)
+      const n0 = new DummyNode(0, 1)
+      const n1 = new DummyNode(1, 2)
+      const n2 = new DummyNode(2, 3)
+      b.add(n0)
+      b.add(n1)
+      b.add(n2)
+      b.add(nn)
+      n0.addSpaceBefore(1, (np: DummyNode) => (b.bst_root = np))
+
+      console.log(b.toString())
+      console.log(b.toDeepString())
+      expect(nn.absolute_value).to.be.equal(0)
+      expect(n0.absolute_value).to.be.equal(1)
+      expect(n1.absolute_value).to.be.equal(2)
+      expect(n2.absolute_value).to.be.equal(3)
+    })
     describe('positive offset test', () => {
       const pt = (i: number) => {
         const { n2, n3, n4, n5, n6, n7, n8 } = constructFullTree()
