@@ -606,8 +606,11 @@ abstract class DBstNode<T extends DBstNode<T>> {
     // Most other "smarter" ways of doing this (other than re-adding the node)
     // involve BST traversals to root anyway, so this is equally inefficient ;)
     if (s < 0) {
-      const root = this.root
-      this.remove(rootUpdate)
+      let root = this.root
+      this.remove((n) => {
+        root = n
+        rootUpdate(n)
+      })
       root.addChild((this as unknown) as T, rootUpdate)
       if (this.value === 0 && this.parent_node) {
         // We must've been added to the end. If not, then an invalid operation
