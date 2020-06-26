@@ -441,29 +441,35 @@ abstract class DBstNode<T extends DBstNode<T>> {
     // A node to "return" to the DBST. This is set when the inorder successor
     // is equal to its parents. In that case, the greatest equal parent is
     // chosen and and children are placed in `return_node`
-    let return_node: T
+    const return_children: T[] = []
     if (this.equal_nodes.length) {
       cnode = this.equal_nodes.shift()
       cnode.equal_nodes.push(...this.equal_nodes)
       this.equal_nodes.forEach((n) => (n.parent_node = cnode))
       this.equal_nodes.length = 0
+      cnode.value = this.absolute_value
     } else if (this.right_node && this.left_node) {
       cnode = this.inorder_successor
       while (cnode.value === 0) {
         cnode = cnode.parent_node
       }
-      // If there is a right node, it can be spliced back into the DBST by
-      // the `removeChild` function
+
+      // Pull out children
       if (cnode.left_node) {
-        return_node = cnode.left_node
+        return_children.push(cnode.left_node)
         delete cnode.left_node.parent_node
         delete cnode.left_node
       }
+      if (cnode.right_node) {
+        return_children.push(cnode.right_node)
+        delete cnode.right_node.parent_node
+        delete cnode.right_node
+      }
 
-      // Keep the value here while we remove (`removeChild` needs the tree to
+      // Keep the value here while we remove (`remove` needs the tree to
       // be preserved)
       const absval = cnode.absolute_value
-      cnode.parent_node.removeChild(cnode.value, (n) => n === cnode)
+      cnode.remove(rootUpdate)
       cnode.value = absval
     } else if (this.right_node) {
       cnode = this.right_node
@@ -474,13 +480,13 @@ abstract class DBstNode<T extends DBstNode<T>> {
     } else {
       cnode = undefined
     }
-    // parentUpdate(cnode)
     this.replaceWith(cnode, rootUpdate, cnode?.value)
 
-    if (return_node) {
-      return_node.value += cnode.value
-      cnode.addChild(return_node, rootUpdate)
+    let node = cnode
+    while (node?.parent_node && node.value === 0) {
+      node = node.parent_node
     }
+    return_children.forEach((c) => node.addChild(c))
   }
   removeChild(
     value: number,
@@ -528,10 +534,13 @@ abstract class DBstNode<T extends DBstNode<T>> {
     s: number,
     rootUpdate: (np: T) => void = noRootUpdateFunction
   ): void {
+    // Option 1: Move nodes before
     let node = this.inorder_predecessor
+    // If we've found the child of an equal node, set the node to its parent
     if (node && node.value === 0) {
       node = node.parent_node || node
     }
+    // Possibly move to `node`'s `equal_node`s
     if (s < 0 && node && node.absolute_value === this.absolute_value + s) {
       const equal_nodes = [...this.equal_nodes]
       this.equal_nodes.length = 0
@@ -589,6 +598,19 @@ abstract class DBstNode<T extends DBstNode<T>> {
       }
       next = next.parent_node
     }
+
+    // Option 2: Move nodes after
+    /* let node = this.inorder_predecessor || this.parent_node
+    // If we've found the child of an equal node, set the node to its parent
+    if (node && node.value === 0) {
+      node = node.parent_node || node
+    }
+    // Possibly move to `node`'s `equal_node`s
+    if (s < 0 && node && node.absolute_value === this.absolute_value) {
+      this.remove(rootUpdate)
+      this.value = node.value
+      node.addChild((this as unknown) as T)
+    } */
 
     // This is just a sneaky way to check if the `if` statement above ran
     if (id >= 0) {
@@ -715,19 +737,23 @@ abstract class DBstNode<T extends DBstNode<T>> {
     }
   }
 
+  /**
+   * Creates a virtual tree showing right, left, and equal nodes. Very useful
+   * when debugging BST issues.
+   */
   toDeepString(): string {
-    let str = `${this}\n${this.equal_nodes.map((n) => `  ${n}\n`).join('')}`
+    let str = `${this}\n` + this.equal_nodes.map((n) => `${n}\n`).join('')
     const dstr = (node: T): string =>
-      node.toDeepString().split('\n').join('\n  ')
+      node.toDeepString().split('\n').join('\n    ')
     if (this.left_node) {
-      str += `    L: ${dstr(this.left_node)}\n`
+      str += `  L: ${dstr(this.left_node)}\n`
     } else {
-      str += '    L: undefined\n'
+      str += '  L: undefined\n'
     }
     if (this.right_node) {
-      str += `    R: ${dstr(this.right_node)}`
+      str += `  R: ${dstr(this.right_node)}`
     } else {
-      str += '    R: undefined'
+      str += '  R: undefined'
     }
     return str
   }
