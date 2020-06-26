@@ -25,11 +25,32 @@ class FatalError extends InternalError {
   fatal = true
 }
 
+/**
+ * Returns a function that will return the value of `cb` by calling it once,
+ * then returning the same value each time after. This is used to compute a
+ * value that may be used multiple times, but is expensive to compute if
+ * unnecessary.
+ * @param cb The function to determine the value of
+ * @returns The value returned by `cb`
+ */
+function ifNeeded<T>(cb: () => T) {
+  let val: T
+  let computed = false
+  return () => {
+    if (!computed) {
+      val = cb()
+      computed = true
+    }
+    return val
+  }
+}
+
 export {
   InternalError,
   FatalError,
   CompareResult,
   CompareFunction,
   DualCompareFunction,
-  Comparable
+  Comparable,
+  ifNeeded
 }

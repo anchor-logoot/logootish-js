@@ -700,11 +700,11 @@ describe('DBst (Differential Binary Search Tree)', () => {
       expect(n5.equal_nodes[0]).to.be.equal(n6)
     })
     describe('full tree removal test', () => {
-      // This almost entirely tests for corruption
       const pt = (i: number) => {
         const { n2, n3, n4, n5, n6, n7, n8 } = constructFullTree()
         const array = [n2, n3, n4, n5, n6, n7, n8]
-        array[i].remove()
+        array[i].remove((n) => (b.bst_root = n))
+        array.forEach((n) => expect(n.n).to.be.equal(n.p))
         expect(b.all_nodes.length).to.be.equal(array.length - 1)
       }
       it('n2', () => pt(0))

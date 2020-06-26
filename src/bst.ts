@@ -8,7 +8,7 @@
 
 import 'regenerator-runtime/runtime'
 
-import { CompareResult, FatalError } from './utils'
+import { CompareResult, ifNeeded } from './utils'
 import { TypeRange, NumberRange } from './compare'
 
 class TypeRangeSearch<T, R> {
@@ -358,15 +358,19 @@ abstract class DBstNode<T extends DBstNode<T>> {
     }
 
     // Transplant children
+    // Difference between previous parent (`this`) and new parent (`data`)
+    const diffval = ifNeeded<number>(
+      () => this.absolute_value - data.absolute_value
+    )
     if (data && this.left_node && this.left_node !== data) {
       data.left_node = this.left_node
       data.left_node.parent_node = data
-      data.left_node.value += this.value - data.value
+      data.left_node.value += diffval()
     }
     if (data && this.right_node && this.right_node !== data) {
       data.right_node = this.right_node
       data.right_node.parent_node = data
-      data.right_node.value += this.value - data.value
+      data.right_node.value += diffval()
     }
     if (this.equal_nodes.length) {
       throw new TypeError('Node cannot currently have equal nodes')
@@ -436,7 +440,18 @@ abstract class DBstNode<T extends DBstNode<T>> {
     return (this as unknown) as T
   }
 
-  remove(rootUpdate: (np: T) => void = noRootUpdateFunction): void {
+  /**
+   * Removes this node from the BST. The node's `absolute_value` will be
+   * preserved, so it can be directly re-added to the BST.
+   * @param rootUpdate This function is called if the `bst_root` of the BST
+   * must be updated. Normally, it should be given the value of
+   * `(node) => (bst.bst_root = node)`. If no value is provided, an error will
+   * be thrown if an update is attempted. **For this reason, if you expect that
+   * no root update will be required for whatever reason, do not provide a
+   * value.** This will ensure that an error is thrown and a potential bug is
+   * caught.
+   */
+  remove(rootUpdate?: (np: T) => void): void {
     let cnode: T
     // A node to "return" to the DBST. This is set when the inorder successor
     // is equal to its parents. In that case, the greatest equal parent is
@@ -468,9 +483,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
 
       // Keep the value here while we remove (`remove` needs the tree to
       // be preserved)
-      const absval = cnode.absolute_value
       cnode.remove(rootUpdate)
-      cnode.value = absval
     } else if (this.right_node) {
       cnode = this.right_node
       cnode.value = cnode.absolute_value
@@ -480,7 +493,9 @@ abstract class DBstNode<T extends DBstNode<T>> {
     } else {
       cnode = undefined
     }
+    const absval = this.absolute_value
     this.replaceWith(cnode, rootUpdate, cnode?.value)
+    this.value = absval
 
     let node = cnode
     while (node?.parent_node && node.value === 0) {
@@ -492,7 +507,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
     value: number,
     filter: (data: T) => boolean = (): boolean => true,
     vals: T[] = [],
-    rootUpdate: (np: T) => void = (): void => undefined
+    rootUpdate?: (np: T) => void
   ): T[] {
     const tryRmLeft = (): void => {
       if (this.left_node) {
@@ -534,27 +549,6 @@ abstract class DBstNode<T extends DBstNode<T>> {
     s: number,
     rootUpdate: (np: T) => void = noRootUpdateFunction
   ): void {
-    // Option 1: Move nodes before
-    let node = this.inorder_predecessor
-    // If we've found the child of an equal node, set the node to its parent
-    if (node && node.value === 0) {
-      node = node.parent_node || node
-    }
-    // Possibly move to `node`'s `equal_node`s
-    if (s < 0 && node && node.absolute_value === this.absolute_value + s) {
-      const equal_nodes = [...this.equal_nodes]
-      this.equal_nodes.length = 0
-      this.remove(rootUpdate)
-      node.equal_nodes.push((this as unknown) as T, ...equal_nodes)
-      equal_nodes.forEach((n) => (n.parent_node = node))
-
-      this.value = -s
-      this.parent_node = node
-      if (node.right_node) {
-        node.right_node.value += s
-      }
-    }
-
     let id
     if (
       s > 0 &&
@@ -599,18 +593,21 @@ abstract class DBstNode<T extends DBstNode<T>> {
       next = next.parent_node
     }
 
-    // Option 2: Move nodes after
-    /* let node = this.inorder_predecessor || this.parent_node
-    // If we've found the child of an equal node, set the node to its parent
-    if (node && node.value === 0) {
-      node = node.parent_node || node
-    }
-    // Possibly move to `node`'s `equal_node`s
-    if (s < 0 && node && node.absolute_value === this.absolute_value) {
+    // Ensure that if the start value is subtracted, this node is added to
+    // `equal_nodes` of another node **if necessary.**
+    // Most other "smarter" ways of doing this (other than re-adding the node)
+    // involve BST traversals to root anyway, so this is equally inefficient ;)
+    if (s < 0) {
+      const root = this.root
       this.remove(rootUpdate)
-      this.value = node.value
-      node.addChild((this as unknown) as T)
-    } */
+      root.addChild((this as unknown) as T, rootUpdate)
+      if (this.value === 0 && this.parent_node) {
+        // We must've been added to the end. If not, then an invalid operation
+        // was performed.
+        this.equal_nodes.forEach((n) => (this.parent_node.equal_nodes.push(n)))
+        this.equal_nodes.length = 0
+      }
+    }
 
     // This is just a sneaky way to check if the `if` statement above ran
     if (id >= 0) {
