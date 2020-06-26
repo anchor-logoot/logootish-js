@@ -699,5 +699,21 @@ describe('DBst (Differential Binary Search Tree)', () => {
       expect(n5.equal_nodes.length).to.be.equal(1)
       expect(n5.equal_nodes[0]).to.be.equal(n6)
     })
+    describe('full tree removal test', () => {
+      // This almost entirely tests for corruption
+      const pt = (i: number) => {
+        const { n2, n3, n4, n5, n6, n7, n8 } = constructFullTree()
+        const array = [n2, n3, n4, n5, n6, n7, n8]
+        array[i].remove()
+        expect(b.all_nodes.length).to.be.equal(array.length - 1)
+      }
+      it('n2', () => pt(0))
+      it('n3', () => pt(1))
+      it('n4', () => pt(2))
+      it('n5', () => pt(3))
+      it('n6', () => pt(4))
+      it('n7', () => pt(5))
+      it('n8', () => pt(6))
+    })
   })
 })
