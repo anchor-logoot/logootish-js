@@ -545,12 +545,36 @@ describe('DBst (Differential Binary Search Tree)', () => {
       b.add(nn)
       n0.addSpaceBefore(1, (np: DummyNode) => (b.bst_root = np))
 
-      console.log(b.toString())
-      console.log(b.toDeepString())
       expect(nn.absolute_value).to.be.equal(0)
       expect(n0.absolute_value).to.be.equal(1)
       expect(n1.absolute_value).to.be.equal(2)
       expect(n2.absolute_value).to.be.equal(3)
+    })
+    it('equaling negative offset with cascading removals', () => {
+      const n2 = new DummyNode(1, 1)
+      const n3 = new DummyNode(6, 6) // Removed
+      const n4 = new DummyNode(8, 8)
+      const n5 = new DummyNode(14, 14)
+      const n6 = new DummyNode(14, 15)
+      b.add(n2)
+      b.add(n4)
+      b.add(n3)
+      b.add(n5)
+      b.add(n6)
+      n4.addSpaceBefore(-2)
+    })
+    it('reordering of negative offset with cascarding removals', () => {
+      const n0 = new DummyNode(0, 0)
+      const n1 = new DummyNode(3, 3) // Removed
+      const n2 = new DummyNode(5, 5)
+      const n3 = new DummyNode(6, 6)
+      const n4 = new DummyNode(11, 11)
+      b.add(n0)
+      b.add(n2)
+      b.add(n1)
+      b.add(n3)
+      b.add(n4)
+      n2.addSpaceBefore(-2)
     })
     describe('positive offset test', () => {
       const pt = (i: number) => {
