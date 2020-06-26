@@ -288,8 +288,14 @@ class AnchorLogootNode extends DBstNode<AnchorLogootNode> {
   }
 
   toString(short?: boolean): string {
+    const type_string = {
+      [NodeType.DATA]: 'D',
+      [NodeType.DUMMY]: 'X',
+      [NodeType.REMOVAL]: 'R'
+    }
+    const type = type_string[this.type] || '?'
     return (
-      `${this.type} ${this.logoot_start},${this.ldoc_start} + ${this.length} ` +
+      `${type} ${this.logoot_start},${this.ldoc_start} + ${this.length} ` +
       `@ ${this.clk} (${this.true_left}<---->${this.true_right})` +
       (this.conflict_with.size === 0 || short
         ? ''
