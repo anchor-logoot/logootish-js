@@ -170,6 +170,30 @@ describe('DBst (Differential Binary Search Tree)', () => {
       expect(n3.right_node).to.be.equal(n4)
       expect(n3.left_node).to.be.equal(n2)
     })
+    describe('duplicates', () => {
+      it('should throw error when duplicate root', () => {
+        const na = new DummyNode(5, 5)
+        const nb = new DummyNode(5, 5)
+        b.add(na)
+        expect(() => b.add(nb)).to.throw('Duplicate node added')
+      })
+      it('should throw error when duplicate child', () => {
+        const n0 = new DummyNode(0, 0)
+        const na = new DummyNode(5, 5)
+        const nb = new DummyNode(5, 5)
+        b.add(n0)
+        b.add(na)
+        expect(() => b.add(nb)).to.throw('Duplicate node added')
+      })
+      it('should throw error when duplicate equal', () => {
+        const na = new DummyNode(5, 3)
+        const nb = new DummyNode(5, 5)
+        const nc = new DummyNode(5, 5)
+        b.add(na)
+        b.add(nb)
+        expect(() => b.add(nc)).to.throw('Duplicate node added')
+      })
+    })
   })
 
   describe('absolute_value', () => {

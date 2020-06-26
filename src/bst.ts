@@ -99,7 +99,11 @@ abstract class DBstNode<T extends DBstNode<T>> {
         ;(node as DBstNode<T>).parent_node = (this as unknown) as T
       }
     } else {
-      if (this.preferential_cmp(node) > 0) {
+      const prefres = this.preferential_cmp(node)
+      if (prefres === 0) {
+        throw new TypeError('Duplicate node added')
+      }
+      if (prefres > 0) {
         if (this.parent_node) {
           if (this.value > 0) {
             this.parent_node.right_node = node
@@ -131,7 +135,11 @@ abstract class DBstNode<T extends DBstNode<T>> {
       } else {
         node.parent_node = (this as unknown) as T
         for (let i = this.equal_nodes.length - 1; i >= 0; i--) {
-          if (this.equal_nodes[i].preferential_cmp(node) < 0) {
+          const prefres = this.equal_nodes[i].preferential_cmp(node)
+          if (prefres === 0) {
+            throw new TypeError('Duplicate node added')
+          }
+          if (prefres < 0) {
             this.equal_nodes.splice(i + 1, 0, node)
             return
           }
