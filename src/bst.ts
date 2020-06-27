@@ -607,6 +607,8 @@ abstract class DBstNode<T extends DBstNode<T>> {
     // involve BST traversals to root anyway, so this is equally inefficient ;)
     if (s < 0) {
       let root = this.root
+      const equal_nodes = [...this.equal_nodes]
+      this.equal_nodes.length = 0
       this.remove((n) => {
         root = n
         rootUpdate(n)
@@ -615,8 +617,8 @@ abstract class DBstNode<T extends DBstNode<T>> {
       if (this.value === 0 && this.parent_node) {
         // We must've been added to the end. If not, then an invalid operation
         // was performed.
-        this.equal_nodes.forEach((n) => (this.parent_node.equal_nodes.push(n)))
-        this.equal_nodes.length = 0
+        equal_nodes.forEach((n) => (this.parent_node.equal_nodes.push(n)))
+        equal_nodes.forEach((n) => (n.parent_node = this.parent_node))
       }
     }
 
