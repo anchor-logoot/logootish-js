@@ -708,6 +708,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
         'lesser',
         this.equal_nodes[this.equal_nodes.length - 1] || (this as unknown) as T
       )
+      traverse_equal()
       // Always traverse right since it could be greater
       if (this.right_node) {
         traverse_right()
@@ -717,6 +718,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
 
       // The same as above, but with the `greater` bucket
       bucket('greater', (this as unknown) as T)
+      traverse_equal()
       // Always try to find a smaller node
       if (this.left_node) {
         traverse_left()
