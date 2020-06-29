@@ -461,10 +461,6 @@ abstract class DBstNode<T extends DBstNode<T>> {
    */
   remove(rootUpdate?: (np: T) => void): void {
     let cnode: T
-    // A node to "return" to the DBST. This is set when the inorder successor
-    // is equal to its parents. In that case, the greatest equal parent is
-    // chosen and and children are placed in `return_node`
-    const return_children: T[] = []
     if (this.equal_nodes.length) {
       cnode = this.equal_nodes.shift()
       cnode.equal_nodes.push(...this.equal_nodes)
@@ -475,18 +471,6 @@ abstract class DBstNode<T extends DBstNode<T>> {
       cnode = this.inorder_successor
       while (cnode.value === 0) {
         cnode = cnode.parent_node
-      }
-
-      // Pull out children
-      if (cnode.left_node) {
-        return_children.push(cnode.left_node)
-        delete cnode.left_node.parent_node
-        delete cnode.left_node
-      }
-      if (cnode.right_node) {
-        return_children.push(cnode.right_node)
-        delete cnode.right_node.parent_node
-        delete cnode.right_node
       }
 
       // Keep the value here while we remove (`remove` needs the tree to
@@ -509,7 +493,6 @@ abstract class DBstNode<T extends DBstNode<T>> {
     while (node?.parent_node && node.value === 0) {
       node = node.parent_node
     }
-    return_children.forEach((c) => node.addChild(c))
   }
   removeChild(
     value: number,
@@ -609,16 +592,21 @@ abstract class DBstNode<T extends DBstNode<T>> {
       let root = this.root
       const equal_nodes = [...this.equal_nodes]
       this.equal_nodes.length = 0
+
       this.remove((n) => {
         root = n
         rootUpdate(n)
       })
       root.addChild((this as unknown) as T, rootUpdate)
+
       if (this.value === 0 && this.parent_node) {
-        // We must've been added to the end. If not, then an invalid operation
-        // was performed.
+        // `this` must've been added to the end. If not, then an invalid
+        // operation was performed.
         equal_nodes.forEach((n) => (this.parent_node.equal_nodes.push(n)))
         equal_nodes.forEach((n) => (n.parent_node = this.parent_node))
+      } else {
+        equal_nodes.forEach((n) => (this.equal_nodes.push(n)))
+        equal_nodes.forEach((n) => (n.parent_node = (this as unknown) as T))
       }
     }
 
