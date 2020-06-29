@@ -839,7 +839,13 @@ class ListDocumentModel {
           `Position ${node.ldoc_start} found after ${last_ldoc}`
         )
       }
-      if (last_logoot && last_logoot.cmp(node.logoot_start) > 0) {
+      if (
+        last_logoot &&
+        (
+          last_logoot.gt(node.logoot_start) &&
+          !node.logoot_start.equalsHigherLevel(last_logoot)
+        )
+      ) {
         throw new FatalError(
           `Logoot position ${node.logoot_start} found after ${last_logoot}`
         )
@@ -895,7 +901,7 @@ class ListDocumentModel {
       }
 
       last_ldoc = node.ldoc_end
-      last_logoot = node.logoot_start
+      last_logoot = node.logoot_end
     })
   }
 }

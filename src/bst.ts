@@ -626,6 +626,10 @@ abstract class DBstNode<T extends DBstNode<T>> {
     }
   }
 
+  /**
+   * Searches the DBST based on node value.
+   * @param s The range to search
+   */
   search(s: TypeRangeSearch<number, T>, cval: number): void {
     cval += this.value
     ;(s.range as NumberRange).push_offset(-this.value)
@@ -676,6 +680,12 @@ abstract class DBstNode<T extends DBstNode<T>> {
     ;(s.range as NumberRange).pop_offset(-this.value)
   }
 
+  /**
+   * Searches the DBST based on the values of `preferential_cmp` only. Useful
+   * for searching for a node when its value is not known.
+   * @param s The range to search
+   * @todo More efficient searches of equal nodes
+   */
   prefSearch(s: TypeRangeSearch<T, T>): void {
     const traverse_left = (): void => {
       this.left_node.prefSearch(s)
@@ -701,10 +711,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
 
       // Try assigning this to a bucket (if the current value is greater, this)
       // will be ignored.
-      bucket(
-        'lesser',
-        this.equal_nodes[this.equal_nodes.length - 1] || (this as unknown) as T
-      )
+      bucket('lesser', (this as unknown) as T)
       traverse_equal()
       // Always traverse right since it could be greater
       if (this.right_node) {
