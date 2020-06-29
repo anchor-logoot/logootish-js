@@ -219,9 +219,18 @@ abstract class DBstNode<T extends DBstNode<T>> {
     if (this.right_node) {
       return this.right_node.smallest_smaller_child || this.right_node
     }
-    if (this.value === 0 && this.parent_node?.right_node) {
-      return this.parent_node.right_node.smallest_smaller_child ||
-        this.parent_node.right_node
+    if (this.value === 0)  {
+      if (this.parent_node) {
+        const eqn = this.parent_node?.equal_nodes
+        const s = eqn[eqn.indexOf((this as unknown) as T) + 1]
+        if (s) {
+          return s
+        }
+      }
+      if (this.parent_node?.right_node) {
+        return this.parent_node.right_node.smallest_smaller_child ||
+          this.parent_node.right_node
+      }
     }
     let node = (this as undefined) as T
     while (node) {
@@ -408,15 +417,12 @@ abstract class DBstNode<T extends DBstNode<T>> {
       node = node.left_node
     }
     if (node) {
-      data.equal_nodes.push(node, ...node.equal_nodes)
-      node.equal_nodes.forEach((n) => (n.parent_node = data))
+      const eqn = [node, ...node.equal_nodes]
       node.equal_nodes.length = 0
+      node.remove()
+      data.equal_nodes.push(...eqn)
+      eqn.forEach((n) => (n.parent_node = data))
 
-      if (node === data.right_node) {
-        delete data.right_node
-      } else {
-        delete node.parent_node.left_node
-      }
       node.parent_node = data
       node.value = 0
     }
@@ -437,8 +443,11 @@ abstract class DBstNode<T extends DBstNode<T>> {
       node = node.right_node
     }
     if (node) {
+      const eqn = [...node.equal_nodes]
+      node.equal_nodes.length = 0
+      node.remove()
       data.replaceWith(node)
-      node.equal_nodes.push(data, ...data.equal_nodes)
+      node.equal_nodes.push(...eqn, data, ...data.equal_nodes)
       data.equal_nodes.forEach((n) => (n.parent_node = node))
       data.parent_node = node
       data.equal_nodes.length = 0

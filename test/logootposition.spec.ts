@@ -336,6 +336,13 @@ describe('LogootPosition', () => {
         const expected = LogootPosition.fromIntsBranches(o, [4, u2], [0, u2])
         expect(pos3.cmp(expected)).to.be.equal(0)
       })
+      it('should not add additional level if infinite space', () => {
+        const pos = LogootPosition.fromIntsBranches(o, [4, u2], [1, u2])
+        const pos2 = LogootPosition.fromIntsBranches(o, [5, u2], [20, u2])
+        const pos3 = new LogootPosition(u2, 3, pos, pos2, o)
+        const expected = LogootPosition.fromIntsBranches(o, [4, u2], [1, u2])
+        expect(pos3.cmp(expected)).to.be.equal(0)
+      })
       it('should correctly allocate between on different branch', () => {
         const pos = LogootPosition.fromIntsBranches(o, [1, u2])
         const pos2 = LogootPosition.fromIntsBranches(o, [1, u2])
