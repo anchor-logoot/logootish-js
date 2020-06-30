@@ -67,14 +67,18 @@
 				<a href="#logootish" id="logootish" style="color: inherit; text-decoration: none;">
 					<h1>Logootish</h1>
 				</a>
-				<p>The Logootish algorithm used by the Matrix Notepad. See the documentation
-					<a href="https://github.com/KB1RD/matrix-notepad/wiki/Logootish">on the wiki.</a> Currently, this
-					is only used in <code>matrix-notepad</code>, but the code is generic enough that it could
-					be used in any collaboration system. The goal of Logootish is to ensure that
-					concurrent edits can successfully be merged together in a collaboration system.
-					Right now, this only supports ordered list types, such as strings or arrays, but
-					I hope to expand it to support full JSON, which would include maps. At the
-				moment, all APIs are subject to change.</p>
+				<p><img src="https://img.shields.io/github/v/release/kb1rd/logootish-js" alt="GitHub release (latest SemVer)">
+					<img src="https://img.shields.io/matrix/matrix-collaboration:kb1rd.net?label=chat%20on%20%23matrix-collaboration%3Akb1rd.net&server_fqdn=matrix.org" alt="Matrix">
+					<img src="https://img.shields.io/github/workflow/status/KB1RD/logootish-js/Yarn%20CI/dev?label=dev%20build%2Ftest" alt="GitHub Workflow Status (branch)">
+				<img src="https://img.shields.io/github/license/kb1rd/logootish-js" alt="GitHub"></p>
+				<p>The Logootish CRDT algorithm used by the Matrix Notepad. See the documentation
+					<a href="https://github.com/KB1RD/matrix-notepad/wiki/Logootish">on the wiki.</a> Currently,
+					this is only used in <code>matrix-notepad</code>, but the code is generic enough that it
+					could be used in any collaboration system. The goal of Logootish is to ensure
+					that concurrent edits can successfully be merged together in a collaboration
+					system. Right now, this only supports ordered list types, such as strings or
+					arrays, but I hope to expand it to support full JSON, which would include maps.
+				At the moment, all APIs are subject to change.</p>
 				<p>Based on <a href="https://github.com/krasimir/webpack-library-starter">https://github.com/krasimir/webpack-library-starter</a></p>
 				<a href="#design-philosophy" id="design-philosophy" style="color: inherit; text-decoration: none;">
 					<h2>Design Philosophy</h2>
@@ -157,6 +161,9 @@ yarn link</code></pre>
 						<a href="modules/_debug_.html">&quot;debug&quot;</a>
 					</li>
 					<li class=" tsd-kind-module">
+						<a href="modules/_index_.html">&quot;index&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
 						<a href="modules/_ints_.html">&quot;ints&quot;</a>
 					</li>
 					<li class=" tsd-kind-module">
@@ -164,6 +171,9 @@ yarn link</code></pre>
 					</li>
 					<li class=" tsd-kind-module">
 						<a href="modules/_listmodel_index_.html">&quot;listmodel/index&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="modules/_listmodel_int_.html">&quot;listmodel/int&quot;</a>
 					</li>
 					<li class=" tsd-kind-module">
 						<a href="modules/_listmodel_node_.html">&quot;listmodel/node&quot;</a>
@@ -190,6 +200,7 @@ yarn link</code></pre>
 			<ul class="tsd-legend">
 				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
 				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
+				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
 				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
 				<li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li>
 			</ul>

@@ -73,7 +73,7 @@
 						<dd><p>Various utilities that don&#39;t belong anywhere else.</p>
 						</dd>
 						<dt>author</dt>
-						<dd><p>Nathan Pennie <a href="mailto:&#107;&#98;&#49;&#114;&#x64;&#x40;&#x6b;&#x62;&#x31;&#x72;&#x64;&#x2e;&#x6e;&#101;&#x74;">&#107;&#98;&#49;&#114;&#x64;&#x40;&#x6b;&#x62;&#x31;&#x72;&#x64;&#x2e;&#x6e;&#101;&#x74;</a></p>
+						<dd><p>Nathan Pennie <a href="mailto:&#x6b;&#98;&#49;&#114;&#x64;&#x40;&#x6b;&#x62;&#x31;&#x72;&#100;&#46;&#110;&#x65;&#116;">&#x6b;&#98;&#49;&#114;&#x64;&#x40;&#x6b;&#x62;&#x31;&#x72;&#100;&#46;&#110;&#x65;&#116;</a></p>
 						</dd>
 					</dl>
 				</div>
@@ -89,7 +89,81 @@
 								<li class="tsd-kind-class tsd-parent-kind-module"><a href="../classes/_utils_.internalerror.html" class="tsd-kind-icon">Internal<wbr>Error</a></li>
 							</ul>
 						</section>
+						<section class="tsd-index-section ">
+							<h3>Functions</h3>
+							<ul class="tsd-index-list">
+								<li class="tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter"><a href="_utils_.html#ifneeded" class="tsd-kind-icon">if<wbr>Needed</a></li>
+							</ul>
+						</section>
 					</div>
+				</section>
+			</section>
+			<section class="tsd-panel-group tsd-member-group ">
+				<h2>Functions</h2>
+				<section class="tsd-panel tsd-member tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+					<a name="ifneeded" class="tsd-anchor"></a>
+					<h3>if<wbr>Needed</h3>
+					<ul class="tsd-signatures tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<li class="tsd-signature tsd-kind-icon">if<wbr>Needed&lt;T&gt;<span class="tsd-signature-symbol">(</span>cb<span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">T</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">T</span></li>
+					</ul>
+					<ul class="tsd-descriptions">
+						<li class="tsd-description">
+							<aside class="tsd-sources">
+								<ul>
+									<li>Defined in <a href="https://github.com/KB1RD/logootish-js/blob/7d8b676/src/utils.ts#L36">src/utils.ts:36</a></li>
+								</ul>
+							</aside>
+							<div class="tsd-comment tsd-typography">
+								<div class="lead">
+									<p>Returns a function that will return the value of <code>cb</code> by calling it once,
+										then returning the same value each time after. This is used to compute a
+										value that may be used multiple times, but is expensive to compute if
+									unnecessary.</p>
+								</div>
+							</div>
+							<h4 class="tsd-type-parameters-title">Type parameters</h4>
+							<ul class="tsd-type-parameters">
+								<li>
+									<h4>T</h4>
+								</li>
+							</ul>
+							<h4 class="tsd-parameters-title">Parameters</h4>
+							<ul class="tsd-parameters">
+								<li>
+									<h5>cb: <span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">T</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>The function to determine the value of</p>
+									</div>
+									<ul class="tsd-parameters">
+										<li class="tsd-parameter-signature">
+											<ul class="tsd-signatures tsd-kind-type-literal">
+												<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span></li>
+											</ul>
+											<ul class="tsd-descriptions">
+												<li class="tsd-description">
+													<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">T</span></h4>
+												</li>
+											</ul>
+										</li>
+									</ul>
+								</li>
+							</ul>
+							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol"> =&gt; </span><span class="tsd-signature-type">T</span></h4>
+							<p>The value returned by <code>cb</code></p>
+							<ul class="tsd-parameters">
+								<li class="tsd-parameter-signature">
+									<ul class="tsd-signatures tsd-kind-type-literal">
+										<li class="tsd-signature tsd-kind-icon"><span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">T</span></li>
+									</ul>
+									<ul class="tsd-descriptions">
+										<li class="tsd-description">
+											<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">T</span></h4>
+										</li>
+									</ul>
+								</li>
+							</ul>
+						</li>
+					</ul>
 				</section>
 			</section>
 		</div>
@@ -109,6 +183,9 @@
 						<a href="_debug_.html">&quot;debug&quot;</a>
 					</li>
 					<li class=" tsd-kind-module">
+						<a href="_index_.html">&quot;index&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
 						<a href="_ints_.html">&quot;ints&quot;</a>
 					</li>
 					<li class=" tsd-kind-module">
@@ -116,6 +193,9 @@
 					</li>
 					<li class=" tsd-kind-module">
 						<a href="_listmodel_index_.html">&quot;listmodel/index&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="_listmodel_int_.html">&quot;listmodel/int&quot;</a>
 					</li>
 					<li class=" tsd-kind-module">
 						<a href="_listmodel_node_.html">&quot;listmodel/node&quot;</a>
@@ -136,6 +216,9 @@
 					<li class=" tsd-kind-class tsd-parent-kind-module">
 						<a href="../classes/_utils_.internalerror.html" class="tsd-kind-icon">Internal<wbr>Error</a>
 					</li>
+					<li class=" tsd-kind-function tsd-parent-kind-module tsd-has-type-parameter">
+						<a href="_utils_.html#ifneeded" class="tsd-kind-icon">if<wbr>Needed</a>
+					</li>
 				</ul>
 			</nav>
 		</div>
@@ -148,6 +231,7 @@
 			<ul class="tsd-legend">
 				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
 				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
+				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
 				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
 				<li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li>
 			</ul>
