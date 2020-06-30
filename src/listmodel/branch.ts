@@ -9,7 +9,7 @@ type BranchKey = symbol | string | number
 class BranchOrder {
   constructor(public readonly order: BranchKey[] = []) {}
 
-  get length() {
+  get length(): number {
     return this.order.length
   }
 

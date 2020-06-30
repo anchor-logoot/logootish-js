@@ -1120,7 +1120,7 @@ describe('ListDocumentModel', () => {
     })
   })
   describe('removeLocal', () => {
-    let last_position
+    let last_position: number
     beforeEach(() => {
       last_position = 0
     })

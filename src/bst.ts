@@ -219,7 +219,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
     if (this.right_node) {
       return this.right_node.smallest_smaller_child || this.right_node
     }
-    if (this.value === 0)  {
+    if (this.value === 0) {
       if (this.parent_node) {
         const eqn = this.parent_node?.equal_nodes
         const s = eqn[eqn.indexOf((this as unknown) as T) + 1]
@@ -228,8 +228,10 @@ abstract class DBstNode<T extends DBstNode<T>> {
         }
       }
       if (this.parent_node?.right_node) {
-        return this.parent_node.right_node.smallest_smaller_child ||
+        return (
+          this.parent_node.right_node.smallest_smaller_child ||
           this.parent_node.right_node
+        )
       }
     }
     let node = (this as undefined) as T
@@ -362,8 +364,9 @@ abstract class DBstNode<T extends DBstNode<T>> {
       }
       let index
       if (
-        (index = this.parent_node.equal_nodes.indexOf((this as unknown) as T))
-        >= 0
+        (index = this.parent_node.equal_nodes.indexOf(
+          (this as unknown) as T
+        )) >= 0
       ) {
         this.parent_node.equal_nodes.splice(index, 1, data)
       }
@@ -409,7 +412,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
         if (node.left_node) {
           throw new TypeError(
             'Out-of-order offset must have been attempted: There are' +
-            'non-successor nodes with equal value'
+              'non-successor nodes with equal value'
           )
         }
         break
@@ -435,7 +438,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
         if (node.right_node) {
           throw new TypeError(
             'Out-of-order offset must have been attempted: There are' +
-            'non-successor nodes with equal value'
+              'non-successor nodes with equal value'
           )
         }
         break
@@ -558,10 +561,7 @@ abstract class DBstNode<T extends DBstNode<T>> {
       const old_parent = this.parent_node
       old_parent.equal_nodes.splice(id, 1)
       this.equal_nodes.push(
-        ...old_parent.equal_nodes.splice(
-          id,
-          old_parent.equal_nodes.length - id
-        )
+        ...old_parent.equal_nodes.splice(id, old_parent.equal_nodes.length - id)
       )
       this.equal_nodes.forEach((n) => (n.parent_node = (this as unknown) as T))
 
@@ -611,10 +611,10 @@ abstract class DBstNode<T extends DBstNode<T>> {
       if (this.value === 0 && this.parent_node) {
         // `this` must've been added to the end. If not, then an invalid
         // operation was performed.
-        equal_nodes.forEach((n) => (this.parent_node.equal_nodes.push(n)))
+        equal_nodes.forEach((n) => this.parent_node.equal_nodes.push(n))
         equal_nodes.forEach((n) => (n.parent_node = this.parent_node))
       } else {
-        equal_nodes.forEach((n) => (this.equal_nodes.push(n)))
+        equal_nodes.forEach((n) => this.equal_nodes.push(n))
         equal_nodes.forEach((n) => (n.parent_node = (this as unknown) as T))
       }
     }
@@ -817,11 +817,12 @@ abstract class DBstNode<T extends DBstNode<T>> {
       )
     }
     this.equal_nodes.forEach((n) => n.selfTestEqual((this as unknown) as T))
-    let last = this
+    let last: T = (this as unknown) as T
     this.equal_nodes.forEach((node) => {
       if (last.preferential_cmp(node) >= 0) {
         throw new Error('Equal nodes are not sequential')
       }
+      last = node
     })
   }
   selfTestEqual(parent?: T, known: DBstNode<T>[] = []): void {

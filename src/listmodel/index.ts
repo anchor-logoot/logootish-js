@@ -841,10 +841,8 @@ class ListDocumentModel {
       }
       if (
         last_logoot &&
-        (
-          last_logoot.gt(node.logoot_start) &&
-          !node.logoot_start.equalsHigherLevel(last_logoot)
-        )
+        last_logoot.gt(node.logoot_start) &&
+        !node.logoot_start.equalsHigherLevel(last_logoot)
       ) {
         throw new FatalError(
           `Logoot position ${node.logoot_start} found after ${last_logoot}`

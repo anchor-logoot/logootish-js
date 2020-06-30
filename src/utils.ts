@@ -33,7 +33,7 @@ class FatalError extends InternalError {
  * @param cb The function to determine the value of
  * @returns The value returned by `cb`
  */
-function ifNeeded<T>(cb: () => T) {
+function ifNeeded<T>(cb: () => T): () => T {
   let val: T
   let computed = false
   return () => {
