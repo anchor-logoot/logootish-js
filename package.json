@@ -15,7 +15,7 @@
     "build:docs": "typedoc --mode modules --out .jsdoc src/",
     "dev": "webpack --progress --colors --watch --env dev",
     "check-types": "tsc",
-    "test": "mocha --timeout 10000 --require ./test/babel-register.js --colors ./test/*.spec.ts ./test/*.practical.ts",
+    "test": "mocha --timeout 20000 --require ./test/babel-register.js --colors ./test/*.spec.ts ./test/*.practical.ts",
     "test:nopractical": "mocha --timeout 10000 --require ./test/babel-register.js --colors ./test/*.spec.ts",
     "test:mvt": "cross-env FIND_MVT=1 mocha --timeout 10000000 --require ./test/babel-register.js --colors ./test/*.practical.ts",
     "test:watch": "mocha --timeout 10000 --require ./test/babel-register.js --colors -w ./test/*.spec.ts",

@@ -236,17 +236,6 @@ abstract class DBstNode<T extends DBstNode<T>> {
     }
     let node = (this as undefined) as T
     while (node) {
-      // If we're in an equal node set, find the next node
-      if (node.value === 0) {
-        if (!node.parent_node) {
-          return undefined
-        }
-        const eqn = node.parent_node.equal_nodes
-        const s = eqn[eqn.indexOf(node) + 1]
-        if (s) {
-          return s
-        }
-      }
       // Return parent if to left
       if (
         node.value <= 0 &&
@@ -481,6 +470,8 @@ abstract class DBstNode<T extends DBstNode<T>> {
       cnode.value = this.absolute_value
     } else if (this.right_node && this.left_node) {
       cnode = this.inorder_successor
+      // Ensure we have the parent of equal nodes (equal nodes will have to be
+      // re-added later)
       while (cnode.value === 0) {
         cnode = cnode.parent_node
       }
