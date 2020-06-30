@@ -11,6 +11,9 @@ jobs:
     - uses: actions/checkout@v1
     - run: yarn install
     - run: yarn run build:docs
+    - run: yarn run build
+    - run: yarn run test:perf
+    - run: mv .flamegraph/ .jsdoc/flamegraph/
     - uses: JamesIves/github-pages-deploy-action@releases/v3
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
