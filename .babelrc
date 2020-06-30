@@ -8,7 +8,8 @@
       "@babel/plugin-transform-typescript",
       { "allowNamespaces": true, "allowDeclareFields": true }
     ],
-    "@babel/plugin-proposal-class-properties"
+    "@babel/plugin-proposal-class-properties",
+    "@babel/plugin-transform-runtime"
   ],
   "env": {
     "test": {

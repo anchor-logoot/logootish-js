@@ -5,6 +5,8 @@
  */
 /** */
 
+import 'core-js/features/array/flat-map'
+
 import { DBst } from '../bst'
 import { LogootInt } from './int'
 import { LogootPosition } from './position'

@@ -1,3 +1,5 @@
+import { DualCompareFunction } from '../compare'
+
 /**
  * A type used to identify a branch. This value should be used to look up a
  * user-presentable name in another map stored outside of `logootish-js`. This
@@ -6,8 +8,8 @@
  */
 type BranchKey = symbol | string | number
 
-class BranchOrder {
-  constructor(public readonly order: BranchKey[] = []) {}
+class BranchOrder<T extends BranchKey = BranchKey> {
+  constructor(public readonly order: T[] = []) {}
 
   get length(): number {
     return this.order.length
@@ -18,15 +20,27 @@ class BranchOrder {
    * @param br The branch to find the index of
    * @return The index of `br`
    */
-  i(br: BranchKey): number {
+  i(br: T): number {
     if (!this.order.includes(br)) {
       this.order.push(br)
       return this.order.length - 1
     }
     return this.order.indexOf(br)
   }
-  b(index: number): BranchKey {
+  b(index: number): T {
     return this.order[index]
+  }
+
+  insertOrdered(br: T, cf: DualCompareFunction<T>): BranchOrder<T> {
+    const len = this.order.length
+    for (let i = 0; i < len; i++) {
+      if (cf(br, this.order[i]) < 0) {
+        this.order.splice(i, 0, br)
+        return this
+      }
+    }
+    this.order.push(br)
+    return this
   }
 
   static fromJSON(

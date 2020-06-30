@@ -6,8 +6,8 @@
  */
 /** */
 
-import { ListDocumentModel, LogootInt, LogootPosition } from './listmodel'
+export { LogootishPosition, LogootPosition } from './listmodel/position'
 
-import { BranchOrder, BranchKey } from './listmodel/branch'
+export { ListDocumentModel, LogootInt } from './listmodel'
 
-export { ListDocumentModel, LogootInt, LogootPosition, BranchOrder, BranchKey }
+export { BranchOrder, BranchKey } from './listmodel/branch'

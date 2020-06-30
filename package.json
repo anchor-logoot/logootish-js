@@ -1,6 +1,6 @@
 {
   "name": "@kb1rd/logootish-js",
-  "version": "0.4.0",
+  "version": "0.4.2",
   "description": "Logootish algorithm for matrix-notepad",
   "main": "dist/@kb1rd/logootish-js.min.js",
   "publishConfig": {
@@ -31,6 +31,7 @@
     "@babel/cli": "^7.10.4",
     "@babel/core": "^7.10.2",
     "@babel/plugin-proposal-class-properties": "^7.10.1",
+    "@babel/plugin-transform-runtime": "^7.10.4",
     "@babel/preset-env": "^7.10.2",
     "@babel/preset-typescript": "^7.10.1",
     "@babel/register": "^7.10.1",
