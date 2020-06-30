@@ -94,5 +94,5 @@ sw.*
 # jsdoc temporary directory
 .jsdoc
 
-# A temporary dir that I use to develop tests from bugs
-test-tmp
+# flamegraph temporary directory
+.flamegraph
