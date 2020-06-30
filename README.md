@@ -1,12 +1,17 @@
 # Logootish
-The Logootish algorithm used by the Matrix Notepad. See the documentation
-[on the wiki.](https://github.com/KB1RD/matrix-notepad/wiki/Logootish) Currently, this
-is only used in `matrix-notepad`, but the code is generic enough that it could
-be used in any collaboration system. The goal of Logootish is to ensure that
-concurrent edits can successfully be merged together in a collaboration system.
-Right now, this only supports ordered list types, such as strings or arrays, but
-I hope to expand it to support full JSON, which would include maps. At the
-moment, all APIs are subject to change.
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/kb1rd/logootish-js)
+![Matrix](https://img.shields.io/matrix/matrix-collaboration:kb1rd.net?label=chat%20on%20%23matrix-collaboration%3Akb1rd.net&server_fqdn=matrix.org)
+![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/KB1RD/logootish-js/Yarn%20CI/dev?label=dev%20build%2Ftest)
+![GitHub](https://img.shields.io/github/license/kb1rd/logootish-js)
+
+The Logootish CRDT algorithm used by the Matrix Notepad. See the documentation
+[on the wiki.](https://github.com/KB1RD/matrix-notepad/wiki/Logootish) Currently,
+this is only used in `matrix-notepad`, but the code is generic enough that it
+could be used in any collaboration system. The goal of Logootish is to ensure
+that concurrent edits can successfully be merged together in a collaboration
+system. Right now, this only supports ordered list types, such as strings or
+arrays, but I hope to expand it to support full JSON, which would include maps.
+At the moment, all APIs are subject to change.
 
 Based on https://github.com/krasimir/webpack-library-starter
 
