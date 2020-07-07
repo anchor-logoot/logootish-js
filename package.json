@@ -1,11 +1,8 @@
 {
-  "name": "@kb1rd/logootish-js",
-  "version": "0.4.2",
+  "name": "@anchor-logoot/logootish-js",
+  "version": "0.4.3",
   "description": "Logootish algorithm for matrix-notepad",
-  "main": "dist/@kb1rd/logootish-js.min.js",
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
-  },
+  "main": "dist/@anchor-logoot/logootish-js.min.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/KB1RD/logootish-js.git"
