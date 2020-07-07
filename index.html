@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<title>@kb1rd/logootish-js</title>
-	<meta name="description" content="Documentation for @kb1rd/logootish-js">
+	<title>@anchor-logoot/logootish-js</title>
+	<meta name="description" content="Documentation for @anchor-logoot/logootish-js">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="assets/css/main.css">
 </head>
@@ -22,7 +22,7 @@
 						<li class="state loading">Preparing search index...</li>
 						<li class="state failure">The search index is not available</li>
 					</ul>
-					<a href="index.html" class="title">@kb1rd/logootish-js</a>
+					<a href="index.html" class="title">@anchor-logoot/logootish-js</a>
 				</div>
 				<div class="table-cell" id="tsd-widgets">
 					<div id="tsd-filter">
@@ -56,7 +56,7 @@
 					<a href="globals.html">Globals</a>
 				</li>
 			</ul>
-			<h1>@kb1rd/logootish-js</h1>
+			<h1>@anchor-logoot/logootish-js</h1>
 		</div>
 	</div>
 </header>
@@ -72,31 +72,30 @@
 					<img src="https://img.shields.io/github/workflow/status/KB1RD/logootish-js/Yarn%20CI/dev?label=dev%20build%2Ftest" alt="GitHub Workflow Status (branch)">
 				<img src="https://img.shields.io/github/license/kb1rd/logootish-js" alt="GitHub"></p>
 				<p>The Logootish CRDT algorithm used by the Matrix Notepad. See the documentation
-					<a href="https://github.com/KB1RD/matrix-notepad/wiki/Logootish">on the wiki.</a> Currently,
-					this is only used in <code>matrix-notepad</code>, but the code is generic enough that it
-					could be used in any collaboration system. The goal of Logootish is to ensure
-					that concurrent edits can successfully be merged together in a collaboration
-					system. Right now, this only supports ordered list types, such as strings or
-					arrays, but I hope to expand it to support full JSON, which would include maps.
-				At the moment, all APIs are subject to change.</p>
+					<a href="https://github.com/KB1RD/matrix-notepad/wiki/Logootish">on the Notepad wiki</a>
+					for information about the algorithm and the <a href="https://logootish-js.matrix-notepad.kb1rd.net/">TypeDoc</a>
+					Currently, this is only used in <code>matrix-notepad</code>, but the code is generic
+					enough that it could be used in any collaboration system. At the moment, this
+				only contains an implementation of an algorithm that I call AnchorLogoot.</p>
 				<p>Based on <a href="https://github.com/krasimir/webpack-library-starter">https://github.com/krasimir/webpack-library-starter</a></p>
 				<a href="#design-philosophy" id="design-philosophy" style="color: inherit; text-decoration: none;">
 					<h2>Design Philosophy</h2>
 				</a>
-				<p>This implementation of the algorithm is designed with the philosophy of
-					separating out all that can be separated. Because of this, <code>logootish-js</code>
-					never actually touches the data that it manipulates: it only deals with a
-					description of that data. In the <code>ListDocumentModel</code> (a Loogoot-like sequence
-					document), this means that the algorithm recieves only position, length,
-					Lamport clocks, and branches for each operation (where applicable). It is up to
-					the application using <code>logootish-js</code> to decide what data to manipulate and how
-					to manipulate it. This way, the <code>ListDocumentModel</code> can be used for arrays,
-					strings, and rich text. The same will be true for a (spolier alert!)
-				<code>MapDocumentModel</code> when that is created.</p>
+				<p>This algorithm, in contrast to others such as
+					<a href="https://github.com/automerge/automerge">Automerge</a> or
+					<a href="https://github.com/yjs/yjs">Y.js</a> is both data <em>and</em> network agnostic. This
+					means that the <code>ListDocumentModel</code> contained here can be used for any ordered
+					list that allows duplication, such as a <code>string</code>, array, or a rich text data
+					type. This <em>does</em> mean that it&#39;s up to you to perform operations on whatever
+					your data model is, but it&#39;s quite easy. However, if you want to save the state
+					(in IndexedDB or wherever), you will have to implement this yourself. If you
+					are interested in using this in your own project, <strong>please submit an issue to
+					request that I clear up the documentation.</strong> I&#39;m focusing on making the Nodepad
+				work, so docs here are not at the top of my priority list.</p>
 				<p>The <code>logootish-js</code> codebase was forked out of
-					<a href="https://matrix-notepad.kb1rd.net">Matrix Notepad</a> and shortly thereafter,
+					<a href="https://matrix-notepad.kb1rd.net">Matrix Notepad</a> and, shortly thereafter,
 					converted to TypeScript. This is by far the most complex and important part of
-				the notepad.</p>
+				the Notepad.</p>
 				<p>Currently, <code>logootish-js</code> only supports the <code>ListDocumentModel</code> type. Other
 				CRDT building blocks will be added in the future.</p>
 				<a href="#listdocumentmodel" id="listdocumentmodel" style="color: inherit; text-decoration: none;">
@@ -118,6 +117,13 @@
 					been created known as &quot;Anchor Logoot.&quot; This is not compatible with previous
 					versions below <code>0.4.0</code>. Currently, conflict creation is experimental and is
 				only implemented in the model. Mark operations are not created yet.</p>
+				<a href="#performance" id="performance" style="color: inherit; text-decoration: none;">
+					<h2>Performance</h2>
+				</a>
+				<p>Most of my time has been spent making this work in the first place. Because of
+					that, it&#39;s a bit slow, but there are a few areas where it can be easily sped up
+					(see the issues). I also have my CI generating flamegraph(s), such as the one
+				<a href="https://logootish-js.matrix-notepad.kb1rd.net/flamegraph/test/listmodel-nc.perf.js/flamegraph.html#%7B%22merged%22:true,%22nodeId%22:null,%22excludeTypes%22:%5B%22cpp%22,%22regexp%22,%22v8%22,%22native%22,%22init%22,%22core%22%5D%7D">here</a>.</p>
 				<a href="#installation" id="installation" style="color: inherit; text-decoration: none;">
 					<h2>Installation</h2>
 				</a>
@@ -134,14 +140,11 @@ yarn run build:docs
 <span class="hljs-comment"># Run tests (currently broken)</span>
 yarn run <span class="hljs-built_in">test</span>
 yarn run <span class="hljs-built_in">test</span>:watch
-yarn run <span class="hljs-built_in">test</span>:cover
-
-<span class="hljs-comment"># Link it so that you can build packages locally with your local copy</span>
-yarn link</code></pre>
+yarn run <span class="hljs-built_in">test</span>:cover</code></pre>
 				<a href="#usage" id="usage" style="color: inherit; text-decoration: none;">
 					<h2>Usage</h2>
 				</a>
-				<p>Unfortunately, the last update changed most of the examples I had here. I will
+				<p>Unfortunately, the last update broke most of the examples I had here. I will
 				eventually put new usage examples here and describe the architecture.</p>
 			</div>
 		</div>
