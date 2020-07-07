@@ -1,6 +1,6 @@
 {
   "name": "@anchor-logoot/logootish-js",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "Logootish algorithm for matrix-notepad",
   "main": "dist/@anchor-logoot/logootish-js.min.js",
   "repository": {
