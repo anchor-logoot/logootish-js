@@ -1,3 +1,12 @@
+# This repository is deprecated
+
+... in favor of different packages for each future CRDT algorithm.
+
+Right now, this means that most of this code has been moved into the
+[ListDocumentModel](https://github.com/anchor-logoot/listdocumentmodel)
+package and the differential ternary search tree has beeb moved into the
+[DTST](https://github.com/anchor-logoot/dtst-js) package.
+
 # Logootish
 ![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/kb1rd/logootish-js)
 ![Matrix](https://img.shields.io/matrix/matrix-collaboration:kb1rd.net?label=chat%20on%20%23matrix-collaboration%3Akb1rd.net&server_fqdn=matrix.org)
